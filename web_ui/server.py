@@ -98,7 +98,9 @@ SYSTEM_STATE = {
     "symbol": "BTCUSDT",
     "trend": "NEUTRAL",
     "rsi": 45.2,
-    "timeframe": "15m"
+    "timeframe": "15m",
+    "ai_insight": "Awaiting initial research...",
+    "sentiment_score": 0.0
 }
 
 # Mock logs for the UI

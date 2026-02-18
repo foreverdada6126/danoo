@@ -40,6 +40,11 @@
                     </div>
                 </div>
                 <div class="card glass">
+                    <h3>AI SENTIMENT</h3>
+                    <p class="value cyan" id="sentiment-value">{{ state.sentiment_score }}</p>
+                    <span id="ai-insight-snip" class="trend">{{ state.ai_insight }}</span>
+                </div>
+                <div class="card glass">
                     <h3>PERFORMANCE (7D)</h3>
                     <canvas id="pnlChart" height="100"></canvas>
                 </div>
