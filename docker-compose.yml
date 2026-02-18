@@ -1,5 +1,6 @@
 services:
-  # 1. DANOO CORE (The Brain & Wallet)
+  # DANOO CORE (The Brain & Wallet)
+  # This container now runs alongside your Hostinger One-Click Apps
   danoo-core:
     build: 
       context: .
@@ -15,71 +16,3 @@ services:
       - ./database:/app/database
       - ./logs:/app/logs
     restart: always
-    networks:
-      - danoo-net
-
-  # 2. INTEL SERVICE (The Researcher - LangChain)
-  intel-service:
-    build:
-      context: .
-      dockerfile: Dockerfile.intel
-    container_name: intel-service
-    ports:
-      - "5000:5000"
-    env_file: .env
-    environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-    restart: always
-    networks:
-      - danoo-net
-
-  # 3. OPENCLAW (The Voice & Interface)
-  openclaw-agent:
-    image: coollabsio/openclaw:latest
-    container_name: openclaw-agent
-    ports:
-      - "3456:3456"
-    environment:
-      - OPENCLAW_GATEWAY_TOKEN=your_secure_token
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - PROVIDER=openai
-    volumes:
-      - ./openclaw:/app/openclaw
-    restart: always
-    networks:
-      - danoo-net
-
-  # 4. LANGFLOW (The AI Designer)
-  langflow:
-    image: langflowai/langflow:latest
-    container_name: langflow
-    ports:
-      - "7860:7860"
-    environment:
-      - LANGFLOW_DATABASE_URL=sqlite:///app/langflow.db
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-    volumes:
-      - ./data/langflow:/app/langflow
-    restart: always
-    networks:
-      - danoo-net
-
-  # 5. n8n (The Operations Manager)
-  n8n:
-    image: n8nio/n8n:latest
-    container_name: n8n
-    ports:
-      - "5678:5678"
-    environment:
-      - N8N_HOST=localhost
-      - N8N_PORT=5678
-      - N8N_PROTOCOL=http
-    volumes:
-      - ./data/n8n:/home/node/.n8n
-    restart: always
-    networks:
-      - danoo-net
-
-networks:
-  danoo-net:
-    driver: bridge
