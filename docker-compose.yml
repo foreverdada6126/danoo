@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   danoo:
     build: .
@@ -16,7 +14,7 @@ services:
     restart: always
 
   openclaw:
-    image: hostinger/openclaw:latest
+    image: phioranex/openclaw-docker:latest
     container_name: openclaw
     ports:
       - "3456:3456"
