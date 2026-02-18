@@ -8,6 +8,8 @@ services:
     ports:
       - "8000:8000"
     env_file: .env
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
     volumes:
       - ./data:/app/data
       - ./database:/app/database
@@ -25,12 +27,13 @@ services:
     ports:
       - "5000:5000"
     env_file: .env
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
     restart: always
     networks:
       - danoo-net
 
   # 3. OPENCLAW (The Voice & Interface)
-  # Using a reliable public image
   openclaw-agent:
     image: coollabsio/openclaw:latest
     container_name: openclaw-agent
@@ -38,6 +41,8 @@ services:
       - "3456:3456"
     environment:
       - OPENCLAW_GATEWAY_TOKEN=your_secure_token
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - PROVIDER=openai
     volumes:
       - ./openclaw:/app/openclaw
     restart: always
@@ -52,6 +57,7 @@ services:
       - "7860:7860"
     environment:
       - LANGFLOW_DATABASE_URL=sqlite:///app/langflow.db
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
     volumes:
       - ./data/langflow:/app/langflow
     restart: always

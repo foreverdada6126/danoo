@@ -4,11 +4,15 @@ from fastapi import FastAPI, Request, UploadFile, File
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
+from config.settings import SETTINGS
 import uvicorn
 import asyncio
 from typing import Dict, Any, List
 
 app = FastAPI(title="DaNoo - Strategy Intelligence Engine v5.2")
+
+class ChatMessage(BaseModel):
+    message: str
 
 # Define storage directories
 REFERENCE_DIR = "reference_files"
