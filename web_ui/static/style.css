@@ -266,6 +266,26 @@ header {
     font-family: 'Space Mono', monospace;
 }
 
+.sub-hash {
+    display: block;
+    font-size: 0.6rem !important;
+    color: var(--text-dim);
+    margin-top: 2px;
+}
+
+.cyan-btn {
+    border: 1px solid var(--cyan) !important;
+    background: transparent !important;
+    color: var(--cyan) !important;
+    transition: all 0.3s ease;
+}
+
+.cyan-btn:hover {
+    background: var(--cyan) !important;
+    color: black !important;
+    box-shadow: 0 0 15px var(--cyan);
+}
+
 .trending-up {
     color: #39d353;
 }

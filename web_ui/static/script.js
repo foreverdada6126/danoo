@@ -142,14 +142,45 @@ async function deleteFile(filename, target) {
     updateFileList();
 }
 
+// DevOps Logic
+const gitSyncBtn = document.getElementById('git-sync-btn');
+
+async function syncToGithub() {
+    gitSyncBtn.textContent = "SYNCING...";
+    gitSyncBtn.classList.add('pulse');
+
+    try {
+        const res = await fetch('/api/system/git_sync', { method: 'POST' });
+        const data = await res.json();
+        alert(data.message);
+    } catch (e) {
+        alert("Fatal Sync Error: Check VPS logs.");
+    } finally {
+        gitSyncBtn.textContent = "PUSH TO GITHUB";
+        gitSyncBtn.classList.remove('pulse');
+        updateSystemInfo();
+    }
+}
+
+async function updateSystemInfo() {
+    const res = await fetch('/api/system/info');
+    const data = await res.json();
+    document.getElementById('meta-version').textContent = data.version;
+    document.getElementById('meta-hash').textContent = `#${data.git_hash}`;
+}
+
+gitSyncBtn.addEventListener('click', syncToGithub);
+
 // Initialization
 initChart();
 loadChartData();
 updateLogs();
 updateFileList();
+updateSystemInfo();
 setInterval(updateState, 5000);
 setInterval(updateLogs, 10000);
 setInterval(updateFileList, 15000);
+setInterval(updateSystemInfo, 30000);
 
 setInterval(() => {
     document.getElementById('uptime').textContent = new Date().toLocaleTimeString();

@@ -46,7 +46,7 @@
             </section>
 
             <section class="analysis-panel glass">
-                <div class="panel-header">STRATEGY INTELLIGENCE</div>
+                <div class="panel-header">STRATEGY INTELLIGENCE & DEVOPS</div>
                 <div class="details-grid">
                     <div class="detail-item">
                         <label>SYMBOL</label>
@@ -57,12 +57,13 @@
                         <span id="meta-trend" class="trending-up">{{ state.trend }}</span>
                     </div>
                     <div class="detail-item">
-                        <label>RSI (14)</label>
-                        <span id="meta-rsi">{{ state.rsi }}</span>
+                        <label>VERSION</label>
+                        <span id="meta-version">{{ state.version or '5.2.0' }}</span>
+                        <span id="meta-hash" class="sub-hash">#---</span>
                     </div>
                     <div class="detail-item">
-                        <label>TIMEFRAME</label>
-                        <span id="meta-tf">{{ state.timeframe }}</span>
+                        <label>CODE SYNC</label>
+                        <button id="git-sync-btn" class="mini-btn cyan-btn">PUSH TO GITHUB</button>
                     </div>
                 </div>
             </section>

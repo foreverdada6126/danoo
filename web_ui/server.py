@@ -43,6 +43,41 @@ async def delete_file(filename: str, target: str = "reference"):
         return {"status": "deleted"}
     return {"status": "not_found"}
 
+import subprocess
+
+@app.get("/api/system/info")
+async def get_system_info():
+    """Returns version and git status."""
+    try:
+        git_hash = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"]).decode().strip()
+        git_msg = subprocess.check_output(["git", "log", "-1", "--pretty=%B"]).decode().strip()
+    except:
+        git_hash = "no-git"
+        git_msg = "Unknown"
+        
+    return {
+        "version": SETTINGS.VERSION,
+        "git_hash": git_hash,
+        "last_commit": git_msg,
+        "mode": SETTINGS.MODE
+    }
+
+@app.post("/api/system/git_sync")
+async def git_sync():
+    """Pushes local changes to GitHub."""
+    try:
+        # Simple sync: add, commit, push
+        # In a real scenario, you'd want a message input, but for 'simple sync' we automate
+        subprocess.run(["git", "add", "."], check=True)
+        # Check if there are changes to commit
+        status = subprocess.check_output(["git", "status", "--porcelain"]).decode().strip()
+        if status:
+            subprocess.run(["git", "commit", "-m", "Sync from DaNoo Web UI"], check=True)
+        subprocess.run(["git", "push", "origin", "main"], check=True)
+        return {"status": "success", "message": "Pushed to GitHub successfully."}
+    except subprocess.CalledProcessError as e:
+        return {"status": "error", "message": f"Git Error: {str(e)}"}
+
 @app.get("/api/logs")
 async def get_logs():
     return LOG_HISTORY

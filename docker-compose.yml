@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  danoo:
+    build: .
+    container_name: danoo-v5.2
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./database:/app/database
+      - ./logs:/app/app_logs
+      - ./reference_files:/app/reference_files
+    restart: always
