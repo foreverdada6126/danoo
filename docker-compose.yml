@@ -30,18 +30,16 @@ services:
       - danoo-net
 
   # 3. OPENCLAW (The Voice & Interface)
-  # Building from a clean python image to avoid registry pull errors
+  # Using a reliable public image
   openclaw-agent:
-    image: python:3.11-slim
+    image: coollabsio/openclaw:latest
     container_name: openclaw-agent
-    working_dir: /app
-    volumes:
-      - .:/app
-    command: >
-      bash -c "pip install --no-cache-dir -r requirements.txt && python app.py"
-    env_file: .env
     ports:
       - "3456:3456"
+    environment:
+      - OPENCLAW_GATEWAY_TOKEN=your_secure_token
+    volumes:
+      - ./openclaw:/app/openclaw
     restart: always
     networks:
       - danoo-net
@@ -56,6 +54,22 @@ services:
       - LANGFLOW_DATABASE_URL=sqlite:///app/langflow.db
     volumes:
       - ./data/langflow:/app/langflow
+    restart: always
+    networks:
+      - danoo-net
+
+  # 5. n8n (The Operations Manager)
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+    volumes:
+      - ./data/n8n:/home/node/.n8n
     restart: always
     networks:
       - danoo-net
