@@ -1,0 +1,12 @@
+{
+    "project": "Adaptive Strategy Intelligence Engine v5.2",
+    "audit_version": "1.0.0",
+    "last_audit_date": "2026-02-18",
+    "allowed_skills": [],
+    "policy_v5_2": {
+        "usage": "discovery_only",
+        "never_auto_install": true,
+        "require_line_by_line_review": true,
+        "require_exact_version_pin": true
+    }
+}

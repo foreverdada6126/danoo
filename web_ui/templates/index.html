@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DaNoo - Strategy Intelligence v5.2</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700&family=Space+Mono&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="background-glow"></div>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <span class="pulse"></span>
+                <h1>DANOO <span>v5.2</span></h1>
+            </div>
+            <div class="system-status">
+                <span id="status-tag" class="tag operational">SYSTEM ONLINE</span>
+            </div>
+        </header>
+
+        <main>
+            <section class="dashboard-grid">
+                <div class="card glass">
+                    <h3>EQUITY</h3>
+                    <p class="value" id="equity-value">${{ "{:,.2f}".format(state.equity) }}</p>
+                    <span class="trend up">+2.45% (24h)</span>
+                </div>
+                <div class="card glass">
+                    <h3>MARKET REGIME</h3>
+                    <p class="value cyan" id="regime-value">{{ state.regime }}</p>
+                    <div class="regime-visual">
+                        <div class="bar-fill" style="width: 75%"></div>
+                    </div>
+                </div>
+                <div class="card glass">
+                    <h3>PERFORMANCE (7D)</h3>
+                    <canvas id="pnlChart" height="100"></canvas>
+                </div>
+            </section>
+
+            <section class="analysis-panel glass">
+                <div class="panel-header">STRATEGY INTELLIGENCE</div>
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <label>SYMBOL</label>
+                        <span id="meta-symbol">{{ state.symbol }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>TREND</label>
+                        <span id="meta-trend" class="trending-up">{{ state.trend }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>RSI (14)</label>
+                        <span id="meta-rsi">{{ state.rsi }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>TIMEFRAME</label>
+                        <span id="meta-tf">{{ state.timeframe }}</span>
+                    </div>
+                </div>
+            </section>
+
+            <div class="split-view">
+                <section class="chat-container glass">
+                    <div class="chat-header">
+                        <h2>INTEL INTERFACE</h2>
+                    </div>
+                    <div id="chat-messages" class="chat-messages">
+                        <div class="msg bot">Welcome, Commander. DaNoo is ready for instructions.</div>
+                    </div>
+                    <div class="chat-input-area">
+                        <input type="text" id="chat-input" placeholder="Type instruction for DaNoo..."
+                            autocomplete="off">
+                        <button id="send-btn">TRANSPOSE</button>
+                    </div>
+                </section>
+
+                <section class="logs-container glass">
+                    <div class="chat-header">
+                        <h2>SYSTEM LOGS</h2>
+                    </div>
+                    <div id="log-list" class="log-list">
+                        <!-- Logs injected via JS -->
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <footer>
+            <div class="footer-segment">MODE: <span>INSTITUTIONAL META</span></div>
+            <div class="footer-segment">UPTIME: <span id="uptime">04:22:15</span></div>
+            <div class="footer-segment">LATENCY: <span>42ms</span></div>
+        </footer>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/static/script.js"></script>
+</body>
+
+</html>
