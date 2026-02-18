@@ -97,12 +97,59 @@ async function updateState() {
     } catch (e) { console.error("Update failed"); }
 }
 
+// File Vault Logic
+const fileInput = document.getElementById('file-input');
+const uploadBtn = document.getElementById('upload-btn');
+const fileTarget = document.getElementById('file-target');
+const fileList = document.getElementById('file-list');
+
+async function updateFileList() {
+    const res = await fetch('/api/files');
+    const data = await res.json();
+
+    let html = '';
+
+    html += '<div class="file-category">REFERENCE</div>';
+    data.reference.forEach(f => {
+        html += `<div class="file-item"><span>${f}</span><button onclick="deleteFile('${f}', 'reference')">DEL</button></div>`;
+    });
+
+    html += '<div class="file-category">DATA</div>';
+    data.processed_data.forEach(f => {
+        html += `<div class="file-item"><span>${f}</span><button onclick="deleteFile('${f}', 'data')">DEL</button></div>`;
+    });
+
+    fileList.innerHTML = html;
+}
+
+uploadBtn.addEventListener('click', () => fileInput.click());
+
+fileInput.addEventListener('change', async () => {
+    if (fileInput.files.length === 0) return;
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+
+    await fetch(`/api/files/upload?target=${fileTarget.value}`, {
+        method: 'POST',
+        body: formData
+    });
+    fileInput.value = '';
+    updateFileList();
+});
+
+async function deleteFile(filename, target) {
+    await fetch(`/api/files/${filename}?target=${target}`, { method: 'DELETE' });
+    updateFileList();
+}
+
 // Initialization
 initChart();
 loadChartData();
 updateLogs();
+updateFileList();
 setInterval(updateState, 5000);
 setInterval(updateLogs, 10000);
+setInterval(updateFileList, 15000);
 
 setInterval(() => {
     document.getElementById('uptime').textContent = new Date().toLocaleTimeString();

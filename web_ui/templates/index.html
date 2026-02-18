@@ -68,6 +68,23 @@
             </section>
 
             <div class="split-view">
+                <section class="files-container glass">
+                    <div class="chat-header">
+                        <h2>FILE VAULT</h2>
+                    </div>
+                    <div class="file-controls">
+                        <select id="file-target">
+                            <option value="reference">Reference Files</option>
+                            <option value="data">Processed Data</option>
+                        </select>
+                        <input type="file" id="file-input" style="display:none">
+                        <button id="upload-btn" class="mini-btn">UPLOAD</button>
+                    </div>
+                    <div id="file-list" class="file-list">
+                        <!-- Files injected via JS -->
+                    </div>
+                </section>
+
                 <section class="chat-container glass">
                     <div class="chat-header">
                         <h2>INTEL INTERFACE</h2>

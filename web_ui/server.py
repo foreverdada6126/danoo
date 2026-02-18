@@ -1,12 +1,51 @@
-from fastapi import FastAPI, Request
+import os
+import shutil
+from fastapi import FastAPI, Request, UploadFile, File
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 import uvicorn
 import asyncio
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 app = FastAPI(title="DaNoo - Strategy Intelligence Engine v5.2")
+
+# Define storage directories
+REFERENCE_DIR = "reference_files"
+DATA_DIR = "data/processed"
+
+@app.get("/api/files")
+async def list_files():
+    """List files in reference_files and data/processed."""
+    ref_files = os.listdir(REFERENCE_DIR)
+    data_files = os.listdir(DATA_DIR)
+    return {
+        "reference": ref_files,
+        "processed_data": data_files
+    }
+
+@app.post("/api/files/upload")
+async def upload_file(file: UploadFile = File(...), target: str = "reference"):
+    """Upload a file to the specified target directory."""
+    path = REFERENCE_DIR if target == "reference" else DATA_DIR
+    file_path = os.path.join(path, file.filename)
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    return {"filename": file.filename, "status": "uploaded"}
+
+@app.delete("/api/files/{filename}")
+async def delete_file(filename: str, target: str = "reference"):
+    """Delete a file from the specified directory."""
+    path = REFERENCE_DIR if target == "reference" else DATA_DIR
+    file_path = os.path.join(path, filename)
+    if os.path.exists(file_path):
+        os.remove(file_path)
+        return {"status": "deleted"}
+    return {"status": "not_found"}
+
+@app.get("/api/logs")
+async def get_logs():
+    return LOG_HISTORY
 app.mount("/static", StaticFiles(directory="web_ui/static"), name="static")
 templates = Jinja2Templates(directory="web_ui/templates")
 
