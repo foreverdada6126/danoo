@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   danoo:
@@ -13,4 +13,19 @@ services:
       - ./database:/app/database
       - ./logs:/app/app_logs
       - ./reference_files:/app/reference_files
+    restart: always
+
+  openclaw:
+    image: hostinger/openclaw:latest
+    container_name: openclaw
+    ports:
+      - "3456:3456"
+      - "18789:18789"
+    environment:
+      OPENCLAW_GATEWAY_TOKEN: "CHANGE_ME_TO_A_LONG_RANDOM_TOKEN"
+      DANOO_BASE_URL: "http://danoo:8000"
+    volumes:
+      - ./openclaw:/app/openclaw
+      - ./data:/shared/data
+      - ./reference_files:/shared/reference_files
     restart: always
