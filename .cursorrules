@@ -1,0 +1,23 @@
+# DaNoo v5.2 - Intelligence & Development Rules
+
+## Core Directive
+Maintain the integrity of the "Risk-First" Institutional Meta Allocation Engine. Every change must prioritize capital preservation, operational stability, and execution security.
+
+## Architecture Guidelines
+- **Math Parity**: All technical indicators must match the deterministic math established in the `reference_files` and `core/strategy_library.py`. Do NOT use standard libraries (like TA-Lib) unless specifically asked; maintain custom parity for backtest consistency.
+- **Async Efficiency**: Use `asyncio` for the main loop, Web UI (FastAPI), and Telegram polling. Avoid blocking calls.
+- **Unified State**: Maintain a shared state between the `RegimeEngine`, `ExecutionEngine`, and the two UIs (Web and Telegram).
+
+## UI/UX Standards
+- **Futuristic Aesthetic**: Web UI updates must follow the "Institutional Cyberpunk" theme (Glassmorphism, neon accents, Outfit/Space Mono fonts).
+- **Instructional Flow**: The Chat/Intel Interface is the primary way to interact with the OpenClaw agent. Ensure responses are professional and data-driven.
+
+## Security & Governance
+- **Zero Secrets**: NEVER hardcode API keys or Telegram tokens. Refer only to `SETTINGS` or `secrets.env`.
+- **Git Hygiene**: Respect the `.gitignore`. Data pull CSVs and logs should stay local or in the File Vault, not in the repo.
+- **OpenClaw Governance**: Follow the skill audit policy: line-by-line review, pinned versions, and "discovery only" usage.
+
+## Development Workflow
+1. **Analyze Regime**: Before suggesting trade logic changes, consider the 5 market regimes: BULL_TREND, BEAR_TREND, RANGING, COMPRESSED, HIGH_VOLATILITY.
+2. **Verify Execution**: All trade execution logic must pass through the `ExecutionValidator` check.
+3. **Log Visibility**: Significant engine changes must be reflected in the Web UI System Logs.
