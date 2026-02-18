@@ -1,6 +1,6 @@
 services:
-  # DANOO CORE (The Brain & Wallet)
-  # This container now runs alongside your Hostinger One-Click Apps
+  # 1. DANOO CORE (The Brain & Wallet)
+  # Port 8000: Handles BTC cycles, logic, and your Dashboard UI.
   danoo-core:
     build: 
       context: .
@@ -16,3 +16,25 @@ services:
       - ./database:/app/database
       - ./logs:/app/logs
     restart: always
+    networks:
+      - danoo-net
+
+  # 2. INTEL SERVICE (The Researcher - LangChain)
+  # Port 5000: A separate worker for deep AI strategy research.
+  intel-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.intel
+    container_name: intel-service
+    ports:
+      - "5000:5000"
+    env_file: .env
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    restart: always
+    networks:
+      - danoo-net
+
+networks:
+  danoo-net:
+    driver: bridge
