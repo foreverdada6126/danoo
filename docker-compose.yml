@@ -1,29 +1,51 @@
 services:
-  danoo:
-    build: .
-    container_name: danoo-v5.2
+  # 1. DANOO CORE (The Brain & Wallet)
+  danoo-core:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: danoo-core
     ports:
       - "8000:8000"
-    env_file:
-      - .env
+    env_file: .env
     volumes:
       - ./data:/app/data
       - ./database:/app/database
-      - ./logs:/app/app_logs
-      - ./reference_files:/app/reference_files
+      - ./logs:/app/logs
     restart: always
+    networks:
+      - danoo-net
 
-  openclaw:
-    image: phioranex/openclaw-docker:latest
-    container_name: openclaw
+  # 2. INTEL SERVICE (The Researcher - LangChain)
+  intel-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.intel
+    container_name: intel-service
+    ports:
+      - "5000:5000"
+    env_file: .env
+    restart: always
+    networks:
+      - danoo-net
+
+  # 3. OPENCLAW (The Voice & Interface)
+  # Building from a clean python image to avoid registry pull errors
+  openclaw-agent:
+    image: python:3.11-slim
+    container_name: openclaw-agent
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: >
+      bash -c "pip install --no-cache-dir -r requirements.txt && python app.py"
+    env_file: .env
     ports:
       - "3456:3456"
-      - "18789:18789"
-    environment:
-      OPENCLAW_GATEWAY_TOKEN: "CHANGE_ME_TO_A_LONG_RANDOM_TOKEN"
-      DANOO_BASE_URL: "http://danoo:8000"
-    volumes:
-      - ./openclaw:/app/openclaw
-      - ./data:/shared/data
-      - ./reference_files:/shared/reference_files
     restart: always
+    networks:
+      - danoo-net
+
+networks:
+  danoo-net:
+    driver: bridge
