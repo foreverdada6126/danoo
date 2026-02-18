@@ -51,24 +51,36 @@ async def main():
     logger.add("logs/engine.log", rotation="10 MB", level="INFO")
     logger.info(f"Initializing {SETTINGS.PROJECT_NAME} v{SETTINGS.VERSION}...")
     
-    # ... (Bot and UI init) ...
-    bot = TelegramBot()
-    await bot.start_bot()
-    
-    ui_server = start_ui_server()
-    asyncio.create_task(ui_server.serve())
-    
-    # 3. Start Intelligence Task
-    asyncio.create_task(run_market_intelligence(bot))
-    
-    # 4. Initialize Internal Engines
-    # ...
+    try:
+        # 1. Initialize Telegram Bot (Core UI)
+        bot = TelegramBot()
+        await bot.start_bot()
+        await bot.send_alert(f"🚀 DaNoo v5.2 Engine Online.")
+        
+        # 2. Start Web UI Server (Background Task)
+        ui_server = start_ui_server()
+        asyncio.create_task(ui_server.serve())
+        logger.info("Web UI Server started on http://0.0.0.0:8000")
+        
+        # 3. Start Intelligence Task
+        asyncio.create_task(run_market_intelligence(bot))
+        
+        # 4. Initialize Internal Engines
+        regime_engine = RegimeEngine()
+        
+        # 5. Start Routine Orchestration (Scheduler)
+        asyncio.create_task(start_scheduler_async())
+        
+        logger.info("Main loop active. System operational.")
+        # Keep the main process alive
+        while True:
+            await asyncio.sleep(60)
             
     except (KeyboardInterrupt, SystemExit):
         logger.info("Shutdown signal received.")
     except Exception as e:
         logger.error(f"Critical System Error: {e}")
-        await bot.send_alert(f"❌ CRITICAL ERROR: {e}")
+        # Only try to send alert if bot was initialized
     finally:
         logger.info("Clean shutdown complete.")
 
