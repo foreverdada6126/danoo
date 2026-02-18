@@ -46,6 +46,20 @@ services:
     networks:
       - danoo-net
 
+  # 4. LANGFLOW (The AI Designer)
+  langflow:
+    image: langflowai/langflow:latest
+    container_name: langflow
+    ports:
+      - "7860:7860"
+    environment:
+      - LANGFLOW_DATABASE_URL=sqlite:///app/langflow.db
+    volumes:
+      - ./data/langflow:/app/langflow
+    restart: always
+    networks:
+      - danoo-net
+
 networks:
   danoo-net:
     driver: bridge
