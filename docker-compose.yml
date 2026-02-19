@@ -15,6 +15,10 @@ services:
       - ./data:/app/data
       - ./database:/app/database
       - ./logs:/app/logs
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+    pid: "host"
     restart: always
     networks:
       - danoo-net

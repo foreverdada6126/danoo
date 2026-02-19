@@ -11,6 +11,10 @@ from typing import Dict, Any, List
 import psutil
 import platform
 import time
+import os
+
+# To see host metrics from inside a container with /host/proc mounted
+os.environ["PROCFS_PATH"] = "/host/proc"
 
 app = FastAPI(title="DaNoo - Strategy Intelligence Engine v5.2")
 
