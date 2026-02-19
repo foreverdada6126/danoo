@@ -9,6 +9,7 @@ from config.settings import SETTINGS
 class ExchangeHandler:
     def __init__(self):
         self.exchange_id = SETTINGS.EXCHANGE_ID
+        self.exchange_id = SETTINGS.EXCHANGE_ID
         self.api_key = SETTINGS.BINANCE_API_KEY
         self.secret = SETTINGS.BINANCE_SECRET
         self.use_sandbox = SETTINGS.USE_SANDBOX

@@ -14,16 +14,22 @@ import time
 import httpx
 from loguru import logger
 
+# Initialize State Containers at the top to prevent log sink crashes
+LOG_HISTORY = []
+RECON_HISTORY = []
+ACTIVE_TRADES = []
+APPROVAL_QUEUE = []
+EQUITY_HISTORY = [1000.0]
+
 # --- Real-time Log Bridge ---
 def ui_log_sink(message):
     """Pushes every 'logger.info' from the terminal into the Dashboard UI."""
     try:
         record = message.record
         log_entry = {
-            "time": record["time"].strftime("%H:%M:%S"),
+            "time": time.time(), # Use Unix time for browser localization
             "msg": record["message"]
         }
-        # Avoid circular imports if possible, but since we are in server.py it works
         LOG_HISTORY.append(log_entry)
         if len(LOG_HISTORY) > 50: LOG_HISTORY.pop(0)
     except:
@@ -138,11 +144,9 @@ SYSTEM_STATE = {
 }
 
 # Mock data for the dashboard refinement
-ACTIVE_TRADES = []
-APPROVAL_QUEUE = [
-    {"time": time.time(), "signal": "Vol-Breakout High", "sentiment": 0.82, "status": "AWAITING APPROVAL", "reason": "Institutional volume spike detected on 15m timeframe."}
-]
-EQUITY_HISTORY = [1000.0]
+# INITIAL_SETPOINT = [time.time(), signal, sentiment, status, reason]
+if not APPROVAL_QUEUE:
+    APPROVAL_QUEUE.append({"time": time.time(), "signal": "Vol-Breakout High", "sentiment": 0.82, "status": "AWAITING APPROVAL", "reason": "Institutional volume spike detected on 15m timeframe."})
 
 @app.get("/api/chart")
 async def get_chart_data():
@@ -158,8 +162,7 @@ async def get_chart_data():
         "values": history
     }
 
-LOG_HISTORY = []
-RECON_HISTORY = []
+# (Global states moved to top)
 
 @app.get("/api/system/trades")
 async def get_active_trades():
