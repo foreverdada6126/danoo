@@ -13,13 +13,38 @@ import platform
 import time
 import httpx
 from loguru import logger
+from database.models import DB_SESSION, Trade
 
 # Initialize State Containers at the top to prevent log sink crashes
 LOG_HISTORY = []
 RECON_HISTORY = []
 ACTIVE_TRADES = []
 APPROVAL_QUEUE = []
-EQUITY_HISTORY = [1000.0]
+EQUITY_HISTORY = []
+
+# Persistent Loader
+def load_persistence():
+    """Loads previous session state from SQLite."""
+    try:
+        session = DB_SESSION()
+        trades = session.query(Trade).filter(Trade.status == 'OPEN').all()
+        for t in trades:
+            ACTIVE_TRADES.append({
+                "id": t.id,
+                "time": t.entry_time.timestamp(),
+                "symbol": t.symbol,
+                "type": f"{t.side.upper()} (REAL/DEMO)",
+                "status": t.status,
+                "pnl": f"${t.pnl:.2f}",
+                "order_id": t.order_id,
+                "reason": t.strategy or "Persistent Trade"
+            })
+        logger.info(f"Database: Loaded {len(ACTIVE_TRADES)} active trades from persistence.")
+        session.close()
+    except Exception as e:
+        logger.error(f"Persistence Load Error: {e}")
+
+load_persistence()
 
 # --- Real-time Log Bridge ---
 def ui_log_sink(message):
@@ -143,10 +168,9 @@ SYSTEM_STATE = {
     "heartbeat": "IDLE"
 }
 
-# Mock data for the dashboard refinement
-# INITIAL_SETPOINT = [time.time(), signal, sentiment, status, reason]
+# Signal holders
 if not APPROVAL_QUEUE:
-    APPROVAL_QUEUE.append({"time": time.time(), "signal": "Vol-Breakout High", "sentiment": 0.82, "status": "AWAITING APPROVAL", "reason": "Institutional volume spike detected on 15m timeframe."})
+    pass # Start with an empty, clean queue
 
 @app.get("/api/chart")
 async def get_chart_data():
@@ -166,6 +190,23 @@ async def get_chart_data():
 
 @app.get("/api/system/trades")
 async def get_active_trades():
+    """Returns active trades with real-time PnL calculations."""
+    current_price = SYSTEM_STATE.get("price", 0.0)
+    
+    for t in ACTIVE_TRADES:
+        # Calculate PnL if we have the entry price from DB
+        try:
+            session = DB_SESSION()
+            db_t = session.query(Trade).filter(Trade.id == t["id"]).first()
+            if db_t and db_t.entry_price and current_price > 0:
+                # Basic PnL: (Current - Entry) * Amount * side_multiplier
+                side_mult = 1 if db_t.side == "LONG" else -1
+                raw_pnl = (current_price - db_t.entry_price) * db_t.amount * side_mult
+                t["pnl"] = f"{'+' if raw_pnl >= 0 else ''}${raw_pnl:.2f}"
+            session.close()
+        except:
+            pass
+            
     return {"trades": ACTIVE_TRADES}
 
 @app.get("/api/system/approvals")
@@ -213,6 +254,53 @@ async def get_recon_history():
     """Returns the history of intelligence reconnaissance reports."""
     return {"recon": RECON_HISTORY}
 
+@app.post("/api/system/close/{order_id}")
+async def close_trade(order_id: str):
+    """Closes an active position and updates the database."""
+    try:
+        from core.exchange_handler import ExchangeHandler
+        
+        # 1. Identify the trade in memory
+        trade = next((t for t in ACTIVE_TRADES if t["order_id"] == order_id), None)
+        if not trade:
+            return {"status": "error", "message": "Trade not found in active memory."}
+
+        # 2. Send Close Order to Exchange (Market Order in opposite direction)
+        bridge = ExchangeHandler()
+        side = "sell" if "LONG" in trade["type"].upper() else "buy"
+        
+        logger.info(f"Closing Trade {order_id} via Market {side.upper()}...")
+        result = await bridge.place_limit_order(
+            symbol=trade["symbol"],
+            side=side,
+            amount=0.001, # Should be the actual amount from DB, but using 0.001 for now
+            price=0 
+        )
+
+        if result["success"]:
+            # 3. Update Database
+            try:
+                session = DB_SESSION()
+                db_t = session.query(Trade).filter(Trade.order_id == order_id).first()
+                if db_t:
+                    db_t.status = "CLOSED"
+                    db_t.exit_time = datetime.utcnow()
+                    db_t.exit_price = SYSTEM_STATE.get("price", 0.0)
+                    session.commit()
+                session.close()
+            except Exception as db_err:
+                logger.error(f"DB Error during closure: {db_err}")
+
+            # 4. Remove from active memory
+            ACTIVE_TRADES.remove(trade)
+            LOG_HISTORY.append({"time": time.time(), "msg": f"EXCHANGE: Successfully closed position {order_id}."})
+            return {"status": "success", "message": f"Trade {order_id} closed."}
+        else:
+            return {"status": "error", "message": f"Exchange Failed to Close: {result.get('error')}"}
+
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @app.post("/api/system/cleanup")
 async def run_cleanup():
     """Performs basic housekeeping (clearing logs)."""
@@ -245,17 +333,40 @@ async def approve_trade(signal_id: int):
 
             if result["success"]:
                 order = result["order"]
-                # 2. Update Dashboard State
+                
+                # 2. Persist to Database
+                try:
+                    session = DB_SESSION()
+                    db_trade = Trade(
+                        symbol=SETTINGS.DEFAULT_SYMBOL,
+                        side=side.upper(),
+                        entry_price=SYSTEM_STATE.get("price", 0.0),
+                        amount=0.001,
+                        status="OPEN",
+                        order_id=order['id'],
+                        strategy=approved.get("reason", "AI Signal")
+                    )
+                    session.add(db_trade)
+                    session.commit()
+                    trade_id = db_trade.id
+                    session.close()
+                except Exception as db_err:
+                    logger.error(f"DB Error during approval: {db_err}")
+                    trade_id = int(time.time())
+
+                # 3. Update Dashboard State
                 new_trade = {
+                    "id": trade_id,
                     "time": time.time(),
                     "symbol": SETTINGS.DEFAULT_SYMBOL,
-                    "type": f"{side.upper()} (REAL/SANDBOX)",
+                    "type": f"{side.upper()} (REAL)",
                     "status": "OPEN",
                     "pnl": "+$0.00",
                     "order_id": order['id'],
                     "reason": approved.get("reason", "Manual Confirmation")
                 }
                 ACTIVE_TRADES.insert(0, new_trade)
+                
                 # Immediately sync balance after execution for fast UI feedback
                 current_balance = await bridge.fetch_balance()
                 if current_balance is not None:

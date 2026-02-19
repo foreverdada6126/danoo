@@ -127,6 +127,7 @@ async function updateTrades() {
                 <div class="card-body">
                     Status: <span class="neutral">${t.status}</span>
                     <div style="font-size: 0.6rem; color: var(--text-dim); margin-top: 4px; font-style: italic;">Reason: ${t.reason || 'Not specified'}</div>
+                    <button onclick="closeTrade('${t.order_id}')" class="btn btn-approve" style="margin-top: 10px; width: 100%; font-size: 0.6rem; background: rgba(255, 100, 100, 0.1); border-color: #ff6464; color: #ff6464;">CLOSE POSITION</button>
                 </div>
             </div>
         `).join('');
@@ -172,6 +173,23 @@ async function approveTrade(id) {
     } catch (e) {
         console.error("Approval failed", e);
         alert("System Error: Could not connect to the Bridge.");
+    }
+}
+
+async function closeTrade(order_id) {
+    try {
+        const res = await fetch(`/api/system/close/${order_id}`, { method: 'POST' });
+        const data = await res.json();
+        if (data.status === 'success') {
+            updateTrades();
+            syncDashboard();
+            updateChart();
+        } else {
+            alert(`Closure Error: ${data.message}`);
+        }
+    } catch (e) {
+        console.error("Closure failed", e);
+        alert("System Error: Could not broadcast closure signal.");
     }
 }
 
