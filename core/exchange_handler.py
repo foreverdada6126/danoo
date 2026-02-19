@@ -29,17 +29,29 @@ class ExchangeHandler:
             logger.warning(f"Exchange Bridge: {self.exchange_id.upper()} initialized in PRODUCTION mode.")
 
     async def fetch_balance(self):
-        """Fetches the actual USDT balance from the futures wallet."""
+        """Aggressively fetches the USDT balance from the futures wallet."""
         if not self.api_key or not self.secret:
-            return 5000.0 if self.use_sandbox else 0.0 # Return demo baseline if no keys
+            return 5000.0 if self.use_sandbox else 0.0
             
         try:
             balance = await self.client.fetch_balance()
-            # Try to get USDT balance from futures
-            usdt_bal = balance.get('USDT', {}).get('total', 0.0)
+            
+            # Discovery Path 1: Standard Total
+            usdt_bal = balance.get('total', {}).get('USDT', 0.0)
+            
+            # Discovery Path 2: Individual Entry
             if usdt_bal == 0:
-                # Fallback for some exchange formats
-                usdt_bal = balance.get('total', {}).get('USDT', 0.0)
+                usdt_bal = balance.get('USDT', {}).get('total', 0.0)
+            
+            # Discovery Path 3: Info Entry (Binance Raw)
+            if usdt_bal == 0 and 'info' in balance:
+                assets = balance['info'].get('assets', [])
+                for asset in assets:
+                    if asset.get('asset') == 'USDT':
+                        usdt_bal = float(asset.get('walletBalance', 0.0))
+                        break
+            
+            logger.info(f"Exchange Bridge: Balance Discovery complete. USDT: {usdt_bal}")
             return float(usdt_bal)
         except Exception as e:
             logger.error(f"Balance Fetch Error: {str(e)}")
