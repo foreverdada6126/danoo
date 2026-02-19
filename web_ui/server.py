@@ -14,6 +14,24 @@ import time
 import httpx
 from loguru import logger
 
+# --- Real-time Log Bridge ---
+def ui_log_sink(message):
+    """Pushes every 'logger.info' from the terminal into the Dashboard UI."""
+    try:
+        record = message.record
+        log_entry = {
+            "time": record["time"].strftime("%H:%M:%S"),
+            "msg": record["message"]
+        }
+        # Avoid circular imports if possible, but since we are in server.py it works
+        LOG_HISTORY.append(log_entry)
+        if len(LOG_HISTORY) > 50: LOG_HISTORY.pop(0)
+    except:
+        pass
+
+# Add the sink (but not if already added)
+logger.add(ui_log_sink, format="{message}", level="INFO")
+
 # To see host metrics from inside a container with /host/proc mounted
 os.environ["PROCFS_PATH"] = "/host/proc"
 
