@@ -181,8 +181,25 @@ async def trigger_scan():
 
 @app.post("/api/chat")
 async def chat_with_openclaw(msg: ChatMessage):
-    # This would link to the OpenClaw skill agent logic
-    # Simplified mock response for now
+    # Detect autonomous reports from the Intel Service
+    if msg.message.startswith("SCIENTIST_REPORT:"):
+        payload = msg.message.replace("SCIENTIST_REPORT:", "").strip()
+        # Format: Justification | Score | Regime
+        parts = payload.split("|")
+        if len(parts) >= 3:
+            justification = parts[0].strip()
+            score = float(parts[1].strip())
+            regime = parts[2].strip()
+            
+            # Update the dashboard state live
+            SYSTEM_STATE["ai_insight"] = justification
+            SYSTEM_STATE["sentiment_score"] = score
+            SYSTEM_STATE["regime"] = regime
+            
+            LOG_HISTORY.append({"time": time.strftime("%H:%M:%S"), "msg": f"AI Intelligence: {justification}"})
+            return {"status": "success", "message": "Dashboard state updated by Scientist."}
+
+    # Standard user chat logic
     response = f"OpenClaw: I received your instruction: '{msg.message}'. Analyzing market impact..."
     return {"reply": response}
 

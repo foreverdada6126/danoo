@@ -1,45 +1,124 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from loguru import logger
 import uvicorn
 import os
+import httpx
+import asyncio
+import time
+from config.settings import SETTINGS
 
-app = FastAPI(title="DaNoo Intel Service - LangChain Core")
+app = FastAPI(title="DaNoo Intel Service - Headless Scientist v5.2")
 
 # Initialize LangChain model
-# Note: In a real VPS, this would use the env var
 llm = ChatOpenAI(model="gpt-4-turbo-preview", temperature=0)
 
 class ResearchRequest(BaseModel):
     query: str
     context: str = ""
 
+async def fetch_serper_data(query: str):
+    """Fetches real-time web context via Serper.dev."""
+    if not SETTINGS.SERPER_API_KEY:
+        logger.warning("SERPER_API_KEY missing. Skipping web research.")
+        return "No web data available."
+    
+    url = "https://google.serper.dev/search"
+    payload = {"q": query}
+    headers = {
+        'X-API-KEY': SETTINGS.SERPER_API_KEY,
+        'Content-Type': 'application/json'
+    }
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(url, json=payload, headers=headers)
+            results = response.json()
+            # Extract snippets for context
+            snippets = [f"{item.get('title')}: {item.get('snippet')}" for item in results.get('organic', [])[:5]]
+            return "\n".join(snippets)
+        except Exception as e:
+            logger.error(f"Serper error: {e}")
+            return "Web research failed."
+
+async def run_autonomous_research():
+    """Autonomous loop that scans BTC sentiment every hour."""
+    while True:
+        try:
+            logger.info("Scientist: Starting autonomous BTC market scan...")
+            
+            # 1. Fetch Web Context
+            context = await fetch_serper_data("Bitcoin latest market sentiment and technical outlook")
+            
+            # 2. Analyze with AI
+            prompt = ChatPromptTemplate.from_template("""
+            You are the DaNoo Senior Analyst. 
+            Latest Market Context: {context}
+            
+            Based on this information, provide:
+            1. A Sentiment Score (-1.0 to +1.0)
+            2. A one-sentence institutional justification.
+            3. Identify the current 'Regime' (BULL_TREND, BEAR_TREND, RANGING).
+            
+            FORMAT: Justification | Score | Regime
+            """)
+            
+            chain = prompt | llm
+            response = chain.invoke({"context": context})
+            result_text = response.content
+            
+            # 3. Push findings to DaNoo Core Dashboard
+            async with httpx.AsyncClient() as client:
+                # Assuming danoo-core is reachable via internal network link
+                try:
+                    # We send it as a 'System Update' to the core
+                    await client.post("http://danoo-core:8000/api/chat", json={
+                        "message": f"SCIENTIST_REPORT: {result_text}"
+                    })
+                except:
+                    logger.warning("Could not reach danoo-core. Dashboard update skipped.")
+
+            logger.info(f"Scientist: Scan completed. Findings: {result_text}")
+            
+        except Exception as e:
+            logger.error(f"Autonomous scan error: {e}")
+        
+        # Wait 1 hour before next scan
+        await asyncio.sleep(3600)
+
 @app.post("/api/research/analyze")
 async def analyze_market(req: ResearchRequest):
-    logger.info(f"Researching: {req.query}")
+    """Manual trigger for research (used by dashboard or chat)."""
+    logger.info(f"Manual Research Triggered: {req.query}")
     try:
+        # If no context provided, fetch it
+        context = req.context if req.context else await fetch_serper_data(req.query)
+        
         prompt = ChatPromptTemplate.from_template("""
         You are the DaNoo Intel Analyzer. 
         Context: {context}
         Query: {query}
         
-        Analyze the provided data and return a sentiment score between -1.0 (Very Bearish) and +1.0 (Very Bullish) 
-        and a brief institutional-grade justification.
+        Return a high-level summary and sentiment estimate.
         """)
         
         chain = prompt | llm
-        response = chain.invoke({"context": req.context, "query": req.query})
+        response = chain.invoke({"context": context, "query": req.query})
         
         return {
             "analysis": response.content,
-            "sentiment_estimate": 0.5, # Logic to extract from content could go here
             "status": "COMPLETED"
         }
     except Exception as e:
         logger.error(f"Research error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.on_event("startup")
+async def startup_event():
+    """Start the autonomous researcher in the background."""
+    asyncio.create_task(run_autonomous_research())
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=5000)

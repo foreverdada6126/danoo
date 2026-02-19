@@ -1,10 +1,14 @@
-# DaNoo v5.2 - Langflow "AI Sniper" Strategy Blueprint
+# DaNoo v5.2 - "BTC Direct" Strategy Blueprint
 
-Use these settings to connect your **Langflow Lab (Port 32771)** to your **Trading Engine (Port 8000)**.
+Use these settings to focus exclusively on Bitcoin for your first live run.
 
-## Node 1: Social Discovery (Search)
-- **Component**: Google Search / Serper
-- **Input Query**: "What are the top 5 trending AI cryptocurrency tokens right now on Twitter/X?"
+## Node 1: BTC Context (Search)
+- **Component**: Serper / Google Search
+- **Input Query**: "Bitcoin latest market sentiment and technical analysis for today"
+
+## Node 2: The Brain (OpenAI / LLM)
+- **Component**: ChatOpenAI
+- **System Prompt**: "You are the Senior BTC Strategist. Based on the search results: {data}, identify if the current Bitcoin mood is 'Optimistic' or 'Cautionary'. Support it with one data point found."
 
 ## Node 2: Technical Filter (Python / CCXT)
 - **Logic**: 

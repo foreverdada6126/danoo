@@ -21,10 +21,10 @@ class Settings(BaseSettings):
     DB_PATH: str = "database/memory.db"
     LOG_PATH: str = "logs"
     
-    # Telegram Config
-    TELEGRAM_TOKEN: Optional[str] = os.getenv("TELEGRAM_TOKEN")
-    TELEGRAM_CHAT_ID: Optional[str] = os.getenv("TELEGRAM_CHAT_ID")
-    
+    # API Keys
+    OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
+    SERPER_API_KEY: Optional[str] = os.getenv("SERPER_API_KEY")
+
     class Config:
         env_file = "config/secrets.env"
         case_sensitive = True
