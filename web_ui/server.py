@@ -123,7 +123,7 @@ SYSTEM_STATE = {
     "status": "OPERATIONAL",
     "mode": SETTINGS.MODE.upper(),
     "regime": "RANGING",
-    "equity": 12450.75,
+    "equity": 1000.0,
     "pnl_24h": +2.5,
     "active_orders": 2,
     "symbol": "BTCUSDT",
