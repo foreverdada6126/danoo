@@ -148,6 +148,11 @@ RECON_HISTORY = []
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request, "state": SYSTEM_STATE})
 
+@app.get("/api/status")
+async def get_status():
+    """Returns the core system state (equity, regime, insights)."""
+    return SYSTEM_STATE
+
 @app.get("/api/system/health")
 async def get_health():
     """Returns VPS health metrics with a small interval for accuracy."""
