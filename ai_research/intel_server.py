@@ -71,14 +71,29 @@ async def run_autonomous_research():
             
             # 3. Push findings to DaNoo Core Dashboard
             async with httpx.AsyncClient() as client:
-                # Assuming danoo-core is reachable via internal network link
+                # Target A: DaNoo Core Dashboard
                 try:
-                    # We send it as a 'System Update' to the core
                     await client.post("http://danoo-core:8000/api/chat", json={
                         "message": f"SCIENTIST_REPORT: {result_text}"
                     })
                 except:
                     logger.warning("Could not reach danoo-core. Dashboard update skipped.")
+
+                # Target B: Mission Control Webhook (The Executive Office)
+                if SETTINGS.MISSION_CONTROL_WEBHOOK:
+                    try:
+                        # Full URL construction
+                        target_url = f"http://{os.getenv('VPS_IP', 'localhost')}:8001{SETTINGS.MISSION_CONTROL_WEBHOOK}"
+                        headers = {"Authorization": f"Bearer {SETTINGS.LOCAL_AUTH_TOKEN}"} if SETTINGS.LOCAL_AUTH_TOKEN else {}
+                        
+                        await client.post(target_url, json={
+                            "query": "Autonomous BTC Research",
+                            "analysis": result_text,
+                            "metadata": {"source": "DaNoo-Scientist", "timestamp": time.time()}
+                        }, headers=headers)
+                        logger.info("Scientist: Report sent to Mission Control.")
+                    except Exception as mc_err:
+                        logger.warning(f"Failed to push to Mission Control: {mc_err}")
 
             logger.info(f"Scientist: Scan completed. Findings: {result_text}")
             

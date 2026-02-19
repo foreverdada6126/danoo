@@ -21,9 +21,15 @@ class Settings(BaseSettings):
     DB_PATH: str = "database/memory.db"
     LOG_PATH: str = "logs"
     
-    # API Keys
+    # API Keys & Webhooks
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
     SERPER_API_KEY: Optional[str] = os.getenv("SERPER_API_KEY")
+    MISSION_CONTROL_WEBHOOK: Optional[str] = os.getenv("MISSION_CONTROL_WEBHOOK")
+    LOCAL_AUTH_TOKEN: Optional[str] = os.getenv("LOCAL_AUTH_TOKEN")
+    
+    # Telegram Config
+    TELEGRAM_TOKEN: Optional[str] = os.getenv("TELEGRAM_TOKEN")
+    TELEGRAM_CHAT_ID: Optional[str] = os.getenv("TELEGRAM_CHAT_ID")
 
     class Config:
         env_file = "config/secrets.env"
