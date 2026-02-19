@@ -95,9 +95,12 @@ async def get_logs():
 app.mount("/static", StaticFiles(directory="web_ui/static"), name="static")
 templates = Jinja2Templates(directory="web_ui/templates")
 
+from config.settings import SETTINGS
+
 # State holders (to be updated by the engine)
 SYSTEM_STATE = {
     "status": "OPERATIONAL",
+    "mode": SETTINGS.MODE.upper(),
     "regime": "RANGING",
     "equity": 12450.75,
     "pnl_24h": +2.5,
@@ -107,7 +110,8 @@ SYSTEM_STATE = {
     "rsi": 45.2,
     "timeframe": "15m",
     "ai_insight": "Awaiting initial research...",
-    "sentiment_score": 0.0
+    "sentiment_score": 0.0,
+    "heartbeat": "IDLE"
 }
 
 # Mock logs for the UI

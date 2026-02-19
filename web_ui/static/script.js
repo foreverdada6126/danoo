@@ -90,10 +90,25 @@ async function updateState() {
 
         document.getElementById('equity-value').textContent = `$${data.equity.toLocaleString()}`;
         document.getElementById('regime-value').textContent = data.regime;
-        document.getElementById('meta-symbol').textContent = data.symbol;
-        document.getElementById('meta-trend').textContent = data.trend;
-        document.getElementById('meta-rsi').textContent = data.rsi;
-        document.getElementById('meta-tf').textContent = data.timeframe;
+
+        // New elements
+        if (document.getElementById('sentiment-value'))
+            document.getElementById('sentiment-value').textContent = data.sentiment_score;
+        if (document.getElementById('ai-insight-snip'))
+            document.getElementById('ai-insight-snip').textContent = data.ai_insight;
+
+        // Heartbeat / Background Activity
+        const hb = document.getElementById('heartbeat-tag');
+        hb.textContent = data.heartbeat;
+        hb.className = 'tag ' + data.heartbeat.toLowerCase();
+
+        // Dynamic Regime Bar
+        const bar = document.getElementById('regime-bar');
+        if (bar) {
+            const width = data.regime === 'BULL_TREND' ? '95%' : (data.regime === 'RANGING' ? '55%' : '15%');
+            bar.style.width = width;
+        }
+
     } catch (e) { console.error("Update failed"); }
 }
 
@@ -222,18 +237,24 @@ document.getElementById('regime-btn').addEventListener('click', async () => {
     }, 1000);
 });
 
-// Initialization
+// Initialization - INSTANT LOAD
 initChart();
 loadChartData();
 updateLogs();
 updateFileList();
 updateSystemInfo();
 updateHealth();
-setInterval(updateState, 5000);
-setInterval(updateLogs, 10000);
+updateState();
+
+// High-Frequency Sync (1.5s - 2s)
+setInterval(updateState, 1500);
+setInterval(updateHealth, 1500);
+setInterval(updateLogs, 2000);
+
+// Background Sync
+setInterval(loadChartData, 60000);
 setInterval(updateFileList, 15000);
 setInterval(updateSystemInfo, 30000);
-setInterval(updateHealth, 10000);
 
 setInterval(() => {
     document.getElementById('uptime').textContent = new Date().toLocaleTimeString();
