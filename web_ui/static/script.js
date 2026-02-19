@@ -71,6 +71,16 @@ function toggleOverlay(id) {
 }
 
 // 3. CORE SYNC (GMGN Style)
+async function toggleAI() {
+    try {
+        const res = await fetch('/api/system/toggle_ai', { method: 'POST' });
+        const data = await res.json();
+        syncDashboard();
+    } catch (e) {
+        console.error("Failed to toggle AI", e);
+    }
+}
+
 async function syncDashboard() {
     try {
         const res = await fetch('/api/status');
@@ -90,6 +100,21 @@ async function syncDashboard() {
         get('mode-tag').textContent = `${data.mode} MODE`;
         get('meta-symbol').textContent = data.symbol;
         get('orders-count').textContent = data.active_orders;
+
+        const aiBtn = get('ai-toggle-btn');
+        if (aiBtn) {
+            if (data.ai_active) {
+                aiBtn.textContent = "AI: ON";
+                aiBtn.style.background = "rgba(0, 255, 100, 0.1)";
+                aiBtn.style.color = "#00ff64";
+                aiBtn.style.borderColor = "#00ff6422";
+            } else {
+                aiBtn.textContent = "AI: OFF";
+                aiBtn.style.background = "rgba(255, 100, 100, 0.1)";
+                aiBtn.style.color = "#ff6464";
+                aiBtn.style.borderColor = "#ff646422";
+            }
+        }
     } catch (e) { }
 }
 

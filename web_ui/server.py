@@ -141,6 +141,14 @@ async def git_sync():
     except subprocess.CalledProcessError as e:
         return {"status": "error", "message": f"Git Error: {str(e)}"}
 
+@app.post("/api/system/toggle_ai")
+async def toggle_ai_state():
+    """Enables or disables OpenAI calls globally."""
+    SYSTEM_STATE["ai_active"] = not SYSTEM_STATE["ai_active"]
+    status = "ACTIVE" if SYSTEM_STATE["ai_active"] else "DISABLED"
+    LOG_HISTORY.append({"time": time.time(), "msg": f"SYSTEM: AI Communication has been {status}."})
+    return {"status": "success", "ai_active": SYSTEM_STATE["ai_active"]}
+
 @app.get("/api/logs")
 async def get_logs():
     return LOG_HISTORY
@@ -165,7 +173,8 @@ SYSTEM_STATE = {
     "sentiment_score": 0.0,
     "price": 0.0,
     "funding_rate": 0.0,
-    "heartbeat": "IDLE"
+    "heartbeat": "IDLE",
+    "ai_active": True
 }
 
 # Signal holders
@@ -386,6 +395,9 @@ async def approve_trade(signal_id: int):
 @app.post("/api/engine/recon")
 async def trigger_recon():
     """Forwards a manual research request to the Intel Service."""
+    if not SYSTEM_STATE["ai_active"]:
+        return {"status": "error", "message": "AI Communication is currently DISABLED. Enable it to run scans."}
+        
     try:
         async with httpx.AsyncClient() as client:
             # Tell the scientist to run a manual 'Full Scan'

@@ -19,6 +19,12 @@ async def run_market_intelligence(bot):
             from web_ui.server import SYSTEM_STATE, LOG_HISTORY
             from datetime import datetime
             
+            # 0. Check Power Toggle
+            if not SYSTEM_STATE.get("ai_active", True):
+                logger.info("Intelligence Loop: AI Communication is disabled. Scanning bypassed.")
+                await asyncio.sleep(300) # Check again in 5 mins
+                continue
+                
             # 1. Fetch data from Intel Service
             async with httpx.AsyncClient() as client:
                 resp = await client.post(
