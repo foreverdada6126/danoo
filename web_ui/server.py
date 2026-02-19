@@ -146,6 +146,17 @@ async def get_chart_data():
         "values": [12100, 12250, 12200, 12350, 12400, 12420, 12450]
     }
 
+@app.post("/api/engine/scan")
+async def trigger_scan():
+    """Manually triggers a fresh regime scan."""
+    try:
+        # In a real engine, this would call engine.run_regime_scan()
+        # For now, we update the log to show the bot responded
+        LOG_HISTORY.append({"time": time.strftime("%H:%M:%S"), "msg": "Manual Command: Depth Market Regime Scan initiated."})
+        return {"status": "success", "message": "Regime scan triggered."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @app.post("/api/chat")
 async def chat_with_openclaw(msg: ChatMessage):
     # This would link to the OpenClaw skill agent logic

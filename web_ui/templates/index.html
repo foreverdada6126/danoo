@@ -32,13 +32,16 @@
                     <p class="value" id="equity-value">${{ "{:,.2f}".format(state.equity) }}</p>
                     <span class="trend up">+2.45% (24h)</span>
                 </div>
-                <div class="card glass">
-                    <h3>MARKET REGIME</h3>
+                <button class="card glass interactive-card" id="regime-btn">
+                    <div class="card-header-flex">
+                        <h3>MARKET REGIME</h3>
+                        <span class="mini-tag">FORCE SCAN</span>
+                    </div>
                     <p class="value cyan" id="regime-value">{{ state.regime }}</p>
                     <div class="regime-visual">
-                        <div class="bar-fill" style="width: 75%"></div>
+                        <div id="regime-bar" class="bar-fill" style="width: 50%"></div>
                     </div>
-                </div>
+                </button>
                 <div class="card glass">
                     <h3>AI SENTIMENT</h3>
                     <p class="value cyan" id="sentiment-value">{{ state.sentiment_score }}</p>

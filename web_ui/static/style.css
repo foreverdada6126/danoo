@@ -129,6 +129,35 @@ header {
     border-color: rgba(0, 242, 255, 0.4);
 }
 
+.interactive-card {
+    cursor: pointer;
+    border: 1px solid rgba(0, 242, 255, 0.2);
+    transition: all 0.3s ease;
+    text-align: left;
+    width: 100%;
+}
+
+.interactive-card:hover {
+    border-color: var(--cyan);
+    transform: translateY(-2px);
+    box-shadow: 0 0 20px rgba(0, 242, 255, 0.2);
+}
+
+.card-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.mini-tag {
+    font-size: 0.6rem;
+    color: var(--cyan);
+    border: 1px solid var(--cyan);
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-family: 'Space Mono', monospace;
+}
+
 .card h3 {
     font-size: 0.8rem;
     color: var(--text-dim);

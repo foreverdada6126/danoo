@@ -200,6 +200,15 @@ async function purgeLogs() {
 
 gitSyncBtn.addEventListener('click', syncToGithub);
 cleanupBtn.addEventListener('click', purgeLogs);
+document.getElementById('regime-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('regime-btn');
+    btn.classList.add('pulse');
+    await fetch('/api/engine/scan', { method: 'POST' });
+    setTimeout(() => {
+        btn.classList.remove('pulse');
+        updateLogs();
+    }, 1000);
+});
 
 // Initialization
 initChart();
