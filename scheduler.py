@@ -14,7 +14,11 @@ async def cycle_15m():
     
     bridge = ExchangeHandler()
     data = await bridge.fetch_market_data()
+    balance = await bridge.fetch_balance()
     
+    if balance is not None:
+        SYSTEM_STATE["equity"] = balance
+
     if data:
         SYSTEM_STATE["rsi"] = data["rsi"]
         SYSTEM_STATE["price"] = data["price"]

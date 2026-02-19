@@ -28,6 +28,23 @@ class ExchangeHandler:
         else:
             logger.warning(f"Exchange Bridge: {self.exchange_id.upper()} initialized in PRODUCTION mode.")
 
+    async def fetch_balance(self):
+        """Fetches the actual USDT balance from the futures wallet."""
+        if not self.api_key or not self.secret:
+            return 5000.0 if self.use_sandbox else 0.0 # Return demo baseline if no keys
+            
+        try:
+            balance = await self.client.fetch_balance()
+            # Try to get USDT balance from futures
+            usdt_bal = balance.get('USDT', {}).get('total', 0.0)
+            if usdt_bal == 0:
+                # Fallback for some exchange formats
+                usdt_bal = balance.get('total', {}).get('USDT', 0.0)
+            return float(usdt_bal)
+        except Exception as e:
+            logger.error(f"Balance Fetch Error: {str(e)}")
+            return None
+
     async def fetch_market_data(self, symbol=None, timeframe=None):
         """Fetches RSI and Funding Rate for the dashboard."""
         symbol = symbol or SETTINGS.DEFAULT_SYMBOL

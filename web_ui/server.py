@@ -253,7 +253,10 @@ async def approve_trade(signal_id: int):
                     "reason": approved.get("reason", "Manual Confirmation")
                 }
                 ACTIVE_TRADES.insert(0, new_trade)
-                SYSTEM_STATE["equity"] += 0.02 
+                # Immediately sync balance after execution for fast UI feedback
+                current_balance = await bridge.fetch_balance()
+                if current_balance is not None:
+                    SYSTEM_STATE["equity"] = current_balance
                 LOG_HISTORY.append({"time": time.time(), "msg": f"EXCHANGE: Order {order['id']} placed successfully."})
                 return {"status": "success", "message": f"Trade {order['id']} executed."}
             else:
