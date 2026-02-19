@@ -137,7 +137,9 @@ SYSTEM_STATE = {
 
 # Mock data for the dashboard refinement
 ACTIVE_TRADES = []
-APPROVAL_QUEUE = []
+APPROVAL_QUEUE = [
+    {"time": "16:40", "signal": "Vol-Breakout High", "sentiment": 0.82, "status": "AWAITING APPROVAL"}
+]
 EQUITY_HISTORY = [1000.0]
 
 @app.get("/api/chart")
@@ -214,13 +216,28 @@ async def run_cleanup():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-@app.get("/api/chart")
-async def get_chart_data():
-    # Mock data for the performance chart
-    return {
-        "labels": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-        "values": [12100, 12250, 12200, 12350, 12400, 12420, 12450]
-    }
+@app.post("/api/system/approve/{signal_id}")
+async def approve_trade(signal_id: int):
+    """Approves a pending trade signal from the queue."""
+    try:
+        if 0 <= signal_id < len(APPROVAL_QUEUE):
+            approved = APPROVAL_QUEUE.pop(signal_id)
+            # Simulate execution entry
+            new_trade = {
+                "time": time.strftime("%H:%M"),
+                "symbol": "BTC/USDT",
+                "type": "LONG (PAPER)",
+                "status": "OPEN",
+                "pnl": "+$0.02"
+            }
+            ACTIVE_TRADES.insert(0, new_trade)
+            # Update equity history to show impact on chart
+            SYSTEM_STATE["equity"] += 0.02
+            LOG_HISTORY.append({"time": time.strftime("%H:%M:%S"), "msg": f"EXECUTION: Approved trade for {approved['signal']}"})
+            return {"status": "success", "message": "Trade approved and executed."}
+        return {"status": "error", "message": "Signal not found."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 @app.post("/api/engine/recon")
 async def trigger_recon():

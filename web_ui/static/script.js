@@ -127,14 +127,27 @@ async function updateApprovals() {
             return;
         }
 
-        container.innerHTML = data.approvals.map(a => `
+        container.innerHTML = data.approvals.map((a, index) => `
             <div class="card-item" style="border-left: 2px solid var(--magenta);">
                 <div class="card-meta"><span>SIGNAL</span><span>${a.time}</span></div>
                 <div class="card-header">${a.signal}</div>
-                <div class="card-body">AI Sentiment: ${a.sentiment} <button class="btn-sm" style="font-size: 0.5rem; float:right;">APPROVE</button></div>
+                <div class="card-body">AI Sentiment: ${a.sentiment} <button class="btn-sm" style="font-size: 0.5rem; float:right;" onclick="approveTrade(${index})">APPROVE</button></div>
             </div>
         `).join('');
     } catch (e) { }
+}
+
+async function approveTrade(id) {
+    try {
+        const res = await fetch(`/api/system/approve/${id}`, { method: 'POST' });
+        const data = await res.json();
+        if (data.status === 'success') {
+            updateApprovals();
+            updateTrades();
+            syncDashboard();
+            updateChart();
+        }
+    } catch (e) { console.error("Approval failed"); }
 }
 
 async function updateHealth() {
