@@ -18,11 +18,20 @@ async def cycle_15m():
 async def cycle_1h():
     """Recalculate scores and check trade changes."""
     from web_ui.server import SYSTEM_STATE, LOG_HISTORY
-    SYSTEM_STATE["heartbeat"] = "BACKTESTING"
-    logger.info("[Cycle 1h] Recalculating strategy scores and trade state...")
-    await asyncio.sleep(3) # Simulate refinement
-    log_entry = {"time": time.strftime("%H:%M:%S"), "msg": "Cycle 1h: Walk-forward testing active strategies..."}
+    from core.executor import ExecutionEngine
+    
+    SYSTEM_STATE["heartbeat"] = "CHECKING_TRADE"
+    logger.info("[Cycle 1h] Running Execution Bridge analysis...")
+    
+    executor = ExecutionEngine()
+    decision = executor.check_trade_readiness(SYSTEM_STATE)
+    executor.execute_mock_trade(decision)
+    
+    # Update Dashboard Log
+    log_msg = f"Execution Decision: {decision['decision']} - {decision['reason']}"
+    log_entry = {"time": time.strftime("%H:%M:%S"), "msg": log_msg}
     LOG_HISTORY.append(log_entry)
+    
     if len(LOG_HISTORY) > 50: LOG_HISTORY.pop(0)
     SYSTEM_STATE["heartbeat"] = "IDLE"
 

@@ -69,6 +69,17 @@ async def run_autonomous_research():
             response = chain.invoke({"context": context})
             result_text = response.content
             
+            # Extract sentiment for metadata
+            sentiment = 0.0
+            if "|" in result_text:
+                try:
+                    parts = result_text.split("|")
+                    if len(parts) >= 2:
+                        import re
+                        score_clean = re.findall(r"[-+]?\d*\.\d+|\d+", parts[-2])[0]
+                        sentiment = float(score_clean)
+                except: pass
+
             # 3. Push findings to DaNoo Core Dashboard
             async with httpx.AsyncClient() as client:
                 # Target A: DaNoo Core Dashboard
@@ -82,16 +93,24 @@ async def run_autonomous_research():
                 # Target B: Mission Control Webhook (The Executive Office)
                 if SETTINGS.MISSION_CONTROL_WEBHOOK:
                     try:
-                        # Full URL construction
+                        # Determine status based on sentiment
+                        status = "Review" if abs(sentiment) > 0.4 else "Inbox"
+                        priority = "High" if abs(sentiment) > 0.7 else "Normal"
+                        
                         target_url = f"http://{os.getenv('VPS_IP', 'localhost')}:8001{SETTINGS.MISSION_CONTROL_WEBHOOK}"
                         headers = {"Authorization": f"Bearer {SETTINGS.LOCAL_AUTH_TOKEN}"} if SETTINGS.LOCAL_AUTH_TOKEN else {}
                         
                         await client.post(target_url, json={
                             "query": "Autonomous BTC Research",
                             "analysis": result_text,
-                            "metadata": {"source": "DaNoo-Scientist", "timestamp": time.time()}
+                            "metadata": {
+                                "source": "DaNoo-Scientist", 
+                                "timestamp": time.time(),
+                                "status": status,
+                                "priority": priority
+                            }
                         }, headers=headers)
-                        logger.info("Scientist: Report sent to Mission Control.")
+                        logger.info(f"Scientist: Report sent to Mission Control ({status}/{priority}).")
                     except Exception as mc_err:
                         logger.warning(f"Failed to push to Mission Control: {mc_err}")
 
