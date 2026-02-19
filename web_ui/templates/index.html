@@ -4,186 +4,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DaNoo - Strategy Intelligence v5.2</title>
+    <title>DaNoo - Commmand Hub v5.2</title>
     <link rel="stylesheet" href="/static/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700&family=Space+Mono&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
-    <div class="background-glow"></div>
-    <div class="container">
+    <div class="app-wrapper">
         <header>
-            <div class="logo">
-                <span class="pulse"></span>
-                <h1>DANOO <span>v5.2</span></h1>
-            </div>
-            <div class="system-status">
-                <div class="btn-group-nav">
-                    <button class="nav-btn" data-target="vps-overlay">HEALTH</button>
-                    <button class="nav-btn" data-target="logs-overlay">LOGS</button>
-                    <button class="nav-btn" data-target="files-overlay">VAULT</button>
+            <div class="brand">DANOO <span>v5.2</span></div>
+            <div class="top-vitals">
+                <div class="vital-item">
+                    <label>EQUITY:</label>
+                    <span id="equity-value" class="val">$1,000.00</span>
                 </div>
-                <span id="mode-tag" class="tag paper-mode">{{ state.mode }} MODE</span>
+                <div class="vital-item">
+                    <label>REGIME:</label>
+                    <span id="regime-value" class="val">RANGING</span>
+                </div>
+                <div class="vital-item">
+                    <label>SENTIMENT:</label>
+                    <span id="sentiment-value" class="val">0.0</span>
+                </div>
+            </div>
+            <div class="nav-actions">
+                <button class="btn-sm" onclick="toggleOverlay('vps-overlay')">HEALTH</button>
+                <button class="btn-sm" onclick="toggleOverlay('logs-overlay')">LOGS</button>
+                <button class="btn-sm" onclick="toggleOverlay('files-overlay')">FILES</button>
+                <div id="mode-tag" class="btn-sm"
+                    style="background: rgba(255, 170, 0, 0.1); color: #ffaa00; border: 1px solid #ffaa0022;">PAPER MODE
+                </div>
             </div>
         </header>
 
         <main>
-            <!-- Top Dashboard Stats -->
-            <section class="dashboard-grid">
-                <div class="card glass">
-                    <h3>EQUITY</h3>
-                    <p class="value" id="equity-value">${{ "{:,.2f}".format(state.equity) }}</p>
-                    <span class="trend up">+2.45% (24h)</span>
-                </div>
-                <button class="card glass interactive-card" id="regime-btn">
-                    <div class="card-header-flex">
-                        <h3>MARKET REGIME</h3>
-                        <span class="mini-tag">FORCE SCAN</span>
-                    </div>
-                    <p class="value cyan" id="regime-value">{{ state.regime }}</p>
-                    <div class="regime-visual">
-                        <div id="regime-bar" class="bar-fill" style="width: 50%"></div>
-                    </div>
-                </button>
-                <div class="card glass">
-                    <h3>AI SENTIMENT</h3>
-                    <p class="value cyan" id="sentiment-value">{{ state.sentiment_score }}</p>
-                    <span id="ai-insight-snip" class="trend">{{ state.ai_insight }}</span>
-                </div>
-                <div class="card glass">
-                    <h3>PERFORMANCE</h3>
-                    <div class="chart-wrapper">
-                        <canvas id="pnlChart"></canvas>
+            <!-- Column 1: Intelligence -->
+            <section class="panel">
+                <div class="panel-title">MISSION RECON <button id="recon-btn" class="btn-sm"
+                        style="font-size: 0.5rem; padding: 2px 6px;">SCAN</button></div>
+                <div id="recon-history" class="feed">
+                    <div class="card-item">
+                        <div class="card-body">Awaiting tactical research...</div>
                     </div>
                 </div>
             </section>
 
-            <!-- Main Operational Hub -->
-            <div class="operations-hub">
-                <!-- Left: AI Intelligence -->
-                <div class="intelligence-column">
-                    <section class="ops-panel recon-panel glass">
-                        <div class="chat-header">
-                            <div class="header-flex">
-                                <h2>MISSION RECON</h2>
-                                <div class="header-actions">
-                                    <button id="recon-btn" class="mini-btn-outline">INITIATE SCAN</button>
-                                    <span class="live-indicator">LIVE FEED</span>
-                                </div>
-                            </div>
+            <!-- Column 2: Execution & Performance -->
+            <section class="panel center-content">
+                <div class="panel">
+                    <div class="panel-title">PERFORMANCE <span style="color: var(--text-dim); font-size: 0.6rem;">EQUITY
+                            GROWTH</span></div>
+                    <div class="chart-zone">
+                        <div class="chart-container">
+                            <canvas id="pnlChart"></canvas>
                         </div>
-                        <div id="recon-history" class="recon-list">
-                            <div class="recon-item empty">Awaiting first reconnaissance report...</div>
-                        </div>
-                    </section>
-
-                    <section class="ops-panel glass chat-panel">
-                        <div class="chat-header">
-                            <h2>MASTER COMMAND</h2>
-                        </div>
-                        <div id="chat-messages" class="chat-messages">
-                            <div class="msg bot">Welcome, Commander. DaNoo is ready.</div>
-                        </div>
-                        <div class="chat-input-area">
-                            <input type="text" id="chat-input" placeholder="Type instruction..." autocomplete="off">
-                            <button id="send-btn">SEND</button>
-                        </div>
-                    </section>
+                    </div>
                 </div>
-
-                <!-- Right: Strategy & Execution -->
-                <div class="strategy-column">
-                    <section class="ops-panel glass trade-feed">
-                        <div class="chat-header">
-                            <h2>ACTIVE TRADES</h2>
+                <div class="panel" style="border-top: 1px solid var(--border);">
+                    <div class="panel-title">ACTIVE TRADES <span id="orders-count" class="up">0</span></div>
+                    <div id="trade-list" class="feed">
+                        <div class="card-item">
+                            <div class="card-body" style="color: var(--text-dim); text-align: center;">No exposure
+                                found.</div>
                         </div>
-                        <div id="trade-list" class="mini-feed">
-                            <div class="recon-item empty">No active paper trades.</div>
-                        </div>
-                    </section>
-
-                    <section class="ops-panel glass approval-feed">
-                        <div class="chat-header">
-                            <h2>APPROVAL QUEUE</h2>
-                        </div>
-                        <div id="approval-list" class="mini-feed">
-                            <div class="recon-item empty">Queue clear. Awaiting signals...</div>
-                        </div>
-                    </section>
+                    </div>
                 </div>
-            </div>
+            </section>
+
+            <!-- Column 3: Ops & Control -->
+            <section class="panel">
+                <div class="panel-title">APPROVAL QUEUE</div>
+                <div id="approval-list" class="feed" style="max-height: 40%;">
+                    <div class="card-item">
+                        <div class="card-body" style="color: var(--text-dim); text-align: center;">Queue empty.</div>
+                    </div>
+                </div>
+                <div class="panel" style="border-top: 1px solid var(--border); flex-grow: 1;">
+                    <div class="panel-title">MASTER COMMAND</div>
+                    <div id="chat-messages" class="chat-messages">
+                        <div class="msg bot">System initialized. Ready for instructions.</div>
+                    </div>
+                    <div class="chat-input-row">
+                        <input type="text" id="chat-input" placeholder="Enter command..." autocomplete="off">
+                        <button id="send-btn">SEND</button>
+                    </div>
+                </div>
+            </section>
         </main>
 
-        <!-- Hidden Overlays -->
-        <div id="vps-overlay" class="overlay hidden glass">
-            <div class="overlay-header">
-                <h2>VPS HEALTH & VITALS</h2>
-                <button class="close-overlay">×</button>
-            </div>
-            <div class="health-grid">
-                <div class="health-item">
-                    <label>CPU</label>
-                    <div class="health-bar">
-                        <div id="cpu-bar" class="health-fill"></div>
-                    </div>
-                    <span id="cpu-val">0%</span>
-                </div>
-                <div class="health-item">
-                    <label>RAM</label>
-                    <div class="health-bar">
-                        <div id="ram-bar" class="health-fill"></div>
-                    </div>
-                    <span id="ram-val">0%</span>
-                </div>
-                <div class="health-item">
-                    <label>DISK</label>
-                    <div class="health-bar">
-                        <div id="disk-bar" class="health-fill"></div>
-                    </div>
-                    <span id="disk-val">0%</span>
-                </div>
-            </div>
-            <div class="btn-group-center">
-                <button id="report-btn" class="mini-btn">SYSTEM REPORT</button>
-                <div id="report-terminal" class="terminal-view hidden">
-                    <pre id="report-content"></pre>
-                </div>
-            </div>
-        </div>
-
-        <div id="logs-overlay" class="overlay hidden glass">
-            <div class="overlay-header">
-                <h2>SYSTEM LOGS</h2>
-                <button id="cleanup-btn" class="mini-btn-link">PURGE</button>
-                <button class="close-overlay">×</button>
-            </div>
-            <div id="log-list" class="log-list"></div>
-        </div>
-
-        <div id="files-overlay" class="overlay hidden glass">
-            <div class="overlay-header">
-                <h2>FILE VAULT</h2>
-                <button class="close-overlay">×</button>
-            </div>
-            <div class="file-controls">
-                <select id="file-target">
-                    <option value="reference">Reference</option>
-                    <option value="data">Data</option>
-                </select>
-                <button id="upload-btn" class="mini-btn">UPLOAD</button>
-            </div>
-            <div id="file-list" class="file-list"></div>
-        </div>
-
         <footer>
-            <div class="footer-segment">SYMBOL: <span id="meta-symbol">{{ state.symbol }}</span></div>
-            <div class="footer-segment">UPTIME: <span id="uptime">04:22:15</span></div>
-            <div class="footer-segment">VERSION: <span id="meta-version">{{ state.version or '5.2.0' }}</span></div>
+            <div>SYMBOL: <span id="meta-symbol">BTCUSDT</span></div>
+            <div>VPS: OPERATIONAL</div>
+            <div id="uptime">00:00:00</div>
         </footer>
+
+        <!-- Overlays -->
+        <div id="vps-overlay" class="overlay hidden">
+            <div class="overlay-header">
+                <h3>VPS HEALTH</h3><button class="close-btn" onclick="toggleOverlay('vps-overlay')">×</button>
+            </div>
+            <div class="feed" style="padding: 1.5rem;">
+                <div class="vital-item" style="margin-bottom: 1rem;"><label>CPU:</label><span id="cpu-val"
+                        class="val">0%</span></div>
+                <div class="vital-item" style="margin-bottom: 1rem;"><label>RAM:</label><span id="ram-val"
+                        class="val">0%</span></div>
+                <div class="vital-item" style="margin-bottom: 1rem;"><label>DISK:</label><span id="disk-val"
+                        class="val">0%</span></div>
+                <button id="report-btn" class="btn-sm" style="width: 100%; margin-top: 1rem;">GENERATE FULL
+                    REPORT</button>
+                <div id="report-terminal" class="hidden"
+                    style="background:#000; padding: 10px; font-family: 'Space Mono', monospace; font-size: 0.6rem; margin-top: 10px; border: 1px solid var(--border); max-height: 200px; overflow-y: auto;">
+                    <pre id="report-content" style="white-space: pre-wrap; color: #8b949e;"></pre>
+                </div>
+            </div>
+        </div>
+
+        <div id="logs-overlay" class="overlay hidden">
+            <div class="overlay-header">
+                <h3>SYSTEM LOGS</h3><button class="close-btn" onclick="toggleOverlay('logs-overlay')">×</button>
+            </div>
+            <div id="log-list" class="feed" style="font-family: 'Space Mono', monospace; font-size: 0.65rem;"></div>
+            <div style="padding: 10px; border-top: 1px solid var(--border);"><button id="cleanup-btn" class="btn-sm"
+                    style="width: 100%;">PURGE LOGS</button></div>
+        </div>
+
+        <div id="files-overlay" class="overlay hidden">
+            <div class="overlay-header">
+                <h3>FILE VAULT</h3><button class="close-btn" onclick="toggleOverlay('files-overlay')">×</button>
+            </div>
+            <div class="feed">
+                <div class="chat-input-row" style="border:none;">
+                    <select id="file-target"
+                        style="background:#1e222d; color:#fff; border:1px solid var(--border); padding:5px; border-radius:4px;">
+                        <option value="reference">Reference</option>
+                        <option value="data">Data</option>
+                    </select>
+                    <button id="upload-btn" class="btn-sm">UPLOAD NEW</button>
+                </div>
+                <div id="file-list" class="feed" style="font-size: 0.7rem;"></div>
+            </div>
+        </div>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/static/script.js"></script>
 </body>

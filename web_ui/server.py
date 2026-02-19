@@ -136,12 +136,23 @@ SYSTEM_STATE = {
 }
 
 # Mock data for the dashboard refinement
-ACTIVE_TRADES = [
-    {"time": "16:20", "symbol": "BTC/USDT", "type": "LONG (PAPER)", "status": "OPEN", "pnl": "+$142.50"}
-]
-APPROVAL_QUEUE = [
-    {"time": "16:40", "signal": "Vol-Breakout High", "sentiment": 0.82, "status": "AWAITING APPROVAL"}
-]
+ACTIVE_TRADES = []
+APPROVAL_QUEUE = []
+EQUITY_HISTORY = [1000.0]
+
+@app.get("/api/chart")
+async def get_chart_data():
+    """Returns the history of equity for the Performance chart."""
+    # Ensure current equity is the last item
+    if not EQUITY_HISTORY or EQUITY_HISTORY[-1] != SYSTEM_STATE["equity"]:
+        EQUITY_HISTORY.append(SYSTEM_STATE["equity"])
+    
+    # Return last 50 points
+    history = EQUITY_HISTORY[-50:]
+    return {
+        "labels": [f"T-{len(history)-i-1}" for i in range(len(history))],
+        "values": history
+    }
 
 LOG_HISTORY = []
 RECON_HISTORY = []

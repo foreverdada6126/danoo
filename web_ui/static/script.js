@@ -1,27 +1,26 @@
-// --- 🛰️ DASHBOARD ORCHESTRATOR v5.2 ---
+// --- 🛰️ DANOO COMMAND HUB ORCHESTRATOR v5.2 ---
 
-// Elements
-const logList = document.getElementById('log-list');
-const chatInput = document.getElementById('chat-input');
-const sendBtn = document.getElementById('send-btn');
-const reconHistory = document.getElementById('recon-history');
+const get = (id) => document.getElementById(id);
 
-// 1. CHART SYSTEM
+// 1. CHART SYSTEM (Fixed Data Source)
 let pnlChart;
 function initChart() {
-    const ctx = document.getElementById('pnlChart').getContext('2d');
+    const canvas = get('pnlChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
     pnlChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            labels: [],
             datasets: [{
-                label: 'Equity',
+                label: 'Equity Growth',
                 borderColor: '#00f2ff',
-                backgroundColor: 'rgba(0, 242, 255, 0.1)',
+                backgroundColor: 'rgba(0, 242, 255, 0.05)',
                 borderWidth: 2,
+                pointRadius: 0,
                 fill: true,
-                data: [12100, 12250, 12200, 12350, 12400, 12420, 12450],
-                tension: 0.4
+                data: [],
+                tension: 0.2
             }]
         },
         options: {
@@ -30,114 +29,111 @@ function initChart() {
             plugins: { legend: { display: false } },
             scales: {
                 x: { display: false },
-                y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { display: false } }
+                y: {
+                    grid: { color: 'rgba(255, 255, 255, 0.03)' },
+                    border: { display: false },
+                    ticks: { color: '#787b86', font: { size: 9 } }
+                }
             }
         }
     });
 }
 
-// 2. OVERLAY SYSTEM
-document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const targetId = btn.getAttribute('data-target');
-        document.getElementById(targetId).classList.remove('hidden');
-    });
-});
+async function updateChart() {
+    try {
+        const res = await fetch('/api/chart');
+        const data = await res.json();
+        pnlChart.data.labels = data.labels;
+        pnlChart.data.datasets[0].data = data.values;
+        pnlChart.update();
+    } catch (e) { console.warn("Chart Link Down"); }
+}
 
-document.querySelectorAll('.close-overlay').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        e.target.closest('.overlay').classList.add('hidden');
-    });
-});
+// 2. OVERLAY CONTROLLER
+function toggleOverlay(id) {
+    const el = get(id);
+    if (!el) return;
+    const isHidden = el.classList.contains('hidden');
+    // Hide all first for cleanliness
+    document.querySelectorAll('.overlay').forEach(ov => ov.classList.add('hidden'));
+    if (isHidden) el.classList.remove('hidden');
+}
 
-// Close overlay on ESC
-window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        document.querySelectorAll('.overlay').forEach(ov => ov.classList.add('hidden'));
-    }
-});
+// 3. CORE SYNC (GMGN Style)
+async function syncDashboard() {
+    try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
 
-// 3. CORE UPDATES (RECON, TRADES, APPROVALS)
+        get('equity-value').textContent = `$${data.equity.toLocaleString()}`;
+        get('regime-value').textContent = data.regime;
+        get('sentiment-value').textContent = data.sentiment_score.toFixed(2);
+
+        const regimeEl = get('regime-value');
+        if (data.regime.includes('BULL')) regimeEl.className = 'val up';
+        else if (data.regime.includes('BEAR')) regimeEl.className = 'val down';
+        else regimeEl.className = 'val neutral';
+
+        get('mode-tag').textContent = `${data.mode} MODE`;
+        get('meta-symbol').textContent = data.symbol;
+        get('orders-count').textContent = data.active_orders;
+    } catch (e) { }
+}
+
 async function updateRecon() {
     try {
         const res = await fetch('/api/system/recon');
         const data = await res.json();
+        const container = get('recon-history');
         if (!data.recon || data.recon.length === 0) return;
 
-        const historyData = [...data.recon].reverse();
-        reconHistory.innerHTML = historyData.map(item => `
-            <div class="recon-item">
-                <span class="time">${item.time}</span>
-                <span class="title">${item.title}</span>
-                <p>${item.content}</p>
+        container.innerHTML = [...data.recon].reverse().map(item => `
+            <div class="card-item">
+                <div class="card-meta"><span>RECON</span><span>${item.time}</span></div>
+                <div class="card-header">${item.title}</div>
+                <div class="card-body">${item.content}</div>
             </div>
         `).join('');
-    } catch (e) { console.error("Recon Sync Failed"); }
+    } catch (e) { }
 }
 
 async function updateTrades() {
     try {
         const res = await fetch('/api/system/trades');
         const data = await res.json();
-        const container = document.getElementById('trade-list');
-        if (!data.trades || data.trades.length === 0) return;
+        const container = get('trade-list');
+        if (!data.trades || data.trades.length === 0) {
+            container.innerHTML = '<div class="card-item"><div class="card-body" style="color: var(--text-dim); text-align: center;">No exposure found.</div></div>';
+            return;
+        }
 
         container.innerHTML = data.trades.map(t => `
-            <div class="recon-item">
-                <span class="time">${t.time}</span>
-                <span class="title">${t.symbol} | ${t.type}</span>
-                <p>Status: ${t.status} | PnL: <span class="trend up">${t.pnl}</span></p>
+            <div class="card-item">
+                <div class="card-meta"><span>${t.type}</span><span>${t.time}</span></div>
+                <div class="card-header">${t.symbol} <span class="${t.pnl.includes('+') ? 'up' : 'down'}">${t.pnl}</span></div>
+                <div class="card-body">Status: <span class="neutral">${t.status}</span></div>
             </div>
         `).join('');
-    } catch (e) { console.error("Trade Sync Failed"); }
+    } catch (e) { }
 }
 
 async function updateApprovals() {
     try {
         const res = await fetch('/api/system/approvals');
         const data = await res.json();
-        const container = document.getElementById('approval-list');
-        if (!data.approvals || data.approvals.length === 0) return;
+        const container = get('approval-list');
+        if (!data.approvals || data.approvals.length === 0) {
+            container.innerHTML = '<div class="card-item"><div class="card-body" style="color: var(--text-dim); text-align: center;">Queue empty.</div></div>';
+            return;
+        }
 
         container.innerHTML = data.approvals.map(a => `
-            <div class="recon-item" style="border-left-color: var(--magenta);">
-                <span class="time">${a.time}</span>
-                <span class="title">${a.signal}</span>
-                <p>AI Sentiment: ${a.sentiment} | <button class="mini-btn-outline" style="margin-top:5px; font-size: 0.5rem;">APPROVE EXECUTION</button></p>
+            <div class="card-item" style="border-left: 2px solid var(--magenta);">
+                <div class="card-meta"><span>SIGNAL</span><span>${a.time}</span></div>
+                <div class="card-header">${a.signal}</div>
+                <div class="card-body">AI Sentiment: ${a.sentiment} <button class="btn-sm" style="font-size: 0.5rem; float:right;">APPROVE</button></div>
             </div>
         `).join('');
-    } catch (e) { console.error("Approval Sync Failed"); }
-}
-
-async function updateLogs() {
-    try {
-        const res = await fetch('/api/logs');
-        const logs = await res.json();
-        logList.innerHTML = logs.map(l => `
-            <div class="log-entry">
-                <span class="time">[${l.time}]</span>
-                <span class="msg">${l.msg}</span>
-            </div>
-        `).join('');
-        logList.scrollTop = logList.scrollHeight;
-    } catch (e) { }
-}
-
-async function updateState() {
-    try {
-        const response = await fetch('/api/status');
-        const data = await response.json();
-
-        document.getElementById('equity-value').textContent = `$${data.equity.toLocaleString()}`;
-        document.getElementById('regime-value').textContent = data.regime;
-        document.getElementById('sentiment-value').textContent = data.sentiment_score;
-        document.getElementById('ai-insight-snip').textContent = data.ai_insight;
-
-        const bar = document.getElementById('regime-bar');
-        if (bar) {
-            const width = data.regime === 'BULL_TREND' ? '95%' : (data.regime === 'RANGING' ? '55%' : '15%');
-            bar.style.width = width;
-        }
     } catch (e) { }
 }
 
@@ -145,85 +141,89 @@ async function updateHealth() {
     try {
         const res = await fetch('/api/system/health');
         const data = await res.json();
-        document.getElementById('cpu-bar').style.width = `${data.cpu_usage}%`;
-        document.getElementById('cpu-val').textContent = `${Math.round(data.cpu_usage)}%`;
-        document.getElementById('ram-bar').style.width = `${data.ram_usage}%`;
-        document.getElementById('ram-val').textContent = `${Math.round(data.ram_usage)}%`;
-        document.getElementById('disk-bar').style.width = `${data.disk_usage}%`;
-        document.getElementById('disk-val').textContent = `${Math.round(data.disk_usage)}%`;
+        get('cpu-val').textContent = `${Math.round(data.cpu_usage)}%`;
+        get('ram-val').textContent = `${Math.round(data.ram_usage)}%`;
+        get('disk-val').textContent = `${Math.round(data.disk_usage)}%`;
     } catch (e) { }
 }
 
-// 4. ACTION TRIGGERS
-async function sendInstruction() {
-    const text = chatInput.value.trim();
-    if (!text) return;
-    appendMessage(text, 'user');
-    chatInput.value = '';
+async function updateLogs() {
+    try {
+        const res = await fetch('/api/logs');
+        const logs = await res.json();
+        const container = get('log-list');
+        container.innerHTML = logs.map(l => `
+            <div style="margin-bottom: 5px; opacity: 0.7;">
+                <span class="neutral">[${l.time}]</span> ${l.msg}
+            </div>
+        `).join('');
+        container.scrollTop = container.scrollHeight;
+    } catch (e) { }
+}
+
+// 4. CHAT INTERFACE
+async function sendCommand() {
+    const input = get('chat-input');
+    if (!input || !input.value.trim()) return;
+    const text = input.value.trim();
+    appendMsg(text, 'user');
+    input.value = '';
     const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text })
     });
     const data = await res.json();
-    setTimeout(() => appendMessage(data.reply, 'bot'), 500);
+    setTimeout(() => appendMsg(data.reply, 'bot'), 400);
 }
 
-function appendMessage(text, side) {
+function appendMsg(text, side) {
+    const list = get('chat-messages');
     const div = document.createElement('div');
     div.className = `msg ${side}`;
     div.textContent = text;
-    const msgContainer = document.getElementById('chat-messages');
-    msgContainer.appendChild(div);
-    msgContainer.scrollTop = msgContainer.scrollHeight;
+    list.appendChild(div);
+    list.scrollTop = list.scrollHeight;
 }
 
-sendBtn.addEventListener('click', sendInstruction);
-chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendInstruction(); });
+// 5. BOOTSTRAP
+document.addEventListener('DOMContentLoaded', () => {
+    initChart();
 
-document.getElementById('recon-btn').addEventListener('click', async () => {
-    const btn = document.getElementById('recon-btn');
-    btn.textContent = "SCOUTING...";
-    btn.classList.add('pulse');
-    await fetch('/api/engine/recon', { method: 'POST' });
-    setTimeout(() => {
-        btn.textContent = "INITIATE SCAN";
-        btn.classList.remove('pulse');
-    }, 3000);
+    // Bind Globals
+    window.toggleOverlay = toggleOverlay;
+    get('send-btn').onclick = sendCommand;
+    get('chat-input').onkeypress = (e) => { if (e.key === 'Enter') sendCommand(); };
+
+    get('recon-btn').onclick = async () => {
+        get('recon-btn').classList.add('pulse');
+        await fetch('/api/engine/recon', { method: 'POST' });
+        setTimeout(() => get('recon-btn').classList.remove('pulse'), 2000);
+    };
+
+    get('report-btn').onclick = async () => {
+        get('report-terminal').classList.remove('hidden');
+        get('report-content').textContent = "Scanning infrastructure...";
+        const res = await fetch('/api/system/report');
+        const data = await res.json();
+        get('report-content').textContent = data.report;
+    };
+
+    get('cleanup-btn').onclick = async () => {
+        if (!confirm("Purge logs?")) return;
+        await fetch('/api/system/cleanup', { method: 'POST' });
+        updateLogs();
+    };
+
+    // Loops
+    setInterval(syncDashboard, 1500);
+    setInterval(updateChart, 3000); // Dynamic chart update
+    setInterval(updateHealth, 3000);
+    setInterval(updateLogs, 2000);
+    setInterval(updateRecon, 3000);
+    setInterval(updateTrades, 3000);
+    setInterval(updateApprovals, 3000);
+    setInterval(() => {
+        get('uptime').textContent = new Date().toLocaleTimeString();
+    }, 1000);
 });
-
-document.getElementById('report-btn').addEventListener('click', async () => {
-    const term = document.getElementById('report-terminal');
-    const content = document.getElementById('report-content');
-    term.classList.remove('hidden');
-    content.textContent = "Scanning VPS Infrastructure...";
-    const res = await fetch('/api/system/report');
-    const data = await res.json();
-    content.textContent = data.report;
-});
-
-document.getElementById('cleanup-btn').addEventListener('click', async () => {
-    if (!confirm("Purge logs?")) return;
-    await fetch('/api/system/cleanup', { method: 'POST' });
-    updateLogs();
-});
-
-// 5. INIT & LOOPS
-initChart();
-updateState();
-updateHealth();
-updateLogs();
-updateRecon();
-updateTrades();
-updateApprovals();
-
-setInterval(updateState, 2000);
-setInterval(updateHealth, 3000);
-setInterval(updateLogs, 2000);
-setInterval(updateRecon, 3000);
-setInterval(updateTrades, 5000);
-setInterval(updateApprovals, 5000);
-
-setInterval(() => {
-    document.getElementById('uptime').textContent = new Date().toLocaleTimeString();
-}, 1000);
