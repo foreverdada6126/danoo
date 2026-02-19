@@ -14,6 +14,8 @@ class ExchangeHandler:
         self.use_sandbox = SETTINGS.USE_SANDBOX
         
         # Initialize Async CCXT exchange
+        # Note: Sandbox mode is deprecated for Binance Futures. 
+        # We now use the standard API and rely on SETTINGS.MODE for safeguards.
         exchange_class = getattr(ccxt, self.exchange_id)
         self.client = exchange_class({
             'apiKey': self.api_key,
@@ -21,12 +23,7 @@ class ExchangeHandler:
             'enableRateLimit': True,
             'options': {'defaultType': 'future'} 
         })
-        
-        if self.use_sandbox:
-            self.client.set_sandbox_mode(True)
-            logger.info(f"Exchange Bridge: {self.exchange_id.upper()} initialized in SANDBOX mode.")
-        else:
-            logger.warning(f"Exchange Bridge: {self.exchange_id.upper()} initialized in PRODUCTION mode.")
+        logger.info(f"Exchange Bridge: {self.exchange_id.upper()} initialized. Mode: {'SANDBOX (Paper)' if self.use_sandbox else 'PRODUCTION'}")
 
     async def fetch_balance(self):
         """Aggressively fetches the USDT balance from the futures wallet."""

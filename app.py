@@ -65,7 +65,7 @@ async def run_market_intelligence(bot):
 async def main():
     logger.add("logs/engine.log", rotation="10 MB", level="INFO")
     logger.info(f"Initializing {SETTINGS.PROJECT_NAME} v{SETTINGS.VERSION}...")
-    logger.success("--- SYSTEM PATCH v5.2.3 ACTIVE (MARKET ORDER MODE) ---")
+    logger.success("--- SYSTEM PATCH v5.2.4 ACTIVE (PROD-LINK MODE) ---")
     try:
         # 1. Initialize Telegram Bot (Core UI)
         bot = TelegramBot()
