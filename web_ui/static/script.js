@@ -202,6 +202,24 @@ async function updateHealth() {
     } catch (e) { console.error("Health update failed"); }
 }
 
+async function updateRecon() {
+    try {
+        const res = await fetch('/api/system/recon');
+        const data = await res.json();
+        const container = document.getElementById('recon-history');
+
+        if (data.recon.length === 0) return;
+
+        container.innerHTML = data.recon.reverse().map(item => `
+            <div class="recon-item">
+                <span class="time">${item.time}</span>
+                <span class="title">${item.title}</span>
+                <p>${item.content}</p>
+            </div>
+        `).join('');
+    } catch (e) { console.error("Recon update failed"); }
+}
+
 async function purgeLogs() {
     if (!confirm("Are you sure you want to clear system logs?")) return;
     cleanupBtn.textContent = "PURGING...";
@@ -245,11 +263,13 @@ updateFileList();
 updateSystemInfo();
 updateHealth();
 updateState();
+updateRecon();
 
 // High-Frequency Sync (1.5s - 2s)
 setInterval(updateState, 1500);
 setInterval(updateHealth, 1500);
 setInterval(updateLogs, 2000);
+setInterval(updateRecon, 3000);
 
 // Background Sync
 setInterval(loadChartData, 60000);

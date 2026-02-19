@@ -121,6 +121,8 @@ LOG_HISTORY = [
     {"time": "15:48:30", "msg": "Regime Shift Detected: BULL_TREND confirmed via 1h TF."},
 ]
 
+RECON_HISTORY = []
+
 @app.get("/")
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request, "state": SYSTEM_STATE})
@@ -149,6 +151,11 @@ async def get_system_report():
         return {"report": report}
     except Exception as e:
         return {"report": f"Report Generation Error: {str(e)}"}
+
+@app.get("/api/system/recon")
+async def get_recon_history():
+    """Returns the history of intelligence reconnaissance reports."""
+    return {"recon": RECON_HISTORY}
 
 @app.post("/api/system/cleanup")
 async def run_cleanup():
@@ -196,7 +203,18 @@ async def chat_with_openclaw(msg: ChatMessage):
             SYSTEM_STATE["sentiment_score"] = score
             SYSTEM_STATE["regime"] = regime
             
-            LOG_HISTORY.append({"time": time.strftime("%H:%M:%S"), "msg": f"AI Intelligence: {justification}"})
+            report_time = time.strftime("%H:%M:%S")
+            LOG_HISTORY.append({"time": report_time, "msg": f"AI Intelligence: {justification}"})
+            
+            # Add to Recon History
+            RECON_HISTORY.append({
+                "time": report_time,
+                "title": f"SCAN REPORT - BTC/{regime}",
+                "content": justification,
+                "score": score
+            })
+            if len(RECON_HISTORY) > 20: RECON_HISTORY.pop(0)
+
             return {"status": "success", "message": "Dashboard state updated by Scientist."}
 
     # Standard user chat logic
