@@ -105,22 +105,23 @@ header {
 }
 
 .nav-btn {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--border-color);
-    color: var(--text-dim);
+    background: rgba(0, 242, 255, 0.05);
+    border: 1px solid rgba(0, 242, 255, 0.3);
+    color: var(--cyan);
     font-size: 0.65rem;
     font-weight: 700;
-    padding: 0.4rem 0.8rem;
+    padding: 0.4rem 1rem;
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.2s;
     letter-spacing: 1px;
+    box-shadow: 0 0 5px rgba(0, 242, 255, 0.1);
 }
 
 .nav-btn:hover {
-    background: rgba(0, 242, 255, 0.1);
-    color: var(--cyan);
-    border-color: var(--cyan);
+    background: var(--cyan);
+    color: black;
+    box-shadow: 0 0 15px var(--cyan);
 }
 
 .tag {
@@ -181,6 +182,12 @@ header {
     color: #39d353;
 }
 
+.chart-wrapper {
+    position: relative;
+    height: 120px;
+    width: 100%;
+}
+
 .interactive-card {
     cursor: pointer;
     border: 1px solid rgba(0, 242, 255, 0.2);
@@ -226,9 +233,79 @@ header {
 /* Main Hub Layout */
 .operations-hub {
     display: grid;
-    grid-template-columns: 1.6fr 1.1fr;
+    grid-template-columns: 1.8fr 1fr;
     gap: 1.5rem;
-    height: 550px;
+    height: 650px;
+}
+
+.intelligence-column {
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.chat-panel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.chat-messages {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.msg {
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    max-width: 85%;
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+.msg.bot {
+    background: rgba(0, 242, 255, 0.05);
+    border-left: 3px solid var(--cyan);
+    align-self: flex-start;
+}
+
+.msg.user {
+    background: rgba(255, 0, 255, 0.05);
+    border-right: 3px solid var(--magenta);
+    align-self: flex-end;
+}
+
+.chat-input-area {
+    padding: 1rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 0.8rem;
+}
+
+#chat-input {
+    flex-grow: 1;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 0.5rem 0.8rem;
+    color: white;
+    outline: none;
+    font-size: 0.8rem;
+}
+
+#send-btn {
+    background: var(--cyan);
+    color: black;
+    border: none;
+    padding: 0 1rem;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 0.7rem;
+    cursor: pointer;
 }
 
 .ops-panel {

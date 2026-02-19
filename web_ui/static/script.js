@@ -155,6 +155,32 @@ async function updateHealth() {
 }
 
 // 4. ACTION TRIGGERS
+async function sendInstruction() {
+    const text = chatInput.value.trim();
+    if (!text) return;
+    appendMessage(text, 'user');
+    chatInput.value = '';
+    const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text })
+    });
+    const data = await res.json();
+    setTimeout(() => appendMessage(data.reply, 'bot'), 500);
+}
+
+function appendMessage(text, side) {
+    const div = document.createElement('div');
+    div.className = `msg ${side}`;
+    div.textContent = text;
+    const msgContainer = document.getElementById('chat-messages');
+    msgContainer.appendChild(div);
+    msgContainer.scrollTop = msgContainer.scrollHeight;
+}
+
+sendBtn.addEventListener('click', sendInstruction);
+chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendInstruction(); });
+
 document.getElementById('recon-btn').addEventListener('click', async () => {
     const btn = document.getElementById('recon-btn');
     btn.textContent = "SCOUTING...";

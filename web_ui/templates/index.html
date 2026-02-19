@@ -55,27 +55,44 @@
                 </div>
                 <div class="card glass">
                     <h3>PERFORMANCE</h3>
-                    <canvas id="pnlChart" height="100"></canvas>
+                    <div class="chart-wrapper">
+                        <canvas id="pnlChart"></canvas>
+                    </div>
                 </div>
             </section>
 
             <!-- Main Operational Hub -->
             <div class="operations-hub">
                 <!-- Left: AI Intelligence -->
-                <section class="ops-panel recon-panel glass">
-                    <div class="chat-header">
-                        <div class="header-flex">
-                            <h2>MISSION RECON</h2>
-                            <div class="header-actions">
-                                <button id="recon-btn" class="mini-btn-outline">INITIATE SCAN</button>
-                                <span class="live-indicator">LIVE FEED</span>
+                <div class="intelligence-column">
+                    <section class="ops-panel recon-panel glass">
+                        <div class="chat-header">
+                            <div class="header-flex">
+                                <h2>MISSION RECON</h2>
+                                <div class="header-actions">
+                                    <button id="recon-btn" class="mini-btn-outline">INITIATE SCAN</button>
+                                    <span class="live-indicator">LIVE FEED</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div id="recon-history" class="recon-list">
-                        <div class="recon-item empty">Awaiting first reconnaissance report...</div>
-                    </div>
-                </section>
+                        <div id="recon-history" class="recon-list">
+                            <div class="recon-item empty">Awaiting first reconnaissance report...</div>
+                        </div>
+                    </section>
+
+                    <section class="ops-panel glass chat-panel">
+                        <div class="chat-header">
+                            <h2>MASTER COMMAND</h2>
+                        </div>
+                        <div id="chat-messages" class="chat-messages">
+                            <div class="msg bot">Welcome, Commander. DaNoo is ready.</div>
+                        </div>
+                        <div class="chat-input-area">
+                            <input type="text" id="chat-input" placeholder="Type instruction..." autocomplete="off">
+                            <button id="send-btn">SEND</button>
+                        </div>
+                    </section>
+                </div>
 
                 <!-- Right: Strategy & Execution -->
                 <div class="strategy-column">
