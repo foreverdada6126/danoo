@@ -78,14 +78,16 @@ async def cycle_daily():
 async def start_scheduler_async():
     scheduler = AsyncIOScheduler()
     
-    # 15m Cycle
-    scheduler.add_job(cycle_15m, 'interval', minutes=15)
+    from datetime import datetime
+    
+    # 15m Cycle (Run immediately)
+    scheduler.add_job(cycle_15m, 'interval', minutes=15, next_run_time=datetime.now())
     
     # 1h Cycle
-    scheduler.add_job(cycle_1h, 'interval', hours=1)
+    scheduler.add_job(cycle_1h, 'interval', hours=1, next_run_time=datetime.now())
     
     # 4h Cycle
-    scheduler.add_job(cycle_4h, 'interval', hours=4)
+    scheduler.add_job(cycle_4h, 'interval', hours=4, next_run_time=datetime.now())
     
     # Daily Cycle (at midnight)
     scheduler.add_job(cycle_daily, 'cron', hour=0, minute=0)

@@ -50,7 +50,8 @@ async def run_market_intelligence(bot):
                     SYSTEM_STATE["sentiment_score"] = sentiment
                     
                     # 3. Log it
-                    log_entry = {"time": datetime.now().strftime("%H:%M:%S"), "msg": f"AI Insight: Sentiment calibrated at {sentiment}."}
+                    import time
+                    log_entry = {"time": time.time(), "msg": f"AI Insight: Sentiment calibrated at {sentiment}."}
                     LOG_HISTORY.append(log_entry)
                     if len(LOG_HISTORY) > 50: LOG_HISTORY.pop(0)
                     
