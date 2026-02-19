@@ -125,7 +125,7 @@ SYSTEM_STATE = {
     "regime": "RANGING",
     "equity": 1000.0,
     "pnl_24h": +2.5,
-    "active_orders": 2,
+    "active_orders": 0,
     "symbol": "BTCUSDT",
     "trend": "NEUTRAL",
     "rsi": 45.2,
@@ -174,6 +174,8 @@ async def read_root(request: Request):
 @app.get("/api/status")
 async def get_status():
     """Returns the core system state (equity, regime, insights)."""
+    # Dynamic sync of order count for the UI counter
+    SYSTEM_STATE["active_orders"] = len(ACTIVE_TRADES)
     return SYSTEM_STATE
 
 @app.get("/api/system/health")
