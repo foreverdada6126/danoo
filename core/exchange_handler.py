@@ -9,7 +9,6 @@ from config.settings import SETTINGS
 class ExchangeHandler:
     def __init__(self):
         self.exchange_id = SETTINGS.EXCHANGE_ID
-        self.exchange_id = SETTINGS.EXCHANGE_ID
         self.api_key = SETTINGS.BINANCE_API_KEY
         self.secret = SETTINGS.BINANCE_SECRET
         self.use_sandbox = SETTINGS.USE_SANDBOX
@@ -102,7 +101,17 @@ class ExchangeHandler:
                 return {"success": False, "error": "Production Keys Missing"}
 
         try:
-            order = await self.client.create_limit_order(symbol, side, amount, price)
+            # 1. Fetch latest ticker if price is missing or zero
+            if not price or price < 0.1:
+                logger.info(f"Exchange Bridge: Price missing or invalid ({price}). Fetching current ticker...")
+                ticker = await self.client.fetch_ticker(symbol)
+                price = ticker['last']
+
+            # 2. Format price for the exchange precision
+            # CCXT provides helper for this
+            formatted_price = self.client.price_to_precision(symbol, price)
+            
+            order = await self.client.create_limit_order(symbol, side, amount, formatted_price)
             logger.success(f"EXCHANGE SUCCESS: {order['id']}")
             return {"success": True, "order": order}
         except Exception as e:
