@@ -138,7 +138,7 @@ SYSTEM_STATE = {
 # Mock data for the dashboard refinement
 ACTIVE_TRADES = []
 APPROVAL_QUEUE = [
-    {"time": "16:40", "signal": "Vol-Breakout High", "sentiment": 0.82, "status": "AWAITING APPROVAL"}
+    {"time": time.time(), "signal": "Vol-Breakout High", "sentiment": 0.82, "status": "AWAITING APPROVAL"}
 ]
 EQUITY_HISTORY = [1000.0]
 
@@ -213,7 +213,7 @@ async def run_cleanup():
     """Performs basic housekeeping (clearing logs)."""
     try:
         LOG_HISTORY.clear()
-        LOG_HISTORY.append({"time": time.strftime("%H:%M:%S"), "msg": "Housekeeping: Logs cleared."})
+        LOG_HISTORY.append({"time": time.time(), "msg": "Housekeeping: Logs cleared."})
         return {"status": "success", "message": "Housekeeping complete. Logs cleared."}
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -226,7 +226,7 @@ async def approve_trade(signal_id: int):
             approved = APPROVAL_QUEUE.pop(signal_id)
             # Simulate execution entry
             new_trade = {
-                "time": time.strftime("%H:%M"),
+                "time": time.time(),
                 "symbol": "BTC/USDT",
                 "type": "LONG (PAPER)",
                 "status": "OPEN",
@@ -235,7 +235,7 @@ async def approve_trade(signal_id: int):
             ACTIVE_TRADES.insert(0, new_trade)
             # Update equity history to show impact on chart
             SYSTEM_STATE["equity"] += 0.02
-            LOG_HISTORY.append({"time": time.strftime("%H:%M:%S"), "msg": f"EXECUTION: Approved trade for {approved['signal']}"})
+            LOG_HISTORY.append({"time": time.time(), "msg": f"EXECUTION: Approved trade for {approved['signal']}"})
             return {"status": "success", "message": "Trade approved and executed."}
         return {"status": "error", "message": "Signal not found."}
     except Exception as e:
@@ -251,7 +251,7 @@ async def trigger_recon():
                 "query": "Manual Institutional Depth Scan: Bitcoin",
                 "context": "" # Will fetch fresh web data
             })
-        LOG_HISTORY.append({"time": time.strftime("%H:%M:%S"), "msg": "Manual Recon: Scientist dispatched for BTC depth scan."})
+        LOG_HISTORY.append({"time": time.time(), "msg": "Manual Recon: Scientist dispatched for BTC depth scan."})
         return {"status": "success"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -262,7 +262,7 @@ async def trigger_scan():
     try:
         # In a real engine, this would call engine.run_regime_scan()
         # For now, we update the log to show the bot responded
-        LOG_HISTORY.append({"time": time.strftime("%H:%M:%S"), "msg": "Manual Command: Depth Market Regime Scan initiated."})
+        LOG_HISTORY.append({"time": time.time(), "msg": "Manual Command: Depth Market Regime Scan initiated."})
         return {"status": "success", "message": "Regime scan triggered."}
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -299,7 +299,7 @@ async def chat_with_openclaw(msg: ChatMessage):
             SYSTEM_STATE["sentiment_score"] = score
             SYSTEM_STATE["regime"] = regime_raw
             
-            report_time = time.strftime("%H:%M:%S")
+            report_time = time.time()
             LOG_HISTORY.append({"time": report_time, "msg": f"AI Intelligence: {justification[:50]}..."})
             
             # Update Recon History

@@ -2,6 +2,17 @@
 
 const get = (id) => document.getElementById(id);
 
+// Helper: Format Server Timestamp to Local Browser Time
+function formatTime(ts, seconds = false) {
+    if (!ts) return '--:--';
+    // Handle Unix seconds or JS ISO strings
+    const d = typeof ts === 'number' ? new Date(ts * 1000) : new Date(ts);
+    if (isNaN(d.getTime())) return ts; // Return as-is if already a string
+    const opts = { hour: '2-digit', minute: '2-digit', hour12: false };
+    if (seconds) opts.second = '2-digit';
+    return d.toLocaleTimeString([], opts);
+}
+
 // 1. CHART SYSTEM (Fixed Data Source)
 let pnlChart;
 function initChart() {
@@ -89,7 +100,7 @@ async function updateRecon() {
 
         container.innerHTML = [...data.recon].reverse().map(item => `
             <div class="card-item">
-                <div class="card-meta"><span>RECON</span><span>${item.time}</span></div>
+                <div class="card-meta"><span>RECON</span><span>${formatTime(item.time)}</span></div>
                 <div class="card-header">${item.title}</div>
                 <div class="card-body">${item.content}</div>
             </div>
@@ -109,7 +120,7 @@ async function updateTrades() {
 
         container.innerHTML = data.trades.map(t => `
             <div class="card-item">
-                <div class="card-meta"><span>${t.type}</span><span>${t.time}</span></div>
+                <div class="card-meta"><span>${t.type}</span><span>${formatTime(t.time)}</span></div>
                 <div class="card-header">${t.symbol} <span class="${t.pnl.includes('+') ? 'up' : 'down'}">${t.pnl}</span></div>
                 <div class="card-body">Status: <span class="neutral">${t.status}</span></div>
             </div>
@@ -129,7 +140,7 @@ async function updateApprovals() {
 
         container.innerHTML = data.approvals.map((a, index) => `
             <div class="card-item" style="border-left: 2px solid var(--magenta);">
-                <div class="card-meta"><span>SIGNAL</span><span>${a.time}</span></div>
+                <div class="card-meta"><span>SIGNAL</span><span>${formatTime(a.time)}</span></div>
                 <div class="card-header">${a.signal}</div>
                 <div class="card-body">AI Sentiment: ${a.sentiment} <button class="btn-sm" style="font-size: 0.5rem; float:right;" onclick="approveTrade(${index})">APPROVE</button></div>
             </div>
@@ -167,7 +178,7 @@ async function updateLogs() {
         const container = get('log-list');
         container.innerHTML = logs.map(l => `
             <div style="margin-bottom: 5px; opacity: 0.7;">
-                <span class="neutral">[${l.time}]</span> ${l.msg}
+                <span class="neutral">[${formatTime(l.time, true)}]</span> ${l.msg}
             </div>
         `).join('');
         container.scrollTop = container.scrollHeight;
