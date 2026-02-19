@@ -34,6 +34,7 @@ class ExchangeHandler:
             return 5000.0 if self.use_sandbox else 0.0
             
         try:
+            await self.client.load_markets()
             balance = await self.client.fetch_balance()
             
             # Discovery Path 1: Standard Total
@@ -113,17 +114,21 @@ class ExchangeHandler:
                 return {"success": False, "error": "Production Keys Missing"}
 
         try:
+            await self.client.load_markets()
+            
             # 1. Fetch latest ticker if price is missing or zero
             if not price or price < 0.1:
-                logger.info(f"Exchange Bridge: Price missing or invalid ({price}). Fetching current ticker...")
+                logger.info(f"Exchange Bridge: Price invalid ({price}). Fetching current ticker...")
                 ticker = await self.client.fetch_ticker(symbol)
                 price = ticker['last']
 
-            # 2. Format price for the exchange precision
-            # CCXT provides helper for this
+            # 2. Format price and amount for precision
             formatted_price = self.client.price_to_precision(symbol, price)
+            formatted_amount = self.client.amount_to_precision(symbol, amount)
             
-            order = await self.client.create_limit_order(symbol, side, amount, formatted_price)
+            logger.info(f"EXCHANGE ATTEMPT: {side.upper()} {formatted_amount} {symbol} @ {formatted_price}")
+            
+            order = await self.client.create_limit_order(symbol, side, formatted_amount, formatted_price)
             logger.success(f"EXCHANGE SUCCESS: {order['id']}")
             return {"success": True, "order": order}
         except Exception as e:
