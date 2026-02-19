@@ -175,6 +175,21 @@ async def get_chart_data():
         "values": [12100, 12250, 12200, 12350, 12400, 12420, 12450]
     }
 
+@app.post("/api/engine/recon")
+async def trigger_recon():
+    """Forwards a manual research request to the Intel Service."""
+    try:
+        async with httpx.AsyncClient() as client:
+            # Tell the scientist to run a manual 'Full Scan'
+            await client.post("http://intel-service:5000/api/research/analyze", json={
+                "query": "Manual Institutional Depth Scan: Bitcoin",
+                "context": "" # Will fetch fresh web data
+            })
+        LOG_HISTORY.append({"time": time.strftime("%H:%M:%S"), "msg": "Manual Recon: Scientist dispatched for BTC depth scan."})
+        return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @app.post("/api/engine/scan")
 async def trigger_scan():
     """Manually triggers a fresh regime scan."""

@@ -121,9 +121,22 @@ async def analyze_market(req: ResearchRequest):
         
         chain = prompt | llm
         response = chain.invoke({"context": context, "query": req.query})
+        result_text = response.content
         
+        # Push to dashboard so it appears in MISSION RECON live
+        async with httpx.AsyncClient() as client:
+            try:
+                # We format it so the decoder in server.py picks it up
+                # Justification | Score | Regime
+                # (We mock the score/regime for manual simple queries if needed)
+                mock_payload = f"{result_text} | 0.0 | MANUAL_SCAN"
+                await client.post("http://danoo-core:8000/api/chat", json={
+                    "message": f"SCIENTIST_REPORT: {mock_payload}"
+                })
+            except: pass
+
         return {
-            "analysis": response.content,
+            "analysis": result_text,
             "status": "COMPLETED"
         }
     except Exception as e:

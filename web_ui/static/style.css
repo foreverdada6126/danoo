@@ -615,6 +615,31 @@ select#file-target {
     flex-grow: 1;
 }
 
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.mini-btn-outline {
+    background: transparent;
+    color: var(--cyan);
+    border: 1px solid var(--cyan);
+    font-size: 0.55rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 700;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+}
+
+.mini-btn-outline:hover {
+    background: var(--cyan);
+    color: black;
+    box-shadow: 0 0 10px var(--cyan);
+}
+
 footer {
     display: flex;
     justify-content: center;

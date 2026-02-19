@@ -255,6 +255,23 @@ document.getElementById('regime-btn').addEventListener('click', async () => {
     }, 1000);
 });
 
+document.getElementById('recon-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('recon-btn');
+    btn.textContent = "SCOUTING...";
+    btn.classList.add('pulse');
+
+    try {
+        await fetch('/api/engine/recon', { method: 'POST' });
+        setTimeout(() => {
+            btn.textContent = "INITIATE";
+            btn.classList.remove('pulse');
+        }, 2000);
+    } catch (e) {
+        btn.textContent = "FAILED";
+        btn.classList.remove('pulse');
+    }
+});
+
 // Initialization - INSTANT LOAD
 initChart();
 loadChartData();
