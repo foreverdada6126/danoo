@@ -126,10 +126,10 @@ async def analyze_market(req: ResearchRequest):
         # Push to dashboard so it appears in MISSION RECON live
         async with httpx.AsyncClient() as client:
             try:
-                mock_payload = f"{result_text} | 0.0 | MANUAL_SCAN"
+                # The result_text already contains the pipes from the prompt
                 logger.info("Scientist: Pushing manual scan result to dashboard...")
                 resp = await client.post("http://danoo-core:8000/api/chat", json={
-                    "message": f"SCIENTIST_REPORT: {mock_payload}"
+                    "message": f"SCIENTIST_REPORT: {result_text}"
                 })
                 logger.info(f"Scientist: Push status: {resp.status_code}")
             except Exception as push_err:

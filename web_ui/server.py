@@ -210,9 +210,15 @@ async def chat_with_openclaw(msg: ChatMessage):
         # Format: Justification | Score | Regime
         parts = payload.split("|")
         if len(parts) >= 3:
-            justification = parts[0].strip()
-            score = float(parts[1].strip())
-            regime = parts[2].strip()
+            # Resilient parsing: strip out 'Justification:', 'Score:', 'Regime:' if AI added them
+            justification = parts[0].replace("Justification:", "").strip()
+            score_str = parts[1].replace("Score:", "").strip()
+            regime = parts[2].replace("Regime:", "").strip()
+            
+            try:
+                score = float(score_str)
+            except:
+                score = 0.0 # Fallback
             
             # Update the dashboard state live
             SYSTEM_STATE["ai_insight"] = justification
