@@ -12,8 +12,12 @@ from config.settings import SETTINGS
 
 app = FastAPI(title="DaNoo Intel Service - Headless Scientist v5.2")
 
-# Initialize LangChain model
-llm = ChatOpenAI(model="gpt-4-turbo-preview", temperature=0)
+# Initialize LangChain model - Switched to gpt-4o-mini for 90% cost reduction
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+
+# Simple Research Cache to prevent redundant costs
+RESEARCH_CACHE = {} 
+CACHE_TTL = 900 # 15 minutes
 
 class ResearchRequest(BaseModel):
     query: str
@@ -124,10 +128,19 @@ async def run_autonomous_research():
 
 @app.post("/api/research/analyze")
 async def analyze_market(req: ResearchRequest):
-    """Manual trigger for research (used by dashboard or chat)."""
+    """Manual trigger for research with caching to reduce costs."""
     logger.info(f"Manual Research Triggered: {req.query}")
+    
+    # 1. Check Cache
+    cache_key = f"{req.query}_{time.strftime('%Y-%m-%d_%H')}" # Hour-level grouping
+    if cache_key in RESEARCH_CACHE:
+        cached_data, timestamp = RESEARCH_CACHE[cache_key]
+        if time.time() - timestamp < CACHE_TTL:
+            logger.info("Cost Optimization: Serving from Research Cache.")
+            return {"analysis": cached_data, "status": "CACHED"}
+
     try:
-        # If no context provided, fetch it
+        # 2. If no context provided, fetch it
         context = req.context if req.context else await fetch_serper_data(req.query)
         
         prompt = ChatPromptTemplate.from_template("""
@@ -142,7 +155,10 @@ async def analyze_market(req: ResearchRequest):
         response = chain.invoke({"context": context, "query": req.query})
         result_text = response.content
         
-        # Push to dashboard so it appears in MISSION RECON live
+        # 3. Update Cache
+        RESEARCH_CACHE[cache_key] = (result_text, time.time())
+        
+        # 4. Push to dashboard 
         async with httpx.AsyncClient() as client:
             try:
                 # The result_text already contains the pipes from the prompt
