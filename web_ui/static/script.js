@@ -166,8 +166,13 @@ async function approveTrade(id) {
             updateTrades();
             syncDashboard();
             updateChart();
+        } else {
+            alert(`Execution Error: ${data.message}`);
         }
-    } catch (e) { console.error("Approval failed"); }
+    } catch (e) {
+        console.error("Approval failed", e);
+        alert("System Error: Could not connect to the Bridge.");
+    }
 }
 
 async function updateHealth() {

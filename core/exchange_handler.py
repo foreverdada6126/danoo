@@ -1,6 +1,8 @@
-import ccxt
+import ccxt.async_support as ccxt
 import pandas as pd
 import numpy as np
+import asyncio
+import time
 from loguru import logger
 from config.settings import SETTINGS
 
@@ -11,13 +13,13 @@ class ExchangeHandler:
         self.secret = SETTINGS.BINANCE_SECRET
         self.use_sandbox = SETTINGS.USE_SANDBOX
         
-        # Initialize CCXT exchange
+        # Initialize Async CCXT exchange
         exchange_class = getattr(ccxt, self.exchange_id)
         self.client = exchange_class({
             'apiKey': self.api_key,
             'secret': self.secret,
             'enableRateLimit': True,
-            'options': {'defaultType': 'future'} # Default to futures for funding rates
+            'options': {'defaultType': 'future'} 
         })
         
         if self.use_sandbox:
@@ -61,9 +63,32 @@ class ExchangeHandler:
             return None
 
     async def place_limit_order(self, symbol, side, amount, price):
-        """Places a real (sandbox) limit order."""
+        """Places a real (sandbox) limit order with paper fallback."""
+        if not self.api_key or not self.secret:
+            if self.use_sandbox:
+                logger.info("Exchange Bridge: No API keys found. Simulating Paper Execution...")
+                await asyncio.sleep(0.5) # Simulate latency
+                return {
+                    'id': f'sim-{int(time.time())}',
+                    'info': {'status': 'FILLED', 'type': 'PAPER_SIM'},
+                    'status': 'closed',
+                    'symbol': symbol,
+                    'side': side,
+                    'price': price,
+                    'amount': amount
+                }
+            else:
+                logger.error("Exchange Bridge: Cannot execute in PRODUCTION without API keys.")
+                return None
+
         try:
-            order = self.client.create_limit_order(symbol, side, amount, price)
+            # Use run_in_executor if ccxt call is synchronous, but ccxt pro is async. 
+            # Note: standard ccxt create_limit_order is sync unless using ccxt.async_support
+            # In this engine, we use sync ccxt usually, but here we assume async if initialized as such
+            # For simplicity, let's treat it as a potential blocking call if not using async_support.
+            # But the requirement.txt says ccxt, and our class doesn't use the async version specifically.
+            # However, server.py calls it with await, so it must be async exchange.
+            order = await self.client.create_limit_order(symbol, side, amount, price)
             logger.success(f"EXCHANGE EXECUTION: {side.upper()} {amount} {symbol} @ {price}. ID: {order['id']}")
             return order
         except Exception as e:
