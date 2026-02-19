@@ -230,16 +230,18 @@ async def approve_trade(signal_id: int):
             
             # 1. Real Exchange Execution (Sandbox)
             bridge = ExchangeHandler()
-            # Default to 0.001 BTC for safety in simulation
             side = "buy" if "LONG" in approved["signal"].upper() else "sell"
-            order = await bridge.place_limit_order(
+            
+            # Executing 0.001 BTC (~$50-100)
+            result = await bridge.place_limit_order(
                 symbol=SETTINGS.DEFAULT_SYMBOL, 
                 side=side, 
                 amount=0.001, 
-                price=SYSTEM_STATE.get("price", 50000) # Fallback price
+                price=SYSTEM_STATE.get("price", 50000) 
             )
 
-            if order:
+            if result["success"]:
+                order = result["order"]
                 # 2. Update Dashboard State
                 new_trade = {
                     "time": time.time(),
@@ -251,13 +253,13 @@ async def approve_trade(signal_id: int):
                     "reason": approved.get("reason", "Manual Confirmation")
                 }
                 ACTIVE_TRADES.insert(0, new_trade)
-                SYSTEM_STATE["equity"] += 0.02 # Paper growth simulation
+                SYSTEM_STATE["equity"] += 0.02 
                 LOG_HISTORY.append({"time": time.time(), "msg": f"EXCHANGE: Order {order['id']} placed successfully."})
-                return {"status": "success", "message": f"Trade {order['id']} executed on exchange."}
+                return {"status": "success", "message": f"Trade {order['id']} executed."}
             else:
                 # Put it back if it failed
                 APPROVAL_QUEUE.insert(signal_id, approved)
-                return {"status": "error", "message": "Exchange API rejected the order."}
+                return {"status": "error", "message": f"Exchange Rejected: {result.get('error')}"}
                 
         return {"status": "error", "message": "Signal not found."}
     except Exception as e:

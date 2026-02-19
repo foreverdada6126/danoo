@@ -67,30 +67,32 @@ class ExchangeHandler:
         if not self.api_key or not self.secret:
             if self.use_sandbox:
                 logger.info("Exchange Bridge: No API keys found. Simulating Paper Execution...")
-                await asyncio.sleep(0.5) # Simulate latency
+                await asyncio.sleep(0.5) 
                 return {
-                    'id': f'sim-{int(time.time())}',
-                    'info': {'status': 'FILLED', 'type': 'PAPER_SIM'},
-                    'status': 'closed',
-                    'symbol': symbol,
-                    'side': side,
-                    'price': price,
-                    'amount': amount
+                    "success": True,
+                    "order": {
+                        'id': f'sim-{int(time.time())}',
+                        'info': {'status': 'FILLED', 'type': 'PAPER_SIM'},
+                        'status': 'closed',
+                        'symbol': symbol,
+                        'side': side,
+                        'price': price,
+                        'amount': amount
+                    }
                 }
             else:
-                logger.error("Exchange Bridge: Cannot execute in PRODUCTION without API keys.")
-                return None
+                return {"success": False, "error": "Production Keys Missing"}
 
         try:
-            # Use run_in_executor if ccxt call is synchronous, but ccxt pro is async. 
-            # Note: standard ccxt create_limit_order is sync unless using ccxt.async_support
-            # In this engine, we use sync ccxt usually, but here we assume async if initialized as such
-            # For simplicity, let's treat it as a potential blocking call if not using async_support.
-            # But the requirement.txt says ccxt, and our class doesn't use the async version specifically.
-            # However, server.py calls it with await, so it must be async exchange.
             order = await self.client.create_limit_order(symbol, side, amount, price)
-            logger.success(f"EXCHANGE EXECUTION: {side.upper()} {amount} {symbol} @ {price}. ID: {order['id']}")
-            return order
+            logger.success(f"EXCHANGE SUCCESS: {order['id']}")
+            return {"success": True, "order": order}
         except Exception as e:
-            logger.error(f"Order Execution Failed: {str(e)}")
-            return None
+            error_msg = str(e)
+            logger.error(f"EXCHANGE REJECTION: {error_msg}")
+            # Identify common errors
+            if "AuthenticationError" in error_msg: error_msg = "Invalid API Keys / Secret"
+            elif "PermissionDenied" in error_msg: error_msg = "API Keys do not have Futures enabled"
+            elif "InsufficientFunds" in error_msg: error_msg = "Insufficient Margin in Futures Wallet"
+            
+            return {"success": False, "error": error_msg}
