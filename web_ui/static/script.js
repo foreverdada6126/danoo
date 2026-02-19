@@ -79,6 +79,8 @@ async function syncDashboard() {
         get('equity-value').textContent = `$${data.equity.toLocaleString()}`;
         get('regime-value').textContent = data.regime;
         get('sentiment-value').textContent = data.sentiment_score.toFixed(2);
+        get('price-value').textContent = `$${data.price.toLocaleString()}`;
+        get('funding-value').textContent = `${data.funding_rate}%`;
 
         const regimeEl = get('regime-value');
         if (data.regime.includes('BULL')) regimeEl.className = 'val up';
@@ -122,7 +124,10 @@ async function updateTrades() {
             <div class="card-item">
                 <div class="card-meta"><span>${t.type}</span><span>${formatTime(t.time)}</span></div>
                 <div class="card-header">${t.symbol} <span class="${t.pnl.includes('+') ? 'up' : 'down'}">${t.pnl}</span></div>
-                <div class="card-body">Status: <span class="neutral">${t.status}</span></div>
+                <div class="card-body">
+                    Status: <span class="neutral">${t.status}</span>
+                    <div style="font-size: 0.6rem; color: var(--text-dim); margin-top: 4px; font-style: italic;">Reason: ${t.reason || 'Not specified'}</div>
+                </div>
             </div>
         `).join('');
     } catch (e) { }
@@ -142,7 +147,11 @@ async function updateApprovals() {
             <div class="card-item" style="border-left: 2px solid var(--magenta);">
                 <div class="card-meta"><span>SIGNAL</span><span>${formatTime(a.time)}</span></div>
                 <div class="card-header">${a.signal}</div>
-                <div class="card-body">AI Sentiment: ${a.sentiment} <button class="btn-sm" style="font-size: 0.5rem; float:right;" onclick="approveTrade(${index})">APPROVE</button></div>
+                <div class="card-body">
+                    AI Sentiment: ${a.sentiment}
+                    <div style="font-size: 0.6rem; color: var(--text-dim); margin-bottom: 6px;">${a.reason || 'Pending scan justification...'}</div>
+                    <button class="btn-sm" style="font-size: 0.5rem; float:right;" onclick="approveTrade(${index})">APPROVE</button>
+                </div>
             </div>
         `).join('');
     } catch (e) { }

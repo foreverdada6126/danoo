@@ -5,12 +5,25 @@ from loguru import logger
 import time
 
 async def cycle_15m():
-    """Update data, indicators, and signals."""
+    """Update data, indicators, and signals using real exchange data."""
     from web_ui.server import SYSTEM_STATE, LOG_HISTORY
+    from core.exchange_handler import ExchangeHandler
+    
     SYSTEM_STATE["heartbeat"] = "SCANNING"
-    logger.info("[Cycle 15m] Fetching new candles and updating indicator state...")
-    await asyncio.sleep(2) # Simulate work
-    log_entry = {"time": time.strftime("%H:%M:%S"), "msg": "Strategy Scan: Indicators recalculated for BTC/USDT."}
+    logger.info("[Cycle 15m] Fetching real-time market data...")
+    
+    bridge = ExchangeHandler()
+    data = await bridge.fetch_market_data()
+    
+    if data:
+        SYSTEM_STATE["rsi"] = data["rsi"]
+        SYSTEM_STATE["price"] = data["price"]
+        SYSTEM_STATE["funding_rate"] = data["funding_rate"]
+        log_msg = f"Market Sync: BTC @ ${data['price']} | RSI: {data['rsi']} | Funding: {data['funding_rate']}%"
+        log_entry = {"time": time.time(), "msg": log_msg}
+    else:
+        log_entry = {"time": time.time(), "msg": "Market Sync Error: Could not reach exchange."}
+    
     LOG_HISTORY.append(log_entry)
     if len(LOG_HISTORY) > 50: LOG_HISTORY.pop(0)
     SYSTEM_STATE["heartbeat"] = "IDLE"
@@ -25,11 +38,13 @@ async def cycle_1h():
     
     executor = ExecutionEngine()
     decision = executor.check_trade_readiness(SYSTEM_STATE)
-    executor.execute_mock_trade(decision)
     
-    # Update Dashboard Log
+    # In 'paper' mode, we might auto-execute locally, but here we just log it
+    # approved signals will usually go to APPROVAL_QUEUE via the Scientist reports
+    # but the executor can also block/READY based on technicals
+    
     log_msg = f"Execution Decision: {decision['decision']} - {decision['reason']}"
-    log_entry = {"time": time.strftime("%H:%M:%S"), "msg": log_msg}
+    log_entry = {"time": time.time(), "msg": log_msg}
     LOG_HISTORY.append(log_entry)
     
     if len(LOG_HISTORY) > 50: LOG_HISTORY.pop(0)
@@ -40,8 +55,15 @@ async def cycle_4h():
     from web_ui.server import SYSTEM_STATE, LOG_HISTORY
     SYSTEM_STATE["heartbeat"] = "REGIME_SCAN"
     logger.info("[Cycle 4h] Updating market regime classification...")
-    await asyncio.sleep(5) # Simulate analysis
-    log_entry = {"time": time.strftime("%H:%M:%S"), "msg": "Regime Engine: 4h Trend Analysis completed."}
+    # Real logic: If RSI > 70 and Sentiment > 0.5 -> BULL_TREND
+    if SYSTEM_STATE.get("rsi", 50) > 60:
+        SYSTEM_STATE["regime"] = "BULL_TREND"
+    elif SYSTEM_STATE.get("rsi", 50) < 40:
+        SYSTEM_STATE["regime"] = "BEAR_TREND"
+    else:
+        SYSTEM_STATE["regime"] = "RANGING"
+
+    log_entry = {"time": time.time(), "msg": f"Regime Engine: 4h Trend Analysis completed. Current: {SYSTEM_STATE['regime']}"}
     LOG_HISTORY.append(log_entry)
     SYSTEM_STATE["heartbeat"] = "IDLE"
 

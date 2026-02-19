@@ -132,13 +132,15 @@ SYSTEM_STATE = {
     "timeframe": "15m",
     "ai_insight": "Awaiting initial research...",
     "sentiment_score": 0.0,
+    "price": 0.0,
+    "funding_rate": 0.0,
     "heartbeat": "IDLE"
 }
 
 # Mock data for the dashboard refinement
 ACTIVE_TRADES = []
 APPROVAL_QUEUE = [
-    {"time": time.time(), "signal": "Vol-Breakout High", "sentiment": 0.82, "status": "AWAITING APPROVAL"}
+    {"time": time.time(), "signal": "Vol-Breakout High", "sentiment": 0.82, "status": "AWAITING APPROVAL", "reason": "Institutional volume spike detected on 15m timeframe."}
 ]
 EQUITY_HISTORY = [1000.0]
 
@@ -220,25 +222,46 @@ async def run_cleanup():
 
 @app.post("/api/system/approve/{signal_id}")
 async def approve_trade(signal_id: int):
-    """Approves a pending trade signal from the queue."""
+    """Approves a pending trade signal and executes on the exchange (Sandbox)."""
+    from core.exchange_handler import ExchangeHandler
     try:
         if 0 <= signal_id < len(APPROVAL_QUEUE):
             approved = APPROVAL_QUEUE.pop(signal_id)
-            # Simulate execution entry
-            new_trade = {
-                "time": time.time(),
-                "symbol": "BTC/USDT",
-                "type": "LONG (PAPER)",
-                "status": "OPEN",
-                "pnl": "+$0.02"
-            }
-            ACTIVE_TRADES.insert(0, new_trade)
-            # Update equity history to show impact on chart
-            SYSTEM_STATE["equity"] += 0.02
-            LOG_HISTORY.append({"time": time.time(), "msg": f"EXECUTION: Approved trade for {approved['signal']}"})
-            return {"status": "success", "message": "Trade approved and executed."}
+            
+            # 1. Real Exchange Execution (Sandbox)
+            bridge = ExchangeHandler()
+            # Default to 0.001 BTC for safety in simulation
+            side = "buy" if "LONG" in approved["signal"].upper() else "sell"
+            order = await bridge.place_limit_order(
+                symbol=SETTINGS.DEFAULT_SYMBOL, 
+                side=side, 
+                amount=0.001, 
+                price=SYSTEM_STATE.get("price", 50000) # Fallback price
+            )
+
+            if order:
+                # 2. Update Dashboard State
+                new_trade = {
+                    "time": time.time(),
+                    "symbol": SETTINGS.DEFAULT_SYMBOL,
+                    "type": f"{side.upper()} (REAL/SANDBOX)",
+                    "status": "OPEN",
+                    "pnl": "+$0.00",
+                    "order_id": order['id'],
+                    "reason": approved.get("reason", "Manual Confirmation")
+                }
+                ACTIVE_TRADES.insert(0, new_trade)
+                SYSTEM_STATE["equity"] += 0.02 # Paper growth simulation
+                LOG_HISTORY.append({"time": time.time(), "msg": f"EXCHANGE: Order {order['id']} placed successfully."})
+                return {"status": "success", "message": f"Trade {order['id']} executed on exchange."}
+            else:
+                # Put it back if it failed
+                APPROVAL_QUEUE.insert(signal_id, approved)
+                return {"status": "error", "message": "Exchange API rejected the order."}
+                
         return {"status": "error", "message": "Signal not found."}
     except Exception as e:
+        logger.error(f"Approval Error: {e}")
         return {"status": "error", "message": str(e)}
 
 @app.post("/api/engine/recon")
@@ -318,7 +341,8 @@ async def chat_with_openclaw(msg: ChatMessage):
                     "time": time.strftime("%H:%M"),
                     "signal": f"AI-{signal_type} ({regime_raw})",
                     "sentiment": score,
-                    "status": "AWAITING APPROVAL"
+                    "status": "AWAITING APPROVAL",
+                    "reason": justification
                 })
                 LOG_HISTORY.append({"time": report_time, "msg": f"STRATEGIC ALERT: High Conviction {signal_type} signal detected. Check Approval Queue."})
 

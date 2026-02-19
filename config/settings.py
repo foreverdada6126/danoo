@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     MISSION_CONTROL_WEBHOOK: Optional[str] = os.getenv("MISSION_CONTROL_WEBHOOK")
     LOCAL_AUTH_TOKEN: Optional[str] = os.getenv("LOCAL_AUTH_TOKEN")
     
+    # Exchange Secrets
+    BINANCE_API_KEY: Optional[str] = os.getenv("BINANCE_API_KEY")
+    BINANCE_SECRET: Optional[str] = os.getenv("BINANCE_SECRET")
+    USE_SANDBOX: bool = os.getenv("USE_SANDBOX", "true").lower() == "true"
+    
     # Telegram Config
     TELEGRAM_TOKEN: Optional[str] = os.getenv("TELEGRAM_TOKEN")
     TELEGRAM_CHAT_ID: Optional[str] = os.getenv("TELEGRAM_CHAT_ID")
