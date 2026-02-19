@@ -200,6 +200,18 @@ async function purgeLogs() {
 
 gitSyncBtn.addEventListener('click', syncToGithub);
 cleanupBtn.addEventListener('click', purgeLogs);
+document.getElementById('report-btn').addEventListener('click', async () => {
+    const term = document.getElementById('report-terminal');
+    const content = document.getElementById('report-content');
+    term.classList.remove('hidden');
+    content.textContent = "Scanning VPS Infrastructure...";
+
+    try {
+        const res = await fetch('/api/system/report');
+        const data = await res.json();
+        content.textContent = data.report;
+    } catch (e) { content.textContent = "Report Scan Failed: Connectivity Error."; }
+});
 document.getElementById('regime-btn').addEventListener('click', async () => {
     const btn = document.getElementById('regime-btn');
     btn.classList.add('pulse');

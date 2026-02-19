@@ -119,14 +119,28 @@ async def read_root(request: Request):
 
 @app.get("/api/system/health")
 async def get_health():
-    """Returns VPS health metrics."""
+    """Returns VPS health metrics with a small interval for accuracy."""
     return {
-        "cpu_usage": psutil.cpu_percent(interval=None),
+        "cpu_usage": psutil.cpu_percent(interval=0.1),
         "ram_usage": psutil.virtual_memory().percent,
         "disk_usage": psutil.disk_usage('/').percent,
         "uptime": int(time.time() - psutil.boot_time()),
         "platform": platform.system()
     }
+
+@app.get("/api/system/report")
+async def get_system_report():
+    """Executes system commands to provide the 'manage.sh' style full report."""
+    try:
+        cpu = subprocess.check_output(["top", "-bn1"]).decode().split('\n')[2]
+        mem = subprocess.check_output(["free", "-h"]).decode()
+        disk = subprocess.check_output(["df", "-h", "/"]).decode()
+        containers = subprocess.check_output(["docker", "ps", "--format", "table {{.Names}}\t{{.Status}}"]).decode()
+        
+        report = f"--- CPU VITAL ---\n{cpu}\n\n--- MEMORY VITAL ---\n{mem}\n--- DISK VITAL ---\n{disk}\n--- CONTAINER FLEET ---\n{containers}"
+        return {"report": report}
+    except Exception as e:
+        return {"report": f"Report Generation Error: {str(e)}"}
 
 @app.post("/api/system/cleanup")
 async def run_cleanup():

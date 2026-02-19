@@ -102,8 +102,14 @@
                     </div>
                     <div class="health-item actions">
                         <label>MAINTENANCE</label>
-                        <button id="cleanup-btn" class="mini-btn cyan-btn">PURGE LOGS</button>
+                        <div class="btn-group">
+                            <button id="report-btn" class="mini-btn">SYSTEM REPORT</button>
+                            <button id="cleanup-btn" class="mini-btn cyan-btn">PURGE LOGS</button>
+                        </div>
                     </div>
+                </div>
+                <div id="report-terminal" class="terminal-view hidden">
+                    <pre id="report-content">Initializing System Scan...</pre>
                 </div>
             </section>
 
