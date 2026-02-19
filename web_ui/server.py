@@ -8,6 +8,9 @@ from config.settings import SETTINGS
 import uvicorn
 import asyncio
 from typing import Dict, Any, List
+import psutil
+import platform
+import time
 
 app = FastAPI(title="DaNoo - Strategy Intelligence Engine v5.2")
 
@@ -114,13 +117,26 @@ LOG_HISTORY = [
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request, "state": SYSTEM_STATE})
 
-@app.get("/api/status")
-async def get_status():
-    return SYSTEM_STATE
+@app.get("/api/system/health")
+async def get_health():
+    """Returns VPS health metrics."""
+    return {
+        "cpu_usage": psutil.cpu_percent(interval=None),
+        "ram_usage": psutil.virtual_memory().percent,
+        "disk_usage": psutil.disk_usage('/').percent,
+        "uptime": int(time.time() - psutil.boot_time()),
+        "platform": platform.system()
+    }
 
-@app.get("/api/logs")
-async def get_logs():
-    return LOG_HISTORY
+@app.post("/api/system/cleanup")
+async def run_cleanup():
+    """Performs basic housekeeping (clearing logs)."""
+    try:
+        LOG_HISTORY.clear()
+        LOG_HISTORY.append({"time": time.strftime("%H:%M:%S"), "msg": "Housekeeping: Logs cleared."})
+        return {"status": "success", "message": "Housekeeping complete. Logs cleared."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 @app.get("/api/chart")
 async def get_chart_data():

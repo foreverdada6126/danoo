@@ -169,7 +169,37 @@ async function updateSystemInfo() {
     document.getElementById('meta-hash').textContent = `#${data.git_hash}`;
 }
 
+const cleanupBtn = document.getElementById('cleanup-btn');
+
+async function updateHealth() {
+    try {
+        const res = await fetch('/api/system/health');
+        const data = await res.json();
+
+        document.getElementById('cpu-bar').style.width = `${data.cpu_usage}%`;
+        document.getElementById('cpu-val').textContent = `${data.cpu_usage}%`;
+
+        document.getElementById('ram-bar').style.width = `${data.ram_usage}%`;
+        document.getElementById('ram-val').textContent = `${data.ram_usage}%`;
+
+        document.getElementById('disk-bar').style.width = `${data.disk_usage}%`;
+        document.getElementById('disk-val').textContent = `${data.disk_usage}%`;
+    } catch (e) { console.error("Health update failed"); }
+}
+
+async function purgeLogs() {
+    if (!confirm("Are you sure you want to clear system logs?")) return;
+    cleanupBtn.textContent = "PURGING...";
+    try {
+        const res = await fetch('/api/system/cleanup', { method: 'POST' });
+        const data = await res.json();
+        updateLogs();
+    } catch (e) { alert("Cleanup failed."); }
+    finally { cleanupBtn.textContent = "PURGE LOGS"; }
+}
+
 gitSyncBtn.addEventListener('click', syncToGithub);
+cleanupBtn.addEventListener('click', purgeLogs);
 
 // Initialization
 initChart();
@@ -177,10 +207,12 @@ loadChartData();
 updateLogs();
 updateFileList();
 updateSystemInfo();
+updateHealth();
 setInterval(updateState, 5000);
 setInterval(updateLogs, 10000);
 setInterval(updateFileList, 15000);
 setInterval(updateSystemInfo, 30000);
+setInterval(updateHealth, 10000);
 
 setInterval(() => {
     document.getElementById('uptime').textContent = new Date().toLocaleTimeString();
