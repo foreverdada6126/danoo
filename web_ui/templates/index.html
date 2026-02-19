@@ -21,13 +21,17 @@
                 <h1>DANOO <span>v5.2</span></h1>
             </div>
             <div class="system-status">
+                <div class="btn-group-nav">
+                    <button class="nav-btn" data-target="vps-overlay">HEALTH</button>
+                    <button class="nav-btn" data-target="logs-overlay">LOGS</button>
+                    <button class="nav-btn" data-target="files-overlay">VAULT</button>
+                </div>
                 <span id="mode-tag" class="tag paper-mode">{{ state.mode }} MODE</span>
-                <span id="heartbeat-tag" class="tag idle">{{ state.heartbeat }}</span>
-                <span id="status-tag" class="tag operational">SYSTEM ONLINE</span>
             </div>
         </header>
 
         <main>
+            <!-- Top Dashboard Stats -->
             <section class="dashboard-grid">
                 <div class="card glass">
                     <h3>EQUITY</h3>
@@ -50,78 +54,20 @@
                     <span id="ai-insight-snip" class="trend">{{ state.ai_insight }}</span>
                 </div>
                 <div class="card glass">
-                    <h3>PERFORMANCE (7D)</h3>
+                    <h3>PERFORMANCE</h3>
                     <canvas id="pnlChart" height="100"></canvas>
                 </div>
             </section>
 
-            <section class="analysis-panel glass">
-                <div class="panel-header">STRATEGY INTELLIGENCE & DEVOPS</div>
-                <div class="details-grid">
-                    <div class="detail-item">
-                        <label>SYMBOL</label>
-                        <span id="meta-symbol">{{ state.symbol }}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>TREND</label>
-                        <span id="meta-trend" class="trending-up">{{ state.trend }}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>VERSION</label>
-                        <span id="meta-version">{{ state.version or '5.2.0' }}</span>
-                        <span id="meta-hash" class="sub-hash">#---</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>CODE SYNC</label>
-                        <button id="git-sync-btn" class="mini-btn cyan-btn">PUSH TO GITHUB</button>
-                    </div>
-                </div>
-            </section>
-
-            <section class="analysis-panel glass housekeeping">
-                <div class="panel-header">VPS HEALTH & HOUSEKEEPING</div>
-                <div class="health-grid">
-                    <div class="health-item">
-                        <label>CPU</label>
-                        <div class="health-bar">
-                            <div id="cpu-bar" class="health-fill" style="width: 0%"></div>
-                        </div>
-                        <span id="cpu-val">0%</span>
-                    </div>
-                    <div class="health-item">
-                        <label>RAM</label>
-                        <div class="health-bar">
-                            <div id="ram-bar" class="health-fill" style="width: 0%"></div>
-                        </div>
-                        <span id="ram-val">0%</span>
-                    </div>
-                    <div class="health-item">
-                        <label>DISK</label>
-                        <div class="health-bar">
-                            <div id="disk-bar" class="health-fill" style="width: 0%"></div>
-                        </div>
-                        <span id="disk-val">0%</span>
-                    </div>
-                    <div class="health-item actions">
-                        <label>MAINTENANCE</label>
-                        <div class="btn-group">
-                            <button id="report-btn" class="mini-btn">SYSTEM REPORT</button>
-                            <button id="cleanup-btn" class="mini-btn cyan-btn">PURGE LOGS</button>
-                        </div>
-                    </div>
-                </div>
-                <div id="report-terminal" class="terminal-view hidden">
-                    <pre id="report-content">Initializing System Scan...</pre>
-                </div>
-            </section>
-
-            <div class="split-view">
-                <section class="recon-container glass">
+            <!-- Main Operational Hub -->
+            <div class="operations-hub">
+                <!-- Left: AI Intelligence -->
+                <section class="ops-panel recon-panel glass">
                     <div class="chat-header">
                         <div class="header-flex">
                             <h2>MISSION RECON</h2>
                             <div class="header-actions">
-                                <button id="recon-btn" class="mini-btn-outline">INITIATE</button>
+                                <button id="recon-btn" class="mini-btn-outline">INITIATE SCAN</button>
                                 <span class="live-indicator">LIVE FEED</span>
                             </div>
                         </div>
@@ -131,52 +77,94 @@
                     </div>
                 </section>
 
-                <section class="files-container glass">
-                    <div class="chat-header">
-                        <h2>FILE VAULT</h2>
-                    </div>
-                    <div class="file-controls">
-                        <select id="file-target">
-                            <option value="reference">Reference Files</option>
-                            <option value="data">Processed Data</option>
-                        </select>
-                        <input type="file" id="file-input" style="display:none">
-                        <button id="upload-btn" class="mini-btn">UPLOAD</button>
-                    </div>
-                    <div id="file-list" class="file-list">
-                        <!-- Files injected via JS -->
-                    </div>
-                </section>
+                <!-- Right: Strategy & Execution -->
+                <div class="strategy-column">
+                    <section class="ops-panel glass trade-feed">
+                        <div class="chat-header">
+                            <h2>ACTIVE TRADES</h2>
+                        </div>
+                        <div id="trade-list" class="mini-feed">
+                            <div class="recon-item empty">No active paper trades.</div>
+                        </div>
+                    </section>
 
-                <section class="chat-container glass">
-                    <div class="chat-header">
-                        <h2>MASTER COMMAND</h2>
-                    </div>
-                    <div id="chat-messages" class="chat-messages">
-                        <div class="msg bot">Welcome, Commander. DaNoo is ready for instructions.</div>
-                    </div>
-                    <div class="chat-input-area">
-                        <input type="text" id="chat-input" placeholder="Type instruction for DaNoo..."
-                            autocomplete="off">
-                        <button id="send-btn">TRANSPOSE</button>
-                    </div>
-                </section>
-
-                <section class="logs-container glass">
-                    <div class="chat-header">
-                        <h2>SYSTEM VITALS & LOGS</h2>
-                    </div>
-                    <div id="log-list" class="log-list">
-                        <!-- Logs injected via JS -->
-                    </div>
-                </section>
+                    <section class="ops-panel glass approval-feed">
+                        <div class="chat-header">
+                            <h2>APPROVAL QUEUE</h2>
+                        </div>
+                        <div id="approval-list" class="mini-feed">
+                            <div class="recon-item empty">Queue clear. Awaiting signals...</div>
+                        </div>
+                    </section>
+                </div>
             </div>
         </main>
 
+        <!-- Hidden Overlays -->
+        <div id="vps-overlay" class="overlay hidden glass">
+            <div class="overlay-header">
+                <h2>VPS HEALTH & VITALS</h2>
+                <button class="close-overlay">×</button>
+            </div>
+            <div class="health-grid">
+                <div class="health-item">
+                    <label>CPU</label>
+                    <div class="health-bar">
+                        <div id="cpu-bar" class="health-fill"></div>
+                    </div>
+                    <span id="cpu-val">0%</span>
+                </div>
+                <div class="health-item">
+                    <label>RAM</label>
+                    <div class="health-bar">
+                        <div id="ram-bar" class="health-fill"></div>
+                    </div>
+                    <span id="ram-val">0%</span>
+                </div>
+                <div class="health-item">
+                    <label>DISK</label>
+                    <div class="health-bar">
+                        <div id="disk-bar" class="health-fill"></div>
+                    </div>
+                    <span id="disk-val">0%</span>
+                </div>
+            </div>
+            <div class="btn-group-center">
+                <button id="report-btn" class="mini-btn">SYSTEM REPORT</button>
+                <div id="report-terminal" class="terminal-view hidden">
+                    <pre id="report-content"></pre>
+                </div>
+            </div>
+        </div>
+
+        <div id="logs-overlay" class="overlay hidden glass">
+            <div class="overlay-header">
+                <h2>SYSTEM LOGS</h2>
+                <button id="cleanup-btn" class="mini-btn-link">PURGE</button>
+                <button class="close-overlay">×</button>
+            </div>
+            <div id="log-list" class="log-list"></div>
+        </div>
+
+        <div id="files-overlay" class="overlay hidden glass">
+            <div class="overlay-header">
+                <h2>FILE VAULT</h2>
+                <button class="close-overlay">×</button>
+            </div>
+            <div class="file-controls">
+                <select id="file-target">
+                    <option value="reference">Reference</option>
+                    <option value="data">Data</option>
+                </select>
+                <button id="upload-btn" class="mini-btn">UPLOAD</button>
+            </div>
+            <div id="file-list" class="file-list"></div>
+        </div>
+
         <footer>
-            <div class="footer-segment">MODE: <span>INSTITUTIONAL META</span></div>
+            <div class="footer-segment">SYMBOL: <span id="meta-symbol">{{ state.symbol }}</span></div>
             <div class="footer-segment">UPTIME: <span id="uptime">04:22:15</span></div>
-            <div class="footer-segment">LATENCY: <span>42ms</span></div>
+            <div class="footer-segment">VERSION: <span id="meta-version">{{ state.version or '5.2.0' }}</span></div>
         </footer>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

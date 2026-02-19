@@ -135,14 +135,24 @@ SYSTEM_STATE = {
     "heartbeat": "IDLE"
 }
 
-# Mock logs for the UI
-LOG_HISTORY = [
-    {"time": "15:42:01", "msg": "Engine Initialized: DaNoo v5.2"},
-    {"time": "15:45:10", "msg": "Data Continuity Check: 1000 candles verified."},
-    {"time": "15:48:30", "msg": "Regime Shift Detected: BULL_TREND confirmed via 1h TF."},
+# Mock data for the dashboard refinement
+ACTIVE_TRADES = [
+    {"time": "16:20", "symbol": "BTC/USDT", "type": "LONG (PAPER)", "status": "OPEN", "pnl": "+$142.50"}
+]
+APPROVAL_QUEUE = [
+    {"time": "16:40", "signal": "Vol-Breakout High", "sentiment": 0.82, "status": "AWAITING APPROVAL"}
 ]
 
+LOG_HISTORY = []
 RECON_HISTORY = []
+
+@app.get("/api/system/trades")
+async def get_active_trades():
+    return {"trades": ACTIVE_TRADES}
+
+@app.get("/api/system/approvals")
+async def get_approval_queue():
+    return {"approvals": APPROVAL_QUEUE}
 
 @app.get("/")
 async def read_root(request: Request):
