@@ -11,7 +11,8 @@ from typing import Dict, Any, List
 import psutil
 import platform
 import time
-import os
+import httpx
+from loguru import logger
 
 # To see host metrics from inside a container with /host/proc mounted
 os.environ["PROCFS_PATH"] = "/host/proc"
@@ -28,6 +29,8 @@ DATA_DIR = "data/processed"
 @app.get("/api/files")
 async def list_files():
     """List files in reference_files and data/processed."""
+    os.makedirs(REFERENCE_DIR, exist_ok=True)
+    os.makedirs(DATA_DIR, exist_ok=True)
     ref_files = os.listdir(REFERENCE_DIR)
     data_files = os.listdir(DATA_DIR)
     return {
@@ -205,39 +208,48 @@ async def trigger_scan():
 async def chat_with_openclaw(msg: ChatMessage):
     logger.info(f"Chat Message Received: {msg.message[:50]}...")
     # Detect autonomous reports from the Intel Service
-    if msg.message.startswith("SCIENTIST_REPORT:"):
-        payload = msg.message.replace("SCIENTIST_REPORT:", "").strip()
-        # Format: Justification | Score | Regime
-        parts = payload.split("|")
+    if "SCIENTIST_REPORT:" in msg.message:
+        payload = msg.message.split("SCIENTIST_REPORT:")[1].strip()
+        logger.info(f"Scientist Report Detected. Payload: {payload[:100]}...")
+        
+        # Super-resilient parsing: find the LAST two pipes to extract Score and Regime
+        # Format: [Long Justification] | [Score] | [Regime]
+        parts = [p.strip() for p in payload.split("|")]
+        
         if len(parts) >= 3:
-            # Resilient parsing: strip out 'Justification:', 'Score:', 'Regime:' if AI added them
-            justification = parts[0].replace("Justification:", "").strip()
-            score_str = parts[1].replace("Score:", "").strip()
-            regime = parts[2].replace("Regime:", "").strip()
+            # The last part is Regime, second to last is Score. Everything else is Justification.
+            regime_raw = parts[-1].replace("Regime:", "").strip()
+            score_raw = parts[-2].replace("Score:", "").strip()
+            # Join everything before the score as the justification
+            justification = "|".join(parts[:-2]).replace("Justification:", "").strip()
             
             try:
-                score = float(score_str)
+                # Clean up score (removes letters/labels)
+                import re
+                score_clean = re.findall(r"[-+]?\d*\.\d+|\d+", score_raw)[0]
+                score = float(score_clean)
             except:
-                score = 0.0 # Fallback
-            
-            # Update the dashboard state live
+                score = 0.0
+                
+            # Update State
             SYSTEM_STATE["ai_insight"] = justification
             SYSTEM_STATE["sentiment_score"] = score
-            SYSTEM_STATE["regime"] = regime
+            SYSTEM_STATE["regime"] = regime_raw
             
             report_time = time.strftime("%H:%M:%S")
-            LOG_HISTORY.append({"time": report_time, "msg": f"AI Intelligence: {justification}"})
+            LOG_HISTORY.append({"time": report_time, "msg": f"AI Intelligence: {justification[:50]}..."})
             
-            # Add to Recon History
+            # Update Recon History
             RECON_HISTORY.append({
                 "time": report_time,
-                "title": f"SCAN REPORT - BTC/{regime}",
+                "title": f"SCAN REPORT - BTC/{regime_raw}",
                 "content": justification,
                 "score": score
             })
             if len(RECON_HISTORY) > 20: RECON_HISTORY.pop(0)
 
-            return {"status": "success", "message": "Dashboard state updated by Scientist."}
+            logger.info(f"Recon Card Created: {regime_raw} | {score}")
+            return {"status": "success", "message": "Intelligence Dossier Updated."}
 
     # Standard user chat logic
     response = f"OpenClaw: I received your instruction: '{msg.message}'. Analyzing market impact..."

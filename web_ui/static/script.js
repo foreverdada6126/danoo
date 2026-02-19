@@ -208,16 +208,25 @@ async function updateRecon() {
         const data = await res.json();
         const container = document.getElementById('recon-history');
 
-        if (data.recon.length === 0) return;
+        if (!data.recon || data.recon.length === 0) {
+            console.log("Recon: No reports found in state.");
+            return;
+        }
 
-        container.innerHTML = data.recon.reverse().map(item => `
+        console.log(`Recon: Rendering ${data.recon.length} insights.`);
+        // Create a copy before reversing to prevent jumping
+        const historyData = [...data.recon].reverse();
+
+        container.innerHTML = historyData.map(item => `
             <div class="recon-item">
                 <span class="time">${item.time}</span>
                 <span class="title">${item.title}</span>
                 <p>${item.content}</p>
             </div>
         `).join('');
-    } catch (e) { console.error("Recon update failed"); }
+    } catch (e) {
+        console.error("Recon: UI fetch failed", e);
+    }
 }
 
 async function purgeLogs() {

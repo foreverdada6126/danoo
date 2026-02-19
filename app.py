@@ -31,12 +31,26 @@ async def run_market_intelligence(bot):
                 )
                 if resp.status_code == 200:
                     data = resp.json()
+                    analysis = data.get("analysis", "No analysis returned.")
+                    
                     # 2. Update Dashboard State
-                    SYSTEM_STATE["ai_insight"] = data["analysis"][:200] + "..."
-                    SYSTEM_STATE["sentiment_score"] = data["sentiment_estimate"]
+                    SYSTEM_STATE["ai_insight"] = analysis[:200] + "..."
+                    
+                    # Try to extract sentiment if the AI followed the pipe format
+                    sentiment = 0.0
+                    if "|" in analysis:
+                        try:
+                            parts = analysis.split("|")
+                            if len(parts) >= 2:
+                                import re
+                                score_clean = re.findall(r"[-+]?\d*\.\d+|\d+", parts[-2])[0]
+                                sentiment = float(score_clean)
+                        except: pass
+                    
+                    SYSTEM_STATE["sentiment_score"] = sentiment
                     
                     # 3. Log it
-                    log_entry = {"time": datetime.now().strftime("%H:%M:%S"), "msg": f"AI Insight: Market is {data['sentiment_estimate']} sentiment."}
+                    log_entry = {"time": datetime.now().strftime("%H:%M:%S"), "msg": f"AI Insight: Sentiment calibrated at {sentiment}."}
                     LOG_HISTORY.append(log_entry)
                     if len(LOG_HISTORY) > 50: LOG_HISTORY.pop(0)
                     
