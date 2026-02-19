@@ -75,7 +75,7 @@ class ExchangeHandler:
         
         try:
             # 1. Fetch OHLCV for RSI
-            ohlcv = self.client.fetch_ohlcv(symbol, timeframe, limit=100)
+            ohlcv = await self.client.fetch_ohlcv(symbol, timeframe, limit=100)
             df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
             
             # Simple RSI Calculation
@@ -87,7 +87,7 @@ class ExchangeHandler:
             current_rsi = rsi.iloc[-1]
             
             # 2. Fetch Funding Rate
-            funding = self.client.fetch_funding_rate(symbol)
+            funding = await self.client.fetch_funding_rate(symbol)
             funding_rate = funding.get('fundingRate', 0.0) * 100 # Convert to percentage
             
             price = df['close'].iloc[-1]
