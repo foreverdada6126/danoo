@@ -237,6 +237,10 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateTrades, 3000);
     setInterval(updateApprovals, 3000);
     setInterval(() => {
-        get('uptime').textContent = new Date().toLocaleTimeString();
+        const up = get('uptime');
+        if (up) {
+            const now = new Date();
+            up.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+        }
     }, 1000);
 });
