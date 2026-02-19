@@ -116,19 +116,14 @@ class ExchangeHandler:
         try:
             await self.client.load_markets()
             
-            # 1. Fetch latest ticker if price is missing or zero
-            if not price or price < 0.1:
-                logger.info(f"Exchange Bridge: Price invalid ({price}). Fetching current ticker...")
-                ticker = await self.client.fetch_ticker(symbol)
-                price = ticker['last']
-
-            # 2. Format price and amount for precision
-            formatted_price = self.client.price_to_precision(symbol, price)
-            formatted_amount = self.client.amount_to_precision(symbol, amount)
+            # Format amount for precision
+            formatted_amount = float(self.client.amount_to_precision(symbol, amount))
             
-            logger.info(f"EXCHANGE ATTEMPT: {side.upper()} {formatted_amount} {symbol} @ {formatted_price}")
+            logger.info(f"EXCHANGE ATTEMPT: MARKET {side.upper()} {formatted_amount} {symbol}")
             
-            order = await self.client.create_limit_order(symbol, side, formatted_amount, formatted_price)
+            # Switch to Market Order to bypass price precision errors entirely
+            order = await self.client.create_market_order(symbol, side, formatted_amount)
+            
             logger.success(f"EXCHANGE SUCCESS: {order['id']}")
             return {"success": True, "order": order}
         except Exception as e:
@@ -136,7 +131,8 @@ class ExchangeHandler:
             logger.error(f"EXCHANGE REJECTION: {error_msg}")
             # Identify common errors
             if "AuthenticationError" in error_msg: error_msg = "Invalid API Keys / Secret"
-            elif "PermissionDenied" in error_msg: error_msg = "API Keys do not have Futures enabled"
-            elif "InsufficientFunds" in error_msg: error_msg = "Insufficient Margin in Futures Wallet"
+            elif "PermissionDenied" in error_msg: error_msg = "Enable Futures in API Settings!"
+            elif "InsufficientFunds" in error_msg: error_msg = "Transfer USDT to Futures Wallet!"
+            elif "Account has insufficient balance" in error_msg: error_msg = "Futures Wallet Empty"
             
             return {"success": False, "error": error_msg}
