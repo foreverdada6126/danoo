@@ -203,6 +203,7 @@ async def trigger_scan():
 
 @app.post("/api/chat")
 async def chat_with_openclaw(msg: ChatMessage):
+    logger.info(f"Chat Message Received: {msg.message[:50]}...")
     # Detect autonomous reports from the Intel Service
     if msg.message.startswith("SCIENTIST_REPORT:"):
         payload = msg.message.replace("SCIENTIST_REPORT:", "").strip()

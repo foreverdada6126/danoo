@@ -257,16 +257,23 @@ document.getElementById('regime-btn').addEventListener('click', async () => {
 
 document.getElementById('recon-btn').addEventListener('click', async () => {
     const btn = document.getElementById('recon-btn');
+    const container = document.getElementById('recon-history');
+
     btn.textContent = "SCOUTING...";
     btn.classList.add('pulse');
+    if (container.querySelector('.empty')) {
+        container.querySelector('.empty').textContent = "AI SEARCH IN PROGRESS...";
+    }
 
     try {
+        console.log("Strategic Recon Initiated...");
         await fetch('/api/engine/recon', { method: 'POST' });
         setTimeout(() => {
             btn.textContent = "INITIATE";
             btn.classList.remove('pulse');
-        }, 2000);
+        }, 3000);
     } catch (e) {
+        console.error("Manual Recon Failed", e);
         btn.textContent = "FAILED";
         btn.classList.remove('pulse');
     }

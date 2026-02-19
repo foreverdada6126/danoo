@@ -1,3 +1,5 @@
+name: danoo-fleet
+
 services:
   # 1. DANOO CORE (The Brain & Wallet)
   # Port 8000: Handles BTC cycles, logic, and your Dashboard UI.
@@ -11,6 +13,10 @@ services:
     env_file: .env
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SERPER_API_KEY=${SERPER_API_KEY}
+      - MISSION_CONTROL_WEBHOOK=${MISSION_CONTROL_WEBHOOK}
+      - LOCAL_AUTH_TOKEN=${LOCAL_AUTH_TOKEN}
+      - VPS_IP=${VPS_IP}
     volumes:
       - ./data:/app/data
       - ./database:/app/database
@@ -35,10 +41,15 @@ services:
     env_file: .env
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SERPER_API_KEY=${SERPER_API_KEY}
+      - MISSION_CONTROL_WEBHOOK=${MISSION_CONTROL_WEBHOOK}
+      - LOCAL_AUTH_TOKEN=${LOCAL_AUTH_TOKEN}
+      - VPS_IP=${VPS_IP}
     restart: always
     networks:
       - danoo-net
 
 networks:
   danoo-net:
+    name: danoo-shared-network
     driver: bridge

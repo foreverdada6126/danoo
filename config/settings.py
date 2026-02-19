@@ -32,7 +32,8 @@ class Settings(BaseSettings):
     TELEGRAM_CHAT_ID: Optional[str] = os.getenv("TELEGRAM_CHAT_ID")
 
     class Config:
-        env_file = "config/secrets.env"
+        env_file = ".env"
+        extra = "ignore"
         case_sensitive = True
 
 SETTINGS = Settings()
