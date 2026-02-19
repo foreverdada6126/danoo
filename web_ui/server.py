@@ -338,7 +338,7 @@ async def chat_with_openclaw(msg: ChatMessage):
             if abs(score) >= 0.7:
                 signal_type = "LONG" if score > 0 else "SHORT"
                 APPROVAL_QUEUE.append({
-                    "time": time.strftime("%H:%M"),
+                    "time": time.time(),
                     "signal": f"AI-{signal_type} ({regime_raw})",
                     "sentiment": score,
                     "status": "AWAITING APPROVAL",
