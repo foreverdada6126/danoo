@@ -14,7 +14,7 @@ import platform
 import time
 import httpx
 from loguru import logger
-from database.models import DB_SESSION, Trade
+from database.models import DB_SESSION, Trade, CandleCache
 
 # Initialize State Containers at the top to prevent log sink crashes
 LOG_HISTORY = []
@@ -290,7 +290,7 @@ async def get_recon_history():
                 Trade.exit_time <= end_of_day,
                 Trade.status == 'CLOSED'
             ).all()
-            daily_pnl = sum(t.pnl for t in trades) if trades else 0.0
+            daily_pnl = sum((t.pnl or 0.0) for t in trades) if trades else 0.0
             
             grouped[date_key] = {
                 "date": dt.strftime("%b %d, %Y"),
