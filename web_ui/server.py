@@ -268,7 +268,12 @@ async def get_recon_history():
     session = DB_SESSION()
     
     # Sort recons by time descending
-    sorted_recon = sorted(RECON_HISTORY, key=lambda x: x['time'], reverse=True)
+    if not RECON_HISTORY:
+        session.close()
+        return {"recon_groups": []}
+        
+    logger.info(f"UI Sync: Processing {len(RECON_HISTORY)} recon items into groups.")
+    sorted_recon = sorted(RECON_HISTORY, key=lambda x: x.get('time', 0), reverse=True)
     
     for item in sorted_recon:
         dt = datetime.fromtimestamp(item['time'])
@@ -303,6 +308,7 @@ async def get_recon_history():
         grouped[date_key]["items"].append(item)
     
     session.close()
+    logger.info(f"UI Sync: Returning {len(grouped)} groups.")
     
     # Convert to list for the frontend
     result = []
