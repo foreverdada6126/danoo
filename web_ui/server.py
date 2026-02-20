@@ -261,8 +261,56 @@ async def get_system_report():
 
 @app.get("/api/system/recon")
 async def get_recon_history():
-    """Returns the history of intelligence reconnaissance reports."""
-    return {"recon": RECON_HISTORY}
+    """Returns the history of intelligence reconnaissance reports grouped by date."""
+    from sqlalchemy import desc
+    
+    grouped = {}
+    session = DB_SESSION()
+    
+    # Sort recons by time descending
+    sorted_recon = sorted(RECON_HISTORY, key=lambda x: x['time'], reverse=True)
+    
+    for item in sorted_recon:
+        dt = datetime.fromtimestamp(item['time'])
+        date_key = dt.strftime("%Y-%m-%d")
+        
+        if date_key not in grouped:
+            # Fetch daily stats once per date
+            # 1. Closing Price (Last candle of the day)
+            end_of_day = datetime.combine(dt.date(), datetime.max.time())
+            candle = session.query(CandleCache).filter(
+                CandleCache.timestamp <= end_of_day
+            ).order_by(desc(CandleCache.timestamp)).first()
+            closing_price = candle.close if candle else 0.0
+            
+            # 2. Daily PnL
+            start_of_day = datetime.combine(dt.date(), datetime.min.time())
+            trades = session.query(Trade).filter(
+                Trade.exit_time >= start_of_day,
+                Trade.exit_time <= end_of_day,
+                Trade.status == 'CLOSED'
+            ).all()
+            daily_pnl = sum(t.pnl for t in trades) if trades else 0.0
+            
+            grouped[date_key] = {
+                "date": dt.strftime("%b %d, %Y"),
+                "date_id": date_key,
+                "closing_price": closing_price,
+                "daily_pnl": daily_pnl,
+                "items": []
+            }
+        
+        grouped[date_key]["items"].append(item)
+    
+    session.close()
+    
+    # Convert to list for the frontend
+    result = []
+    sorted_keys = sorted(grouped.keys(), reverse=True)
+    for key in sorted_keys:
+        result.append(grouped[key])
+        
+    return {"recon_groups": result}
 
 @app.post("/api/system/close/{order_id}")
 async def close_trade(order_id: str):

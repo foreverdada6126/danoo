@@ -2,6 +2,20 @@
 
 const get = (id) => document.getElementById(id);
 
+let expandedGroups = new Set();
+
+function toggleReconGroup(dateId) {
+    if (expandedGroups.has(dateId)) {
+        expandedGroups.delete(dateId);
+    } else {
+        expandedGroups.add(dateId);
+    }
+    const el = document.getElementById(`recon-group-${dateId}`);
+    if (el) {
+        el.classList.toggle('collapsed', !expandedGroups.has(dateId));
+    }
+}
+
 // Helper: Format Server Timestamp to Local Browser Time
 function formatTime(ts, seconds = false) {
     if (!ts) return '--:--';
@@ -123,15 +137,40 @@ async function updateRecon() {
         const res = await fetch('/api/system/recon');
         const data = await res.json();
         const container = get('recon-history');
-        if (!data.recon || data.recon.length === 0) return;
+        if (!data.recon_groups || data.recon_groups.length === 0) return;
 
-        container.innerHTML = [...data.recon].reverse().map(item => `
-            <div class="card-item">
-                <div class="card-meta"><span>RECON</span><span>${formatTime(item.time)}</span></div>
-                <div class="card-header">${item.title}</div>
-                <div class="card-body">${item.content}</div>
-            </div>
-        `).join('');
+        // Auto-expand first group if nothing is expanded
+        if (expandedGroups.size === 0 && data.recon_groups.length > 0) {
+            expandedGroups.add(data.recon_groups[0].date_id);
+        }
+
+        container.innerHTML = data.recon_groups.map(group => {
+            const isCollapsed = !expandedGroups.has(group.date_id);
+            const pnlClass = group.daily_pnl > 0 ? 'up' : group.daily_pnl < 0 ? 'down' : '';
+            return `
+                <div id="recon-group-${group.date_id}" class="recon-group ${isCollapsed ? 'collapsed' : ''}">
+                    <div class="recon-date-header ${pnlClass}" onclick="toggleReconGroup('${group.date_id}')">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span>${group.date}</span>
+                            <span class="recon-meta">Close: $${group.closing_price.toLocaleString()}</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <span class="recon-meta ${pnlClass}" style="font-weight:700;">PnL: $${group.daily_pnl.toFixed(2)}</span>
+                            <span class="chevron">▼</span>
+                        </div>
+                    </div>
+                    <div class="recon-items-content">
+                        ${group.items.map(item => `
+                            <div class="card-item sub-item">
+                                <div class="card-meta"><span>RECON</span><span>${formatTime(item.time)}</span></div>
+                                <div class="card-header">${item.title}</div>
+                                <div class="card-body">${item.content}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }).join('');
     } catch (e) { }
 }
 
@@ -273,6 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Bind Globals
     window.toggleOverlay = toggleOverlay;
+    window.toggleReconGroup = toggleReconGroup;
     get('send-btn').onclick = sendCommand;
     get('chat-input').onkeypress = (e) => { if (e.key === 'Enter') sendCommand(); };
 
