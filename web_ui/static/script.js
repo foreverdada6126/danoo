@@ -5,6 +5,7 @@ const get = (id) => document.getElementById(id);
 let expandedGroups = new Set();
 
 function toggleReconGroup(dateId) {
+    console.log("Toggling Group:", dateId);
     if (expandedGroups.has(dateId)) {
         expandedGroups.delete(dateId);
     } else {
@@ -137,25 +138,30 @@ async function updateRecon() {
         const res = await fetch('/api/system/recon');
         const data = await res.json();
         const container = get('recon-history');
-        if (!data.recon_groups || data.recon_groups.length === 0) return;
+
+        if (!data.recon_groups || data.recon_groups.length === 0) {
+            // If empty, we can show a subtle message or keep previous state
+            return;
+        }
 
         // Auto-expand first group if nothing is expanded
         if (expandedGroups.size === 0 && data.recon_groups.length > 0) {
             expandedGroups.add(data.recon_groups[0].date_id);
         }
 
-        container.innerHTML = data.recon_groups.map(group => {
-            const isCollapsed = !expandedGroups.has(group.date_id);
-            const pnlClass = group.daily_pnl > 0 ? 'up' : group.daily_pnl < 0 ? 'down' : '';
+        const html = data.recon_groups.map(group => {
+            const isColl = !expandedGroups.has(group.date_id);
+            const pnlCls = group.daily_pnl > 0 ? 'up' : (group.daily_pnl < 0 ? 'down' : '');
+
             return `
-                <div id="recon-group-${group.date_id}" class="recon-group ${isCollapsed ? 'collapsed' : ''}">
-                    <div class="recon-date-header ${pnlClass}" onclick="toggleReconGroup('${group.date_id}')">
+                <div id="recon-group-${group.date_id}" class="recon-group ${isColl ? 'collapsed' : ''}">
+                    <div class="recon-date-header ${pnlCls}" onclick="toggleReconGroup('${group.date_id}')">
                         <div style="display:flex; align-items:center; gap:8px;">
                             <span>${group.date}</span>
-                            <span class="recon-meta">Close: $${group.closing_price.toLocaleString()}</span>
+                            <span class="recon-meta">Close: $${(group.closing_price || 0).toLocaleString()}</span>
                         </div>
                         <div style="display:flex; align-items:center; gap:12px;">
-                            <span class="recon-meta ${pnlClass}" style="font-weight:700;">PnL: $${group.daily_pnl.toFixed(2)}</span>
+                            <span class="recon-meta ${pnlCls}" style="font-weight:700;">PnL: $${(group.daily_pnl || 0).toFixed(2)}</span>
                             <span class="chevron">▼</span>
                         </div>
                     </div>
@@ -171,7 +177,11 @@ async function updateRecon() {
                 </div>
             `;
         }).join('');
-    } catch (e) { }
+
+        container.innerHTML = html;
+    } catch (err) {
+        console.error("Recon Update Failed:", err);
+    }
 }
 
 async function updateTrades() {
