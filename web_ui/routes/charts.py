@@ -104,28 +104,40 @@ async def get_ohlcv_data(symbol: str = "BTCUSDT", timeframe: str = "15m"):
 async def get_all_prices():
     """Returns live prices for all supported assets."""
     from core.exchange_handler import ExchangeHandler
-    symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "HBARUSDT", "DOGEUSDT", "XLMUSDT", "XDCUSDT"]
+    # symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "HBARUSDT", "DOGEUSDT", "XLMUSDT", "XDCUSDT"]
+    symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT"] # Start small for reliability
     prices = {}
     try:
         bridge = ExchangeHandler()
-        # Force Public for Real Prices
         client = await bridge._get_client(force_public=True)
         markets = await client.load_markets()
-        logger.info(f"Ticker: Loaded {len(markets)} markets. BTCUSDT in: {'BTCUSDT' in markets}")
         
+        # Determine valid symbol format for current exchange
+        if "BTC/USDT:USDT" in markets:
+            target_symbols = [f"{s.replace('USDT', '')}/USDT:USDT" for s in symbols]
+        else:
+            target_symbols = symbols
+            
         try:
-            tickers = await client.fetch_tickers(symbols)
-            for s in symbols:
-                if s in tickers:
+            tickers = await client.fetch_tickers(target_symbols)
+            for s, target in zip(symbols, target_symbols):
+                if target in tickers:
+                    prices[s] = tickers[target].get("last", 0.0)
+                elif s in tickers:
                     prices[s] = tickers[s].get("last", 0.0)
         except Exception as e:
-            logger.warning(f"fetch_tickers failed: {e}")
-            for s in symbols:
+            logger.warning(f"Ticker fallback triggered: Sequential fetch for {len(symbols)} assets.")
+            for s, target in zip(symbols, target_symbols):
                 try:
-                    t = await client.fetch_ticker(s)
+                    t = await client.fetch_ticker(target)
                     prices[s] = t.get("last", 0.0)
-                except: prices[s] = 0.0
-                    
+                except:
+                    try:
+                        t = await client.fetch_ticker(s)
+                        prices[s] = t.get("last", 0.0)
+                    except:
+                        prices[s] = 0.0
+                        
     except Exception as e:
-        logger.error(f"Multi-price fetch error: {e}")
+        logger.error(f"FATAL Multi-price fetch error: {str(e)}")
     return {"prices": prices}
