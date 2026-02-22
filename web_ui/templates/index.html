@@ -13,6 +13,10 @@
         rel="stylesheet">
     <!-- Tailwind CSS Play CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lightweight Charts -->
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -181,8 +185,6 @@
                         </div>
                         <div class="flex-1 min-h-0 bg-brand-bg">
                             <div id="price-chart" class="h-full w-full"></div>
-                            <script
-                                src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
                             <script type="text/javascript">
                                 let priceChart = null;
                                 let candleSeries = null;
@@ -269,6 +271,20 @@
                                     (USDT)</span>
                                 <span id="perf-capital"
                                     class="text-lg font-bold font-mono text-white tracking-wider">$--</span>
+                            </div>
+                            <div class="flex flex-col items-center">
+                                <span class="text-[9px] text-brand-dim uppercase tracking-widest mb-1">Trades</span>
+                                <div class="flex items-center gap-2">
+                                    <span id="perf-total" class="text-sm font-bold font-mono text-white">0</span>
+                                    <span class="text-[8px] text-brand-dim">/</span>
+                                    <span id="perf-open"
+                                        class="text-[10px] font-bold font-mono text-brand-green">0</span>
+                                    <span class="text-[8px] text-brand-dim">/</span>
+                                    <span id="perf-closed"
+                                        class="text-[10px] font-bold font-mono text-brand-red">0</span>
+                                </div>
+                                <span class="text-[7px] text-brand-dim uppercase tracking-widest mt-0.5">tot / open /
+                                    cls</span>
                             </div>
                             <div class="flex flex-col text-right">
                                 <span class="text-[9px] text-brand-dim uppercase tracking-widest mb-1">24H PNL</span>

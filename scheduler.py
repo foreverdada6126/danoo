@@ -53,7 +53,9 @@ async def cycle_15m():
     try:
         balance = await bridge.fetch_balance()
         if balance is not None:
-            SYSTEM_STATE["equity"] = balance
+            # Don't overwrite paper equity with a real $0 testnet balance
+            if balance > 0 or SETTINGS.MODE != "paper":
+                SYSTEM_STATE["equity"] = balance
             SYSTEM_STATE["exchange_connected"] = True
             if balance == 0 and not SETTINGS.BYBIT_API_KEY:
                 logger.warning("Exchange Bridge: Connected in PAPER mode (No API Keys).")

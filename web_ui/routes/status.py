@@ -14,7 +14,22 @@ router = APIRouter()
 @router.get("/api/status")
 async def get_status():
     """Returns the core system state (equity, regime, insights)."""
+    from database.models import DB_SESSION, Trade
     SYSTEM_STATE["active_orders"] = len(ACTIVE_TRADES)
+    
+    # Trade counts
+    try:
+        session = DB_SESSION()
+        total = session.query(Trade).count()
+        open_count = session.query(Trade).filter(Trade.status == 'OPEN').count()
+        closed_count = session.query(Trade).filter(Trade.status == 'CLOSED').count()
+        session.close()
+        SYSTEM_STATE["trades_total"] = total
+        SYSTEM_STATE["trades_open"] = open_count
+        SYSTEM_STATE["trades_closed"] = closed_count
+    except:
+        pass
+    
     return SYSTEM_STATE
 
 @router.get("/api/system/health")

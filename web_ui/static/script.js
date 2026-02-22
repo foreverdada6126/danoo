@@ -158,6 +158,9 @@ async function syncDashboard() {
         if (get('sentiment-value')) get('sentiment-value').textContent = data.sentiment_score.toFixed(2);
         if (get('price-value')) get('price-value').textContent = `$${data.price.toLocaleString()}`;
         if (get('funding-value')) get('funding-value').textContent = `${data.funding_rate}%`;
+        if (get('perf-total')) get('perf-total').textContent = data.trades_total || 0;
+        if (get('perf-open')) get('perf-open').textContent = data.trades_open || 0;
+        if (get('perf-closed')) get('perf-closed').textContent = data.trades_closed || 0;
 
         if (get('mode-selector') && data.mode) {
             const ms = get('mode-selector');
