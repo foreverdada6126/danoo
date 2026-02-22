@@ -303,12 +303,17 @@ async function updateLogs() {
         const res = await fetch('/api/logs');
         const logs = await res.json();
         const container = get('log-list');
+        const isScrolledToBottom = container.scrollHeight - container.clientHeight <= container.scrollTop + 20;
+
         container.innerHTML = logs.map(l => `
             <div style="margin-bottom: 5px; opacity: 0.7;">
                 <span class="neutral">[${formatTime(l.time, true)}]</span> ${l.msg}
             </div>
         `).join('');
-        container.scrollTop = container.scrollHeight;
+
+        if (isScrolledToBottom) {
+            container.scrollTop = container.scrollHeight;
+        }
     } catch (e) { }
 }
 
