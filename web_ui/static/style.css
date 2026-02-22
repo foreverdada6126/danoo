@@ -235,6 +235,10 @@ body {
 }
 
 /* Fixed Widgets */
+.hidden {
+    display: none !important;
+}
+
 .overlay.hidden {
     display: none !important;
 }

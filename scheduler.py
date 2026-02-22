@@ -19,6 +19,9 @@ async def cycle_15m():
     
     if balance is not None:
         SYSTEM_STATE["equity"] = balance
+        SYSTEM_STATE["exchange_connected"] = True
+    else:
+        SYSTEM_STATE["exchange_connected"] = False
 
     if data:
         SYSTEM_STATE["rsi"] = data["rsi"]

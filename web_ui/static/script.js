@@ -303,18 +303,21 @@ async function updateLogs() {
         const res = await fetch('/api/logs');
         const logs = await res.json();
         const container = get('log-list');
-        const isScrolledToBottom = container.scrollHeight - container.clientHeight <= container.scrollTop + 20;
+        if (!container) return;
+
+        const isScrolledToBottom = container.scrollHeight - container.clientHeight <= container.scrollTop + 50;
 
         container.innerHTML = logs.map(l => `
-            <div style="margin-bottom: 5px; opacity: 0.7;">
-                <span class="neutral">[${formatTime(l.time, true)}]</span> ${l.msg}
+            <div style="margin-bottom: 8px; font-size: 11px; line-height: 1.4; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 4px;">
+                <span style="color: var(--cyan-brand); font-weight: bold; margin-right: 8px;">[${formatTime(l.time, true)}]</span>
+                <span style="color: #fff; opacity: 0.9;">${l.msg}</span>
             </div>
         `).join('');
 
         if (isScrolledToBottom) {
             container.scrollTop = container.scrollHeight;
         }
-    } catch (e) { }
+    } catch (e) { console.error("Logs sync failed", e); }
 }
 
 // 4. CHAT INTERFACE
@@ -437,19 +440,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function onDragMove(e) {
-        isDraggingFab = true;
+        if (!isDraggingFab) isDraggingFab = true;
         e.preventDefault();
 
         let newX = e.clientX - dragStartX;
         let newY = e.clientY - dragStartY;
 
-        if (newX < 0) newX = 0;
-        if (newY < 0) newY = 0;
-        if (newX > window.innerWidth - 60) newX = window.innerWidth - 60;
-        if (newY > window.innerHeight - 60) newY = window.innerHeight - 60;
+        // Boundaries with padding
+        const pad = 20;
+        if (newX < pad) newX = pad;
+        if (newY < pad) newY = pad;
+        if (newX > window.innerWidth - 80) newX = window.innerWidth - 80;
+        if (newY > window.innerHeight - 80) newY = window.innerHeight - 80;
 
         fabWidget.style.left = `${newX}px`;
         fabWidget.style.top = `${newY}px`;
+        fabWidget.style.bottom = 'auto'; // Force override
+        fabWidget.style.right = 'auto';  // Force override
     }
 
     function onDragEnd(e) {
@@ -457,8 +464,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.removeEventListener('mouseup', onDragEnd);
         if (dragHandle) dragHandle.style.cursor = 'grab';
 
-        // Short delay to prevent click fire after drag
-        setTimeout(() => { isDraggingFab = false; }, 100);
+        // Wait a bit before allowing clicks to prevent drag-triggering-click
+        setTimeout(() => { isDraggingFab = false; }, 150);
     }
 
     if (dragHandle) dragHandle.addEventListener('mousedown', initDrag);

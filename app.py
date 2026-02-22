@@ -92,6 +92,10 @@ async def main():
         # 5. Start Routine Orchestration (Scheduler)
         asyncio.create_task(start_scheduler_async())
         
+        # 6. Immediate Sync for UI
+        from scheduler import cycle_15m
+        asyncio.create_task(cycle_15m())
+        
         logger.info("Main loop active. System operational.")
         # Keep the main process alive
         while True:
