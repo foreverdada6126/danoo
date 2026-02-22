@@ -39,4 +39,5 @@ RECON_HISTORY = []
 ACTIVE_TRADES = []
 APPROVAL_QUEUE = []
 EQUITY_HISTORY = []
-TRADE_LOG_HISTORY = [] # Specialized logs for chart trade actions
+TRADE_LOG_HISTORY = [] # Detailed trade execution logs
+INTELLIGENCE_FLOW = [] # Real-time flow of chart data, signals, and engine heartbeats

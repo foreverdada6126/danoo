@@ -24,6 +24,8 @@ async def get_chart_data():
 async def get_ohlcv_data(symbol: str = "BTCUSDT", timeframe: str = "15m"):
     """Returns OHLCV candles and trade markers for the price chart."""
     from core.exchange_handler import ExchangeHandler
+    from web_ui.state import INTELLIGENCE_FLOW
+    import time
     
     candles = []
     trades = []
@@ -32,6 +34,7 @@ async def get_ohlcv_data(symbol: str = "BTCUSDT", timeframe: str = "15m"):
         bridge = ExchangeHandler()
         client = await bridge._get_client()
         ohlcv = await client.fetch_ohlcv(symbol, timeframe, limit=200)
+        await bridge.close()
         
         candles = [{
             "time": int(row[0] / 1000),
@@ -58,7 +61,7 @@ async def get_ohlcv_data(symbol: str = "BTCUSDT", timeframe: str = "15m"):
                 marker = {
                     "time": snapped_entry,
                     "position": "belowBar" if t.side.upper() in ["BUY", "LONG"] else "aboveBar",
-                    "color": "#00f2ff" if t.side.upper() in ["BUY", "LONG"] else "#f23645",
+                    "color": "#22ab94" if t.side.upper() in ["BUY", "LONG"] else "#f23645",
                     "shape": "arrowUp" if t.side.upper() in ["BUY", "LONG"] else "arrowDown",
                     "text": f"{t.side[:1]} @ {t.entry_price:.2f}" if t.entry_price else t.side,
                 }
@@ -70,7 +73,7 @@ async def get_ohlcv_data(symbol: str = "BTCUSDT", timeframe: str = "15m"):
                 exit_marker = {
                     "time": snapped_exit,
                     "position": "aboveBar" if t.side.upper() in ["BUY", "LONG"] else "belowBar",
-                    "color": "#22ab94" if t.pnl and t.pnl >= 0 else "#f23645",
+                    "color": "#fff" if t.pnl and t.pnl >= 0 else "#f23645",
                     "shape": "circle",
                     "text": f"Exit @ {t.exit_price:.2f}",
                 }
@@ -79,7 +82,20 @@ async def get_ohlcv_data(symbol: str = "BTCUSDT", timeframe: str = "15m"):
         trades.sort(key=lambda x: x["time"])
         session.close()
         
+        # Intelligence Logging
+        INTELLIGENCE_FLOW.append({
+            "timestamp": time.time(),
+            "cat": "CHART",
+            "msg": f"Synchronized {len(candles)} candles for {symbol} ({timeframe}). Loaded {len(trades)} trade markers."
+        })
+        if len(INTELLIGENCE_FLOW) > 100: INTELLIGENCE_FLOW.pop(0)
+        
     except Exception as e:
         logger.error(f"Chart data fetch error: {e}")
+        INTELLIGENCE_FLOW.append({
+            "timestamp": time.time(),
+            "cat": "ERROR",
+            "msg": f"Chart Sync Fail: {symbol} - {str(e)}"
+        })
     
     return {"candles": candles, "trades": trades}

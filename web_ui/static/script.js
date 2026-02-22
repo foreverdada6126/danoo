@@ -645,7 +645,7 @@ async function updateLogs() {
             const logs = data.logs || [];
 
             if (logs.length === 0) {
-                container.innerHTML = '<div class="text-[10px] text-brand-dim text-center py-10 italic">No trade intelligence recorded yet.</div>';
+                container.innerHTML = '<div class="text-[10px] text-brand-dim text-center py-10 italic">No trade intelligence recorded yet. Check your strategy filters.</div>';
                 return;
             }
 
@@ -667,6 +667,33 @@ async function updateLogs() {
                             ${pnlStr}
                         </div>
                         <div class="text-[8px] text-brand-dim italic uppercase tracking-tighter">${l.reason || 'Auto-Optimized'}</div>
+                    </div>
+                `;
+            }).join('');
+            return;
+        }
+
+        if (activeLogTab === "INTEL") {
+            const res = await fetch('/api/intelligence/flow');
+            const data = await res.json();
+            const flow = data.flow || [];
+
+            if (flow.length === 0) {
+                container.innerHTML = '<div class="text-[10px] text-brand-dim text-center py-10 italic">Waiting for initial chart flow... (Requires 1st heartbeat)</div>';
+                return;
+            }
+
+            container.innerHTML = flow.reverse().map(f => {
+                const timeStr = new Date(f.timestamp * 1000).toLocaleTimeString();
+                let color = "text-white";
+                if (f.cat === "CHART") color = "text-brand-cyan";
+                if (f.cat === "ERROR") color = "text-brand-red";
+
+                return `
+                    <div class="py-1.5 border-b border-white/5 flex gap-3 text-[10px]">
+                        <span class="text-brand-dim font-mono">[${timeStr}]</span>
+                        <span class="${color} font-bold min-w-[50px] uppercase">${f.cat}</span>
+                        <span class="text-white/80">${f.msg}</span>
                     </div>
                 `;
             }).join('');

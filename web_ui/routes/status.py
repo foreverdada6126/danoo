@@ -94,6 +94,12 @@ async def get_trade_logs():
     from web_ui.state import TRADE_LOG_HISTORY
     return {"logs": TRADE_LOG_HISTORY}
 
+@router.get("/api/intelligence/flow")
+async def get_intel_flow():
+    """Returns real-time flow of chart data, signals, and engine heartbeats."""
+    from web_ui.state import INTELLIGENCE_FLOW
+    return {"flow": INTELLIGENCE_FLOW}
+
 @router.get("/api/system/health")
 async def get_health():
     """Returns VPS health metrics."""
