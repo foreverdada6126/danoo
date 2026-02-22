@@ -759,6 +759,20 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateTrades, 3000);
     setInterval(updateApprovals, 3000);
     setInterval(updateFiles, 10000);
+
+    // Initialize Lightweight Charts (price candlestick chart)
+    setTimeout(() => {
+        const symbol = document.getElementById('asset-selector')?.value || 'BTCUSDT';
+        const timeframe = document.getElementById('timeframe-selector')?.value || '15m';
+        if (window.initTradingView) {
+            window.initTradingView(symbol, timeframe);
+        }
+    }, 1000);
+
+    // Refresh candlestick chart data every 30s
+    setInterval(() => {
+        if (window.refreshChartData) window.refreshChartData();
+    }, 30000);
     setInterval(() => {
         const up = get('uptime');
         if (up) {
