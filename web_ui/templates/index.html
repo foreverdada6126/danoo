@@ -71,6 +71,36 @@
             <!-- Column 2: Execution & Performance -->
             <section class="panel center-content">
                 <div class="panel">
+                    <div class="panel-title">LIVE MARKET <span id="market-symbol-title"
+                            style="color: var(--text-dim); font-size: 0.6rem;">BTCUSDT</span></div>
+                    <div class="chart-zone" style="padding: 0; height: 100%;">
+                        <div class="tradingview-widget-container" style="height:100%;width:100%">
+                            <div id="tradingview_1" style="height:calc(100% - 32px);width:100%"></div>
+                            <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+                            <script type="text/javascript">
+                                new TradingView.widget(
+                                    {
+                                        "autosize": true,
+                                        "symbol": "BYBIT:BTCUSDT",
+                                        "interval": "15",
+                                        "timezone": "Etc/UTC",
+                                        "theme": "dark",
+                                        "style": "1",
+                                        "locale": "en",
+                                        "enable_publishing": false,
+                                        "backgroundColor": "#0a0b0d",
+                                        "gridColor": "#131722",
+                                        "hide_top_toolbar": true,
+                                        "hide_legend": true,
+                                        "save_image": false,
+                                        "container_id": "tradingview_1"
+                                    }
+                                );
+                            </script>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel" style="border-top: 1px solid var(--border);">
                     <div class="panel-title">PERFORMANCE <span style="color: var(--text-dim); font-size: 0.6rem;">EQUITY
                             GROWTH</span></div>
                     <div class="chart-zone">
