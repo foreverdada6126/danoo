@@ -42,7 +42,9 @@ function formatTime(ts, seconds = false) {
     return d.toLocaleTimeString([], opts);
 }
 
-// 1. CHART SYSTEM (Fixed Data Source)
+// 1. CHART SYSTEM
+
+// ─── PnL Equity Chart (Chart.js) ─────────────────────────────
 let pnlChart;
 function initChart() {
     const canvas = get('pnlChart');
@@ -93,24 +95,110 @@ async function updateChart() {
     }
 }
 
-window.refreshChartData = async () => {
-    // Relying on global window.candleSeries created in HTML
-    if (typeof window.candleSeries === 'undefined' || !window.candleSeries) return;
+// ─── Price Candlestick Chart (Lightweight Charts) ────────────
+let priceChart = null;
+let candleSeries = null;
+
+async function initPriceChart() {
+    // Wait for LightweightCharts to be available (CDN may still be loading)
+    let retries = 0;
+    while (typeof LightweightCharts === 'undefined' && retries < 20) {
+        await new Promise(r => setTimeout(r, 500));
+        retries++;
+    }
+    if (typeof LightweightCharts === 'undefined') {
+        console.error('LightweightCharts CDN failed to load');
+        return;
+    }
+
+    const container = document.getElementById('price-chart');
+    if (!container) {
+        console.error('price-chart container not found');
+        return;
+    }
+
+    // Wait for container to have actual dimensions
+    let dimRetries = 0;
+    while ((container.clientWidth === 0 || container.clientHeight === 0) && dimRetries < 20) {
+        await new Promise(r => setTimeout(r, 250));
+        dimRetries++;
+    }
+
+    if (container.clientWidth === 0 || container.clientHeight === 0) {
+        console.error('price-chart container has 0 dimensions');
+        return;
+    }
+
+    if (priceChart) {
+        priceChart.remove();
+        priceChart = null;
+    }
+
+    priceChart = LightweightCharts.createChart(container, {
+        width: container.clientWidth,
+        height: container.clientHeight,
+        layout: {
+            background: { color: 'rgba(5, 6, 8, 1)' },
+            textColor: '#787b86',
+        },
+        grid: {
+            vertLines: { color: 'rgba(255, 255, 255, 0.03)' },
+            horzLines: { color: 'rgba(255, 255, 255, 0.03)' },
+        },
+        crosshair: {
+            mode: LightweightCharts.CrosshairMode.Normal,
+        },
+        rightPriceScale: {
+            borderColor: 'rgba(255, 255, 255, 0.08)',
+        },
+        timeScale: {
+            borderColor: 'rgba(255, 255, 255, 0.08)',
+            timeVisible: true,
+        },
+    });
+
+    candleSeries = priceChart.addCandlestickSeries({
+        upColor: '#00f2ff',
+        downColor: '#3b82f6',
+        borderUpColor: '#00f2ff',
+        borderDownColor: '#3b82f6',
+        wickUpColor: '#00f2ff',
+        wickDownColor: '#3b82f6',
+    });
+
+    // Load initial data
+    await refreshPriceChart();
+
+    // Resize handler
+    window.addEventListener('resize', () => {
+        if (priceChart && container) {
+            priceChart.applyOptions({
+                width: container.clientWidth,
+                height: container.clientHeight
+            });
+        }
+    });
+
+    console.log('Price chart initialized successfully');
+}
+
+async function refreshPriceChart() {
+    if (!candleSeries) return;
     try {
-        const currentSymbol = document.getElementById('asset-selector')?.value || 'BTCUSDT';
-        const currentTimeframe = document.getElementById('timeframe-selector')?.value || '15m';
-        const res = await fetch(`/api/chart/ohlcv?symbol=${currentSymbol}&timeframe=${currentTimeframe}`);
+        const symbol = document.getElementById('asset-selector')?.value || 'BTCUSDT';
+        const timeframe = document.getElementById('timeframe-selector')?.value || '15m';
+        const res = await fetch(`/api/chart/ohlcv?symbol=${symbol}&timeframe=${timeframe}`);
         const data = await res.json();
         if (data.candles && data.candles.length > 0) {
-            window.candleSeries.setData(data.candles);
+            candleSeries.setData(data.candles);
         }
         if (data.trades && data.trades.length > 0) {
-            window.candleSeries.setMarkers(data.trades);
+            candleSeries.setMarkers(data.trades);
         }
     } catch (e) {
-        console.warn('Failed to refresh chart:', e);
+        console.warn('Failed to refresh price chart:', e);
     }
-};
+}
 
 // 2. OVERLAY CONTROLLER
 function toggleOverlay(id) {
@@ -763,19 +851,11 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateApprovals, 3000);
     setInterval(updateFiles, 10000);
 
-    // Initialize Lightweight Charts (price candlestick chart)
-    setTimeout(() => {
-        const symbol = document.getElementById('asset-selector')?.value || 'BTCUSDT';
-        const timeframe = document.getElementById('timeframe-selector')?.value || '15m';
-        if (window.initTradingView) {
-            window.initTradingView(symbol, timeframe);
-        }
-    }, 1000);
+    // Initialize candlestick chart (has built-in retry for CDN + dimensions)
+    initPriceChart();
 
     // Refresh candlestick chart data every 30s
-    setInterval(() => {
-        if (window.refreshChartData) window.refreshChartData();
-    }, 30000);
+    setInterval(refreshPriceChart, 30000);
     setInterval(() => {
         const up = get('uptime');
         if (up) {
