@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -22,6 +23,47 @@ CACHE_TTL = 900 # 15 minutes
 class ResearchRequest(BaseModel):
     query: str
     context: str = ""
+
+@app.get("/", response_class=HTMLResponse)
+async def scientist_status():
+    """Funny status page for the Headless Scientist."""
+    has_brain = bool(SETTINGS.OPENAI_API_KEY)
+    status_color = "#00ff64" if has_brain else "#ff4444"
+    status_text = "HYPER-ACTIVE" if has_brain else "BRAIN-DEAD"
+    flavor_sub = "Caffeinated and Analyzing." if has_brain else "Forgot to plug in my brain (Check .env)."
+    
+    html_content = f"""
+    <html>
+        <head>
+            <title>DaNoo Scientist Portal</title>
+            <style>
+                body {{ background: #050608; color: #d1d4dc; font-family: 'Inter', 'Courier New', monospace; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }}
+                .container {{ border: 1px solid rgba(255,255,255,0.08); padding: 50px; border-radius: 30px; background: rgba(17, 21, 28, 0.7); backdrop-filter: blur(20px); box-shadow: 0 20px 80px rgba(0,0,0,0.8); text-align: center; max-width: 500px; }}
+                h1 {{ color: #00f2ff; letter-spacing: 2px; text-transform: lowercase; font-weight: 800; font-size: 28px; margin-bottom: 20px; }}
+                h1 span {{ font-style: italic; color: #fff; }}
+                .status-badge {{ display: inline-block; padding: 6px 20px; border-radius: 50px; background: {status_color}15; color: {status_color}; border: 1px solid {status_color}33; font-weight: 900; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; }}
+                .terminal {{ background: rgba(0,0,0,0.4); padding: 25px; border-radius: 15px; margin-top: 30px; text-align: left; font-size: 13px; border: 1px solid rgba(255,255,255,0.05); color: #888; line-height: 1.6; }}
+                .cursor {{ display: inline-block; width: 8px; height: 15px; background: #00f2ff; animation: blink 1s infinite; vertical-align: middle; }}
+                @keyframes blink {{ 0%, 50% {{ opacity: 1; }} 51%, 100% {{ opacity: 0; }} }}
+                .glow {{ color: #00f2ff; text-shadow: 0 0 10px rgba(0,242,255,0.5); }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>da<span>noo</span> scientist</h1>
+                <div class="status-badge">{status_text}</div>
+                <div class="terminal">
+                    > Accessing neural clusters...<br>
+                    > Objective: BTC Sentiment Analysis<br>
+                    > <span class="glow">Mood:</span> {flavor_sub}<br><br>
+                    <span style="color: #444;">------------------------------</span><br>
+                    > <span style="color: #fff">Lab Status:</span> All systems nominal. I am watching the markets so you don't have to. <span class="cursor"></span>
+                </div>
+            </div>
+        </body>
+    </html>
+    """
+    return html_content
 
 async def fetch_serper_data(query: str):
     """Fetches real-time web context via Serper.dev."""
