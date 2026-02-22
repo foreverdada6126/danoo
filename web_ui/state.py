@@ -27,7 +27,8 @@ SYSTEM_STATE = {
     "ai_active": True,
     "strat_strict": True,
     "strat_loose": True,
-    "strat_recon": True
+    "strat_recon": True,
+    "version": SETTINGS.VERSION
 }
 
 # Per-Asset State Tracking (Equity/PNL)

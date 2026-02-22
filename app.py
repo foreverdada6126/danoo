@@ -99,7 +99,7 @@ async def main():
         logger.info("Pillar 1/5: Initializing Telegram Interface...")
         bot = TelegramBot()
         await bot.start_bot()
-        await bot.send_alert(f"🚀 DaNoo v5.4 Engine Online. Version 5.4.1 Patched.")
+        await bot.send_alert(f"🚀 DaNoo v{SETTINGS.VERSION} Engine Online.")
         
         # 2. Start Web UI Server (Background Task)
         logger.info("Pillar 2/5: Initializing Command Hub Server...")
