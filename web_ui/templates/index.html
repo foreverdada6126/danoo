@@ -217,14 +217,27 @@
                     </div>
 
                     <!-- Performance -->
-                    <div class="bg-brand-bg flex flex-col overflow-hidden">
+                    <div class="bg-brand-bg flex flex-col min-h-0 overflow-hidden">
                         <div
-                            class="flex items-center justify-between px-5 py-3 bg-brand-card/10 border-b border-brand-border">
-                            <h2 class="text-[10px] font-bold tracking-[0.25em] text-brand-dim uppercase italic">Equity
-                                Velocity</h2>
+                            class="flex items-center justify-between px-5 py-3 bg-brand-card/10 border-b border-brand-border shrink-0">
+                            <h2 class="text-[10px] font-bold tracking-[0.25em] text-brand-dim uppercase italic">Live
+                                Performance</h2>
                             <span class="text-[10px] text-brand-cyan/60 font-mono tracking-widest">LIVE DATA FEED</span>
                         </div>
-                        <div class="flex-1 p-6">
+                        <div class="px-5 py-3 flex justify-between shrink-0 border-b border-brand-border bg-black/40">
+                            <div class="flex flex-col">
+                                <span class="text-[9px] text-brand-dim uppercase tracking-widest mb-1">Capital
+                                    (USDT)</span>
+                                <span id="perf-capital"
+                                    class="text-lg font-bold font-mono text-white tracking-wider">$--</span>
+                            </div>
+                            <div class="flex flex-col text-right">
+                                <span class="text-[9px] text-brand-dim uppercase tracking-widest mb-1">24H PNL</span>
+                                <span id="perf-pnl"
+                                    class="text-lg font-bold font-mono text-brand-green tracking-wider">+$--</span>
+                            </div>
+                        </div>
+                        <div class="flex-1 min-h-0 p-6">
                             <div class="h-full w-full relative">
                                 <canvas id="pnlChart"></canvas>
                             </div>

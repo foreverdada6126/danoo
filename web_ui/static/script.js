@@ -116,6 +116,15 @@ async function syncDashboard() {
         const data = await res.json();
 
         if (get('equity-value')) get('equity-value').textContent = `$${data.equity.toLocaleString()}`;
+        if (get('perf-capital')) get('perf-capital').textContent = `$${data.equity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        if (get('perf-pnl')) {
+            const pnl = data.pnl_24h || 0;
+            const sign = pnl > 0 ? '+' : '';
+            const val = Math.abs(pnl).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const pnlEl = get('perf-pnl');
+            pnlEl.textContent = `${sign}$${val}`;
+            pnlEl.className = `text-lg font-bold font-mono tracking-wider ${pnl > 0 ? 'text-brand-green' : (pnl < 0 ? 'text-brand-red' : 'text-white')}`;
+        }
         if (get('regime-value')) {
             const regimeEl = get('regime-value');
             regimeEl.textContent = data.regime;
