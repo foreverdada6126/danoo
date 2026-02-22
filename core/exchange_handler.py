@@ -81,10 +81,10 @@ class ExchangeHandler:
                         usdt_bal = float(asset.get('walletBalance', 0.0))
                         break
             
-            logger.info(f"Exchange Bridge: Balance Discovery complete. USDT: {usdt_bal}")
+            logger.info(f"Exchange Bridge: Connection SUCCESS. Detected Balance: ${usdt_bal}")
             return float(usdt_bal)
         except Exception as e:
-            logger.error(f"Balance Fetch Error: {str(e)}")
+            logger.error(f"Exchange Bridge: Connection FAILURE. Cause: {str(e)}")
             return None
 
     async def fetch_market_data(self, symbol=None, timeframe=None):

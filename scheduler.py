@@ -52,8 +52,19 @@ async def cycle_15m():
     # General Balance Update
     try:
         balance = await bridge.fetch_balance()
-        if balance: SYSTEM_STATE["equity"] = balance
-    except: pass
+        if balance is not None:
+            SYSTEM_STATE["equity"] = balance
+            SYSTEM_STATE["exchange_connected"] = True
+            if balance == 0 and not SETTINGS.BYBIT_API_KEY:
+                logger.warning("Exchange Bridge: Connected in PAPER mode (No API Keys).")
+            else:
+                logger.info(f"Exchange Bridge: Connection Verified. Wallet: ${balance}")
+        else:
+            SYSTEM_STATE["exchange_connected"] = False
+            logger.error("Exchange Bridge: Connection Failed (Balance returned None).")
+    except Exception as e:
+        SYSTEM_STATE["exchange_connected"] = False
+        logger.error(f"Exchange Bridge: Fatal Connection Error: {e}")
     
     await bridge.close()
     SYSTEM_STATE["heartbeat"] = "IDLE"

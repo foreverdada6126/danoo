@@ -104,39 +104,44 @@ async function syncDashboard() {
         const res = await fetch('/api/status');
         const data = await res.json();
 
-        get('equity-value').textContent = `$${data.equity.toLocaleString()}`;
-        get('regime-value').textContent = data.regime;
-        get('sentiment-value').textContent = data.sentiment_score.toFixed(2);
-        get('price-value').textContent = `$${data.price.toLocaleString()}`;
-        get('funding-value').textContent = `${data.funding_rate}%`;
+        if (get('equity-value')) get('equity-value').textContent = `$${data.equity.toLocaleString()}`;
+        if (get('regime-value')) {
+            const regimeEl = get('regime-value');
+            regimeEl.textContent = data.regime;
+            if (data.regime.includes('BULL')) regimeEl.className = 'val up';
+            else if (data.regime.includes('BEAR')) regimeEl.className = 'val down';
+            else regimeEl.className = 'val neutral';
+        }
+        if (get('sentiment-value')) get('sentiment-value').textContent = data.sentiment_score.toFixed(2);
+        if (get('price-value')) get('price-value').textContent = `$${data.price.toLocaleString()}`;
+        if (get('funding-value')) get('funding-value').textContent = `${data.funding_rate}%`;
 
-        const regimeEl = get('regime-value');
-        if (data.regime.includes('BULL')) regimeEl.className = 'val up';
-        else if (data.regime.includes('BEAR')) regimeEl.className = 'val down';
-        else regimeEl.className = 'val neutral';
-
-        get('mode-tag').textContent = `${data.mode} MODE`;
-        get('meta-symbol').textContent = data.symbol;
-        get('orders-count').textContent = data.active_orders;
+        if (get('mode-tag')) get('mode-tag').textContent = `${data.mode} MODE`;
+        if (get('meta-symbol')) get('meta-symbol').textContent = data.symbol;
+        if (get('orders-count')) get('orders-count').textContent = data.active_orders;
 
         const exchangeStatusEl = get('exchange-status');
         const exchangeDotEl = get('exchange-dot');
         const exchangeNameEl = get('exchange-name');
 
         if (exchangeStatusEl) {
-            exchangeNameEl.textContent = data.exchange_id || "EXCHANGE";
+            if (exchangeNameEl) exchangeNameEl.textContent = data.exchange_id || "EXCHANGE";
             if (data.exchange_connected) {
                 exchangeStatusEl.style.background = "rgba(0, 255, 100, 0.1)";
                 exchangeStatusEl.style.color = "#00ff64";
                 exchangeStatusEl.style.borderColor = "#00ff6422";
-                exchangeDotEl.style.background = "#00ff64";
-                exchangeDotEl.style.boxShadow = "0 0 5px #00ff64";
+                if (exchangeDotEl) {
+                    exchangeDotEl.style.background = "#00ff64";
+                    exchangeDotEl.style.boxShadow = "0 0 5px #00ff64";
+                }
             } else {
                 exchangeStatusEl.style.background = "rgba(255, 100, 100, 0.1)";
                 exchangeStatusEl.style.color = "#ff6464";
                 exchangeStatusEl.style.borderColor = "#ff646422";
-                exchangeDotEl.style.background = "#ff6464";
-                exchangeDotEl.style.boxShadow = "0 0 5px #ff6464";
+                if (exchangeDotEl) {
+                    exchangeDotEl.style.background = "#ff6464";
+                    exchangeDotEl.style.boxShadow = "0 0 5px #ff6464";
+                }
             }
         }
 
@@ -168,34 +173,50 @@ async function updateRecon() {
 
         // 1. Update Archives Overlay
         if (archiveContainer) {
-            if (expandedGroups.size === 0) expandedGroups.add(data.recon_groups[0].date_id);
-            archiveContainer.innerHTML = data.recon_groups.map(group => {
-                const isColl = !expandedGroups.has(group.date_id);
-                const pnlCls = group.daily_pnl > 0 ? 'up' : (group.daily_pnl < 0 ? 'down' : '');
-                return `
-                    <div id="recon-group-${group.date_id}" class="recon-group ${isColl ? 'collapsed' : ''}">
-                        <div class="recon-date-header ${pnlCls}" onclick="toggleReconGroup('${group.date_id}')">
-                            <div style="display:flex; align-items:center; gap:8px;">
-                                <span>${group.date}</span>
-                                <span class="recon-meta">Close: $${(group.closing_price || 0).toLocaleString()}</span>
-                            </div>
-                            <div style="display:flex; align-items:center; gap:12px;">
-                                <span class="recon-meta ${pnlCls}">PnL: $${(group.daily_pnl || 0).toFixed(2)}</span>
-                                <span class="chevron">▼</span>
-                            </div>
-                        </div>
-                        <div class="recon-items-content">
-                            ${group.items.map(item => `
-                                <div class="card-item sub-item">
-                                    <div class="card-meta"><span>RECON</span><span>${formatTime(item.time)}</span></div>
-                                    <div class="card-header">${item.title}</div>
-                                    <div class="card-body">${item.content}</div>
+            const filterAsset = get('recon-asset-filter') ? get('recon-asset-filter').value : 'ALL';
+
+            // Generate filtered groups
+            const filteredGroups = data.recon_groups.map(group => {
+                const filteredItems = group.items.filter(item => {
+                    if (filterAsset === 'ALL') return true;
+                    // Check if title contains the asset (e.g. "AUTO-SCAN: BTC")
+                    return item.title.includes(filterAsset);
+                });
+                return { ...group, items: filteredItems };
+            }).filter(group => group.items.length > 0);
+
+            if (filteredGroups.length === 0) {
+                archiveContainer.innerHTML = `<div class="text-[10px] text-brand-dim text-center py-20 italic">No reports found for ${filterAsset}</div>`;
+            } else {
+                if (expandedGroups.size === 0) expandedGroups.add(filteredGroups[0].date_id);
+                archiveContainer.innerHTML = filteredGroups.map(group => {
+                    const isColl = !expandedGroups.has(group.date_id);
+                    const pnlCls = group.daily_pnl > 0 ? 'up' : (group.daily_pnl < 0 ? 'down' : '');
+                    return `
+                        <div id="recon-group-${group.date_id}" class="recon-group ${isColl ? 'collapsed' : ''}">
+                            <div class="recon-date-header ${pnlCls}" onclick="toggleReconGroup('${group.date_id}')">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <span>${group.date}</span>
+                                    <span class="recon-meta">Close: $${(group.closing_price || 0).toLocaleString()}</span>
                                 </div>
-                            `).join('')}
+                                <div style="display:flex; align-items:center; gap:12px;">
+                                    <span class="recon-meta ${pnlCls}">PnL: $${(group.daily_pnl || 0).toFixed(2)}</span>
+                                    <span class="chevron">▼</span>
+                                </div>
+                            </div>
+                            <div class="recon-items-content">
+                                ${group.items.map(item => `
+                                    <div class="card-item sub-item">
+                                        <div class="card-meta"><span>RECON</span><span>${formatTime(item.time)}</span></div>
+                                        <div class="card-header">${item.title}</div>
+                                        <div class="card-body">${item.content}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
                         </div>
-                    </div>
-                `;
-            }).join('');
+                    `;
+                }).join('');
+            }
         }
 
         // 2. Update Mini-Slot (Directly above Approval Queue)
