@@ -359,6 +359,9 @@ async def get_ohlcv_data(symbol: str = "BTCUSDT", timeframe: str = "15m"):
                 }
                 trades.append(exit_marker)
         
+        # Sort markers chronologically to satisfy Lightweight Charts strict requirements
+        trades.sort(key=lambda x: x["time"])
+        
         session.close()
         
     except Exception as e:
