@@ -158,12 +158,12 @@ async function initPriceChart() {
     });
 
     candleSeries = priceChart.addCandlestickSeries({
-        upColor: '#00f2ff',
-        downColor: '#3b82f6',
-        borderUpColor: '#00f2ff',
-        borderDownColor: '#3b82f6',
-        wickUpColor: '#00f2ff',
-        wickDownColor: '#3b82f6',
+        upColor: '#22ab94',
+        downColor: '#f23645',
+        borderUpColor: '#22ab94',
+        borderDownColor: '#f23645',
+        wickUpColor: '#22ab94',
+        wickDownColor: '#f23645',
     });
 
     // Load initial data
@@ -422,11 +422,11 @@ async function changeGlobalConfig(type, value) {
         if (data.status === 'success') {
             if (type === 'symbol') {
                 get('market-symbol-title').textContent = `${value} (${get('timeframe-selector').value.toUpperCase()})`;
-                if (window.initTradingView) window.initTradingView(value, get('timeframe-selector').value);
             } else {
                 get('market-symbol-title').textContent = `${get('asset-selector').value} (${value.toUpperCase()})`;
-                if (window.initTradingView) window.initTradingView(get('asset-selector').value, value);
             }
+            // Reload chart with new symbol/timeframe
+            initPriceChart();
             syncDashboard();
         }
     } catch (e) {
@@ -636,11 +636,46 @@ async function updateHealth() {
 
 async function updateLogs() {
     try {
+        const container = get('log-list');
+        if (!container) return;
+
+        if (activeLogTab === "TRADE") {
+            const res = await fetch('/api/trade_logs');
+            const data = await res.json();
+            const logs = data.logs || [];
+
+            if (logs.length === 0) {
+                container.innerHTML = '<div class="text-[10px] text-brand-dim text-center py-10 italic">No trade intelligence recorded yet.</div>';
+                return;
+            }
+
+            container.innerHTML = logs.reverse().map(l => {
+                const isExit = l.action === "EXIT";
+                const pnlStr = isExit ? `<span class="${l.pnl >= 0 ? 'text-brand-green' : 'text-brand-red'} font-bold">PNL: ${l.pnl >= 0 ? '+' : ''}$${l.pnl.toFixed(2)} (${(l.pnl_pct || 0).toFixed(2)}%)</span>` : '';
+                return `
+                    <div class="border-b border-white/5 py-3 space-y-1">
+                        <div class="flex items-center justify-between text-[9px] uppercase tracking-widest text-brand-dim">
+                            <span>${new Date(l.timestamp * 1000).toLocaleString()}</span>
+                            <span class="px-1.5 py-0.5 rounded ${isExit ? 'bg-brand-red/10 text-brand-red' : 'bg-brand-green/10 text-brand-green'}">${l.action}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-white font-bold">${l.symbol}</span>
+                            <span class="text-brand-dim">${l.type} @ $${l.price.toLocaleString()}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-[10px]">
+                            <span>Size: ${l.amount.toLocaleString()} | Lev: ${l.leverage}x</span>
+                            ${pnlStr}
+                        </div>
+                        <div class="text-[8px] text-brand-dim italic uppercase tracking-tighter">${l.reason || 'Auto-Optimized'}</div>
+                    </div>
+                `;
+            }).join('');
+            return;
+        }
+
         const res = await fetch('/api/logs');
         if (!res.ok) throw new Error("Server Log Error");
         let logs = await res.json();
-        const container = get('log-list');
-        if (!container) return;
 
         // Filter by Tab
         if (activeLogTab !== "ALL") {
@@ -654,9 +689,9 @@ async function updateLogs() {
 
         const isScrolledToBottom = container.scrollHeight - container.clientHeight <= container.scrollTop + 100;
 
-        container.innerHTML = logs.map(l => {
-            const levelMatch = l.msg.match(/^\[(INFO|ERROR|DEBUG|SUCCESS|WARNING)\]/);
-            const level = levelMatch ? levelMatch[1] : 'INFO';
+        container.innerHTML = logs.reverse().map(l => {
+            const levelMatch = l.msg.match(/^\[(INFO|ERROR|SUCCESS|WARNING)\]/);
+            const level = levelMatch ? levelMatch[1] : (l.msg.includes('SUCCESS') ? 'SUCCESS' : 'INFO');
             const cleanMsg = l.msg.replace(/^\[.*?\]/, '').trim();
             const color = level === 'ERROR' ? '#ff4444' : (level === 'SUCCESS' ? '#00ff64' : (level === 'WARNING' ? '#ffbb00' : '#fff'));
 
@@ -673,8 +708,6 @@ async function updateLogs() {
         }
     } catch (e) {
         console.error("Logs sync failed", e);
-        const container = get('log-list');
-        if (container) container.innerHTML = `<div class="text-red-500/50 text-[10px] text-center py-4">Sync Error: ${e.message}</div>`;
     }
 }
 

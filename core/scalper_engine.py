@@ -109,11 +109,9 @@ class ScalperEngine:
 
     async def manage_open_positions(self):
         """Monitors open scalps and executes exits based on TP/SL."""
-        from web_ui.state import ACTIVE_TRADES, LOG_HISTORY, SYSTEM_STATE
+        from web_ui.state import ACTIVE_TRADES, LOG_HISTORY, SYSTEM_STATE, TRADE_LOG_HISTORY
         
         current_price = SYSTEM_STATE.get("price", 0.0)
-        # Note: In multi-asset mode, we'd ideally fetch current price per symbol.
-        # For simplicity in this pulse, we fetch fresh price during exit check if needed.
 
         to_close = []
         for trade in ACTIVE_TRADES:
@@ -133,11 +131,18 @@ class ScalperEngine:
                 
                 entry_price = db_t.entry_price
                 side = db_t.side
+                amount = db_t.amount
+                leverage = trade.get("leverage", 1)
                 pnl_pct = ((price - entry_price) / entry_price) if side == "BUY" else ((entry_price - price) / entry_price)
                 
                 exit_triggered = False
-                if pnl_pct >= 0.005: exit_triggered = True # 0.5% TP
-                elif pnl_pct <= -0.003: exit_triggered = True # 0.3% SL
+                exit_reason = ""
+                if pnl_pct >= 0.005: 
+                    exit_triggered = True # 0.5% TP
+                    exit_reason = "TAKE_PROFIT"
+                elif pnl_pct <= -0.003: 
+                    exit_triggered = True # 0.3% SL
+                    exit_reason = "STOP_LOSS"
                 
                 if exit_triggered:
                     close_side = "sell" if side == "BUY" else "buy"
@@ -147,10 +152,27 @@ class ScalperEngine:
                         db_t.status = "CLOSED"
                         db_t.exit_price = price
                         db_t.exit_time = datetime.utcnow()
-                        db_t.pnl = (price - entry_price) * close_amount * (1 if side == "BUY" else -1)
+                        final_pnl = (price - entry_price) * close_amount * (1 if side == "BUY" else -1)
+                        db_t.pnl = final_pnl
                         session.commit()
                         to_close.append(trade)
-                        LOG_HISTORY.append({"time": time.time(), "msg": f"SCALPER: Finalized {trade['symbol']} scalp at ${price} ({pnl_pct*100:.2f}%)"})
+                        
+                        log_msg = f"SCALPER: Finalized {trade['symbol']} scalp at ${price} ({pnl_pct*100:.2f}%) via {exit_reason}"
+                        LOG_HISTORY.append({"time": time.time(), "msg": log_msg})
+                        
+                        # Specialized Trade Log for Intelligence
+                        TRADE_LOG_HISTORY.append({
+                            "timestamp": time.time(),
+                            "action": "EXIT",
+                            "symbol": trade["symbol"],
+                            "type": side,
+                            "price": price,
+                            "amount": amount,
+                            "leverage": leverage,
+                            "pnl": final_pnl,
+                            "pnl_pct": pnl_pct * 100,
+                            "reason": exit_reason
+                        })
 
                 session.close()
             except Exception as e:
@@ -161,12 +183,12 @@ class ScalperEngine:
 
     async def execute_scalp(self, symbol: str, side: str, price: float, reason: str = "STRICT_SCALP"):
         """Execute and Persist Scalp Trade using Dynamic Position Sizing."""
-        from web_ui.state import ACTIVE_TRADES, LOG_HISTORY, SYSTEM_STATE
+        from web_ui.state import ACTIVE_TRADES, LOG_HISTORY, SYSTEM_STATE, TRADE_LOG_HISTORY
         from config.risk_config import RISK_CONFIG
         
         # 1. Base Portfolio Constraint
-        equity = SYSTEM_STATE.get("equity", 1000.0)
-        if equity <= 0: equity = 1000.0
+        equity = SYSTEM_STATE.get("equity", 5000.0)
+        if equity <= 0: equity = 5000.0
         
         # 2. Base Risk Allocation (default: 1% of equity to risk losing)
         base_risk_amount = equity * RISK_CONFIG.max_risk_per_trade
@@ -206,8 +228,9 @@ class ScalperEngine:
         stop_loss_pct = 0.003  # 0.3% static stop loss used in `manage_open_positions`
         position_size_usdt = adjusted_max_loss_usdt / stop_loss_pct
         
-        # 5. Cap Position Size by Maximum Allowed Account Leverage
-        absolute_max_position = equity * RISK_CONFIG.max_leverage
+        # 5. Cap Position Size by Maximum Allowed Account Leverage (default 10x)
+        leverage = RISK_CONFIG.max_leverage or 10
+        absolute_max_position = equity * leverage
         position_size_usdt = min(position_size_usdt, absolute_max_position)
         
         # Enforce Minimum Order Value (Exchange requires > $10 in most cases)
@@ -218,13 +241,15 @@ class ScalperEngine:
         # 6. Calculate Final Asset Amount based on Price
         amount = position_size_usdt / price
         
-        # Precision Adjustments based on asset height (Approximated since live markets dict not available synchronously)
+        # Precision Adjustments based on asset height
         if price > 10000:
             amount = round(amount, 3) # BTC
         elif price > 100:
             amount = round(amount, 2) # ETH, SOL
         else:
-            amount = max(1.0, round(amount, 0)) # XRP, DOGE, HBAR
+            # HBAR, XRP, etc. - ensure integer for low-value assets if they require it
+            # Actually, Bybit HBARUSDT usually allows 1-2 decimals, but let's stick to int if 0 was used before
+            amount = round(amount, 1) if "HBAR" in symbol else round(amount, 0)
             
         result = self.executor.execute_order(symbol, side.lower(), amount=amount, price=price)
         
@@ -233,7 +258,7 @@ class ScalperEngine:
             new_trade = Trade(
                 symbol=symbol, side=side, amount=amount, entry_price=price,
                 entry_time=datetime.utcnow(), status="OPEN", order_id=result["order_id"],
-                strategy=reason
+                strategy=reason, leverage=leverage
             )
             session.add(new_trade)
             session.commit()
@@ -245,8 +270,24 @@ class ScalperEngine:
                 "id": new_trade.id, "time": new_trade.entry_time.timestamp(),
                 "symbol": symbol, "type": f"{side} ({reason.split('_')[0]})", "status": "OPEN",
                 "pnl": "$0.00", "order_id": new_trade.order_id, "reason": reason,
-                "conviction": conviction, "risk": risk
+                "conviction": conviction, "risk": risk, "leverage": leverage
             })
-            LOG_HISTORY.append({"time": time.time(), "msg": f"SCALPER: Entering {side} for {symbol} at ${price} via {reason}"})
+            
+            log_msg = f"SCALPER: Entering {side} for {symbol} at ${price} via {reason}"
+            LOG_HISTORY.append({"time": time.time(), "msg": log_msg})
+            
+            # Specialized Trade Log for Intelligence
+            TRADE_LOG_HISTORY.append({
+                "timestamp": time.time(),
+                "action": "ENTRY",
+                "symbol": symbol,
+                "type": side,
+                "price": price,
+                "amount": amount,
+                "leverage": leverage,
+                "amount_usd": position_size_usdt,
+                "reason": reason
+            })
+            
             session.close()
             logger.success(f"[Scalper] Position Live: {symbol} {side} ${price} [{reason}]")

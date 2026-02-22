@@ -16,32 +16,83 @@ async def get_status():
     """Returns the core system state (equity, regime, insights)."""
     from database.models import DB_SESSION, Trade
     from datetime import datetime, timedelta
+    from core.exchange_handler import ExchangeHandler
+    from web_ui.state import ASSET_STATE
     
     SYSTEM_STATE["active_orders"] = len(ACTIVE_TRADES)
+    current_symbol = SYSTEM_STATE.get("symbol", "BTCUSDT")
     
     try:
         session = DB_SESSION()
-        total = session.query(Trade).count()
-        open_count = session.query(Trade).filter(Trade.status == 'OPEN').count()
-        closed_count = session.query(Trade).filter(Trade.status == 'CLOSED').count()
         
-        # 24H PNL from closed trades in last 24 hours
+        # Global Trade counts
+        SYSTEM_STATE["trades_total"] = session.query(Trade).count()
+        SYSTEM_STATE["trades_open"] = session.query(Trade).filter(Trade.status == 'OPEN').count()
+        SYSTEM_STATE["trades_closed"] = session.query(Trade).filter(Trade.status == 'CLOSED').count()
+        
+        # --- Per-Asset Calculation ---
+        # 1. Realized PnL (Last 24h for current asset)
         cutoff = datetime.utcnow() - timedelta(hours=24)
         recent_closed = session.query(Trade).filter(
+            Trade.symbol == current_symbol,
             Trade.status == 'CLOSED',
             Trade.exit_time >= cutoff
         ).all()
-        pnl_24h = sum((t.pnl or 0.0) for t in recent_closed)
+        realized_pnl = sum((t.pnl or 0.0) for t in recent_closed)
+        
+        # 2. Unrealized PnL (Current open trades for asset)
+        unrealized_pnl = 0.0
+        open_trades = session.query(Trade).filter(
+            Trade.symbol == current_symbol,
+            Trade.status == 'OPEN'
+        ).all()
+        
+        if open_trades:
+            # Fetch current price
+            try:
+                bridge = ExchangeHandler()
+                client = await bridge._get_client()
+                ticker = await client.fetch_ticker(current_symbol)
+                current_price = ticker.get("last", 0.0)
+                await bridge.close()
+            except:
+                current_price = SYSTEM_STATE.get("price", 0.0)
+            
+            if current_price > 0:
+                for t in open_trades:
+                    if t.entry_price and t.amount:
+                        side_mult = 1 if t.side.upper() in ["BUY", "LONG"] else -1
+                        unrealized_pnl += (current_price - t.entry_price) * t.amount * side_mult
+        
+        # 3. Update ASSET_STATE
+        if current_symbol not in ASSET_STATE:
+            ASSET_STATE[current_symbol] = {
+                "initial_equity": 5000.0 if SYSTEM_STATE["mode"] == "PAPER" else 0.0,
+                "cumulative_pnl": 0.0
+            }
+        
+        # Get total realized PnL for this asset (all time) to calculate total equity
+        all_closed = session.query(Trade).filter(
+            Trade.symbol == current_symbol,
+            Trade.status == 'CLOSED'
+        ).all()
+        total_realized = sum((t.pnl or 0.0) for t in all_closed)
+        
+        current_equity = ASSET_STATE[current_symbol]["initial_equity"] + total_realized + unrealized_pnl
+        SYSTEM_STATE["equity"] = current_equity
+        SYSTEM_STATE["pnl_24h"] = realized_pnl + unrealized_pnl
         
         session.close()
-        SYSTEM_STATE["trades_total"] = total
-        SYSTEM_STATE["trades_open"] = open_count
-        SYSTEM_STATE["trades_closed"] = closed_count
-        SYSTEM_STATE["pnl_24h"] = pnl_24h
-    except:
-        pass
+    except Exception as e:
+        logger.error(f"Status Calculation Error: {e}")
     
     return SYSTEM_STATE
+
+@router.get("/api/trade_logs")
+async def get_trade_logs():
+    """Returns specialized logs for chart trade actions."""
+    from web_ui.state import TRADE_LOG_HISTORY
+    return {"logs": TRADE_LOG_HISTORY}
 
 @router.get("/api/system/health")
 async def get_health():

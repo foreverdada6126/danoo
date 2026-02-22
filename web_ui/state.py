@@ -30,9 +30,13 @@ SYSTEM_STATE = {
     "strat_recon": True
 }
 
+# Per-Asset State Tracking (Equity/PNL)
+ASSET_STATE = {}
+
 # ─── Data Containers ─────────────────────────────────────────────
 LOG_HISTORY = []
 RECON_HISTORY = []
 ACTIVE_TRADES = []
 APPROVAL_QUEUE = []
 EQUITY_HISTORY = []
+TRADE_LOG_HISTORY = [] # Specialized logs for chart trade actions

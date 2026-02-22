@@ -26,6 +26,7 @@ async def get_active_trades():
             client = await bridge._get_client()
             ticker = await client.fetch_ticker(symbol)
             price_cache[symbol] = ticker.get("last", 0.0)
+            await bridge.close()
             return price_cache[symbol]
         except:
             if symbol == SYSTEM_STATE.get("symbol", "BTCUSDT"):
@@ -39,7 +40,7 @@ async def get_active_trades():
             if db_t:
                 current_price = await get_price(db_t.symbol)
                 if db_t.entry_price and current_price > 0:
-                    side_mult = 1 if db_t.side == "LONG" else -1
+                    side_mult = 1 if db_t.side.upper() in ["BUY", "LONG"] else -1
                     raw_pnl = (current_price - db_t.entry_price) * db_t.amount * side_mult
                     t["pnl"] = f"{'+' if raw_pnl >= 0 else ''}${raw_pnl:.2f}"
                 t["leverage"] = db_t.leverage or 1
@@ -70,6 +71,7 @@ async def get_all_trades():
                 client = await bridge._get_client()
                 ticker = await client.fetch_ticker(symbol)
                 price_cache[symbol] = ticker.get("last", 0.0)
+                await bridge.close()
                 return price_cache[symbol]
             except:
                 return 0.0
@@ -117,6 +119,8 @@ async def get_approval_queue():
 @router.post("/api/system/close/{order_id}")
 async def close_trade(order_id: str):
     """Closes an active position and updates the database."""
+    from web_ui.state import TRADE_LOG_HISTORY
+    from core.exchange_handler import ExchangeHandler
     try:
         trade = next((t for t in ACTIVE_TRADES if t["order_id"] == order_id), None)
         if not trade:
@@ -124,10 +128,18 @@ async def close_trade(order_id: str):
 
         is_paper = order_id.startswith("paper_") or SETTINGS.MODE == "paper"
         
+        # Determine exit price
+        try:
+            bridge = ExchangeHandler()
+            client = await bridge._get_client()
+            ticker = await client.fetch_ticker(trade["symbol"])
+            exit_price = ticker.get("last", 0.0)
+            await bridge.close()
+        except:
+            exit_price = SYSTEM_STATE.get("price", 0.0)
+
         if not is_paper:
             # Real trade: send close order to exchange
-            from core.exchange_handler import ExchangeHandler
-            
             session = DB_SESSION()
             db_trade = session.query(Trade).filter(Trade.order_id == order_id).first()
             if not db_trade:
@@ -152,14 +164,34 @@ async def close_trade(order_id: str):
                 return {"status": "error", "message": f"Exchange Failed to Close: {result.get('error')}"}
 
         # Update database (both paper and real)
+        final_pnl = 0.0
         try:
             session = DB_SESSION()
             db_t = session.query(Trade).filter(Trade.order_id == order_id).first()
             if db_t:
                 db_t.status = "CLOSED"
                 db_t.exit_time = datetime.utcnow()
-                db_t.exit_price = SYSTEM_STATE.get("price", 0.0)
+                db_t.exit_price = exit_price
+                
+                if db_t.entry_price and db_t.amount:
+                    side_mult = 1 if db_t.side.upper() in ["BUY", "LONG"] else -1
+                    final_pnl = (exit_price - db_t.entry_price) * db_t.amount * side_mult
+                    db_t.pnl = final_pnl
+                
                 session.commit()
+                
+                # Specialized Trade Log for Intelligence
+                TRADE_LOG_HISTORY.append({
+                    "timestamp": time.time(),
+                    "action": "EXIT",
+                    "symbol": trade["symbol"],
+                    "type": trade["type"],
+                    "price": exit_price,
+                    "amount": db_t.amount,
+                    "leverage": db_t.leverage or 1,
+                    "pnl": final_pnl,
+                    "reason": "MANUAL_CLOSE"
+                })
             session.close()
         except Exception as db_err:
             logger.error(f"DB Error during closure: {db_err}")
