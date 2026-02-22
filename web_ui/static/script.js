@@ -717,10 +717,15 @@ async function updateLogs() {
         if (activeLogTab === "TRADE") {
             const res = await fetch('/api/trade_logs');
             const data = await res.json();
-            const logs = data.logs || [];
+            let logs = data.logs || [];
+
+            if (activeAssetFilter) {
+                const currentSymbol = get('asset-selector').value;
+                logs = logs.filter(l => l.symbol === currentSymbol);
+            }
 
             if (logs.length === 0) {
-                container.innerHTML = '<div class="text-[10px] text-brand-dim text-center py-10 italic">No trade intelligence recorded yet. Check your strategy filters.</div>';
+                container.innerHTML = '<div class="text-[10px] text-brand-dim text-center py-10 italic">No trade intelligence for ' + get('asset-selector').value + '. Toggle Focus off for global view.</div>';
                 return;
             }
 

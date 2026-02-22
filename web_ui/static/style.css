@@ -124,18 +124,23 @@ body {
     font-size: 11px;
     line-height: 1.6;
     color: var(--text-brand);
-    opacity: 0.9;
+    opacity: 0.95;
+    letter-spacing: 0.2px;
+}
+
+.text-shadow-glow {
+    text-shadow: 0 0 10px currentColor;
 }
 
 .badge-sleek {
-    padding: 3px 8px;
+    padding: 3px 10px;
     border-radius: 4px;
     font-size: 8px;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    letter-spacing: 1px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* Recon Grouping */
