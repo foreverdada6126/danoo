@@ -104,39 +104,35 @@ async def get_ohlcv_data(symbol: str = "BTCUSDT", timeframe: str = "15m"):
 async def get_all_prices():
     """Returns live prices for all supported assets."""
     from core.exchange_handler import ExchangeHandler
-    # symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "HBARUSDT", "DOGEUSDT", "XLMUSDT", "XDCUSDT"]
-    symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT"] # Start small for reliability
+    symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "HBARUSDT", "DOGEUSDT", "XLMUSDT", "XDCUSDT"]
     prices = {}
     try:
         bridge = ExchangeHandler()
         client = await bridge._get_client(force_public=True)
         markets = await client.load_markets()
         
-        # Determine valid symbol format for current exchange
-        if "BTC/USDT:USDT" in markets:
-            target_symbols = [f"{s.replace('USDT', '')}/USDT:USDT" for s in symbols]
-        else:
-            target_symbols = symbols
+        # Build symbol map
+        sym_map = {}
+        for s in symbols:
+            # Try exact, then CCXT unified styles
+            if s in markets: sym_map[s] = s
+            elif f"{s.replace('USDT','')}/USDT:USDT" in markets: sym_map[s] = f"{s.replace('USDT','')}/USDT:USDT"
+            elif s.replace("USDT", "/USDT") in markets: sym_map[s] = s.replace("USDT", "/USDT")
+            
+        target_symbols = list(sym_map.values())
+        if not target_symbols: return {"prices": {}}
             
         try:
             tickers = await client.fetch_tickers(target_symbols)
-            for s, target in zip(symbols, target_symbols):
+            for s, target in sym_map.items():
                 if target in tickers:
                     prices[s] = tickers[target].get("last", 0.0)
-                elif s in tickers:
-                    prices[s] = tickers[s].get("last", 0.0)
         except Exception as e:
-            logger.warning(f"Ticker fallback triggered: Sequential fetch for {len(symbols)} assets.")
-            for s, target in zip(symbols, target_symbols):
+            for s, target in sym_map.items():
                 try:
                     t = await client.fetch_ticker(target)
                     prices[s] = t.get("last", 0.0)
-                except:
-                    try:
-                        t = await client.fetch_ticker(s)
-                        prices[s] = t.get("last", 0.0)
-                    except:
-                        prices[s] = 0.0
+                except: prices[s] = 0.0
                         
     except Exception as e:
         logger.error(f"FATAL Multi-price fetch error: {str(e)}")
