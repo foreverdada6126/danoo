@@ -116,7 +116,19 @@ async function syncDashboard() {
         if (get('price-value')) get('price-value').textContent = `$${data.price.toLocaleString()}`;
         if (get('funding-value')) get('funding-value').textContent = `${data.funding_rate}%`;
 
-        if (get('mode-tag')) get('mode-tag').textContent = `${data.mode} MODE`;
+        if (get('mode-selector') && data.mode) {
+            const ms = get('mode-selector');
+            if (ms.value !== data.mode.toLowerCase()) {
+                ms.value = data.mode.toLowerCase();
+            }
+            if (data.mode.toLowerCase() === 'live') {
+                ms.classList.remove('text-brand-dim');
+                ms.classList.add('text-brand-red');
+            } else {
+                ms.classList.remove('text-brand-red');
+                ms.classList.add('text-brand-dim');
+            }
+        }
         if (get('meta-symbol')) get('meta-symbol').textContent = data.symbol;
         if (get('orders-count')) get('orders-count').textContent = data.active_orders;
 

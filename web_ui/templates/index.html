@@ -115,9 +115,12 @@
                     </select>
                 </div>
 
-                <div class="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/10 h-9">
-                    <div id="mode-tag" class="px-2 py-1 text-[9px] font-bold text-brand-dim uppercase tracking-tighter">
-                        Paper Mode</div>
+                <div class="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/10 h-9 relative">
+                    <select id="mode-selector" onchange="changeGlobalConfig('mode', this.value)"
+                        class="bg-transparent px-2 py-1 text-[9px] font-bold text-brand-dim uppercase tracking-tighter outline-none cursor-pointer appearance-none border-none">
+                        <option value="paper" selected class="bg-[#11151c] text-white">PAPER MODE</option>
+                        <option value="live" class="bg-[#11151c] text-brand-red">LIVE MODE</option>
+                    </select>
                 </div>
 
                 <button id="ai-toggle-btn"

@@ -210,6 +210,21 @@ async def update_config(data: Dict[str, str]):
         LOG_HISTORY.append({"time": time.time(), "msg": f"SYSTEM: Timeframe switched to {new_tf}. Recalculating indicators..."})
         return {"status": "success", "timeframe": new_tf}
     
+    if "mode" in data:
+        new_mode = data["mode"].upper()
+        if new_mode in ["PAPER", "LIVE"]:
+            SYSTEM_STATE["mode"] = new_mode
+            SETTINGS.MODE = new_mode.lower()
+            try:
+                from scheduler import SCALPER
+                if hasattr(SCALPER, "executor"):
+                    SCALPER.executor.mode = new_mode.lower()
+                    SCALPER.executor.setup_exchange()
+            except Exception as e:
+                logger.error(f"Failed to propagate mode change: {e}")
+            LOG_HISTORY.append({"time": time.time(), "msg": f"SYSTEM: Execution mode switched to {new_mode}."})
+            return {"status": "success", "mode": new_mode}
+    
     return {"status": "error", "message": "Invalid config keys"}
 
 @app.post("/api/system/toggle_ai")
