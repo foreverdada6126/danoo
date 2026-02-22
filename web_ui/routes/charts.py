@@ -111,16 +111,21 @@ async def get_all_prices():
         client = await bridge._get_client(force_public=True)
         markets = await client.load_markets()
         
-        # Build symbol map
+        # Fuzzy Build symbol map
         sym_map = {}
         for s in symbols:
-            # Try exact, then CCXT unified styles
-            if s in markets: sym_map[s] = s
-            elif f"{s.replace('USDT','')}/USDT:USDT" in markets: sym_map[s] = f"{s.replace('USDT','')}/USDT:USDT"
-            elif s.replace("USDT", "/USDT") in markets: sym_map[s] = s.replace("USDT", "/USDT")
+            # Normalize S for matching
+            norm_s = s.replace("/", "").replace(":", "").upper()
+            for k in markets.keys():
+                norm_k = k.replace("/", "").replace(":", "").upper()
+                if norm_s == norm_k:
+                    sym_map[s] = k
+                    break
             
         target_symbols = list(sym_map.values())
-        if not target_symbols: return {"prices": {}}
+        if not target_symbols:
+            logger.warning(f"Ticker: No symbols matched from watchlist. First 10 markets: {list(markets.keys())[:10]}")
+            return {"prices": {}}
             
         try:
             tickers = await client.fetch_tickers(target_symbols)
