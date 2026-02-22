@@ -136,27 +136,13 @@
             <section class="bg-brand-bg flex flex-col h-full overflow-hidden border-r border-brand-border">
 
                 <div class="px-5 py-2.5 border-b border-brand-border bg-brand-bg/80 flex flex-col gap-2">
-                    <span class="text-[9px] font-bold tracking-[0.2em] text-brand-dim uppercase">Active
-                        Strategies</span>
-                    <div class="flex gap-4">
-                        <label
-                            class="flex items-center gap-1.5 cursor-pointer text-[10px] text-brand-dim uppercase font-bold hover:text-white transition-colors">
-                            <input type="checkbox" id="toggle-strat-strict" onchange="toggleStrat('strat_strict')"
-                                class="accent-brand-cyan cursor-pointer" checked>
-                            Strict
-                        </label>
-                        <label
-                            class="flex items-center gap-1.5 cursor-pointer text-[10px] text-brand-dim uppercase font-bold hover:text-white transition-colors">
-                            <input type="checkbox" id="toggle-strat-loose" onchange="toggleStrat('strat_loose')"
-                                class="accent-brand-cyan cursor-pointer">
-                            Loose
-                        </label>
-                        <label
-                            class="flex items-center gap-1.5 cursor-pointer text-[10px] text-brand-dim uppercase font-bold hover:text-white transition-colors">
-                            <input type="checkbox" id="toggle-strat-recon" onchange="toggleStrat('strat_recon')"
-                                class="accent-brand-cyan cursor-pointer">
-                            Intel Sync
-                        </label>
+                    <span class="text-[9px] font-bold tracking-[0.2em] text-brand-dim uppercase">Strategy Filter</span>
+                    <div id="strat-filter-nav" class="flex gap-1 p-0.5 bg-black/40 rounded border border-white/5">
+                        <button onclick="setStratFilter('ALL')" data-strat="ALL" class="trade-tab active">All</button>
+                        <button onclick="setStratFilter('STRICT')" data-strat="STRICT" class="trade-tab">Strict</button>
+                        <button onclick="setStratFilter('LOOSE')" data-strat="LOOSE" class="trade-tab">Loose</button>
+                        <button onclick="setStratFilter('RECON')" data-strat="RECON" class="trade-tab">Intel
+                            Sync</button>
                     </div>
                 </div>
 

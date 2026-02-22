@@ -4,8 +4,19 @@ let expandedGroups = new Set();
 let activeLogTab = "ALL";
 let isDraggingFab = false;
 let activeTradeTab = "ALL";
+let activeStratFilter = "ALL";
 let isIntelCollapsed = true;
 let lastReadIntelTime = 0;
+
+function setStratFilter(cat) {
+    activeStratFilter = cat;
+    const btns = document.querySelectorAll('#strat-filter-nav button');
+    btns.forEach(b => {
+        if (b.dataset.strat === cat) b.classList.add('active');
+        else b.classList.remove('active');
+    });
+    updateTrades();
+}
 
 function toggleReconGroup(dateId) {
     console.log("Toggling Group:", dateId);
@@ -129,10 +140,6 @@ async function syncDashboard() {
                 ms.classList.add('text-brand-dim');
             }
         }
-
-        if (get('toggle-strat-strict')) get('toggle-strat-strict').checked = data.strat_strict;
-        if (get('toggle-strat-loose')) get('toggle-strat-loose').checked = data.strat_loose;
-        if (get('toggle-strat-recon')) get('toggle-strat-recon').checked = data.strat_recon;
 
         if (get('meta-symbol')) get('meta-symbol').textContent = data.symbol;
         if (get('orders-count')) get('orders-count').textContent = data.active_orders;
@@ -368,6 +375,14 @@ async function updateTrades() {
             trades = trades.filter(t => t.status === 'OPEN');
         }
 
+        // Filter by Strategy
+        if (activeStratFilter !== 'ALL') {
+            trades = trades.filter(t => {
+                const strat = t.reason || "Auto";
+                return strat.includes(activeStratFilter);
+            });
+        }
+
         if (trades.length === 0) {
             container.innerHTML = '<div class="card-item"><div class="card-body" style="color: var(--text-dim); text-align: center; font-size: 10px;">No trades found in this category.</div></div>';
             return;
@@ -404,6 +419,10 @@ async function updateTrades() {
                                 </div>
                                 <div class="card-header">${t.symbol} <span class="${t.pnl && t.pnl.includes('+') ? 'up' : 'down'}">${t.pnl}</span></div>
                                 <div class="card-body">
+                                    <div class="flex items-center justify-between mb-3 text-[10px]">
+                                        <span class="text-brand-dim">Conviction: <span class="text-white">${t.conviction || 'N/A'}</span></span>
+                                        <span class="text-brand-dim">Risk: <span class="${t.risk === 'HIGH' ? 'text-brand-red' : (t.risk === 'MED' ? 'text-brand-orange' : 'text-brand-green')}">${t.risk || 'UNK'}</span></span>
+                                    </div>
                                     <div class="flex items-center justify-between mb-3">
                                         <span class="text-[9px] uppercase tracking-wider ${isClosed ? 'text-brand-red' : 'text-brand-green'}">${t.status}</span>
                                         <span class="px-1.5 py-0.5 rounded text-[7px] font-bold uppercase border ${badgeColor}">${strategy}</span>

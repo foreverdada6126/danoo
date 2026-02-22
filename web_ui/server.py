@@ -273,8 +273,8 @@ SYSTEM_STATE = {
     "heartbeat": "IDLE",
     "ai_active": True,
     "strat_strict": True,
-    "strat_loose": False,
-    "strat_recon": False
+    "strat_loose": True,
+    "strat_recon": True
 }
 
 # Signal holders
@@ -324,6 +324,9 @@ async def get_all_trades():
         db_trades = session.query(Trade).order_by(Trade.entry_time.desc()).limit(50).all()
         result = []
         for t in db_trades:
+            strat_name = t.strategy or "Auto Trade"
+            conviction = "95%" if "STRICT" in strat_name else ("70%" if "LOOSE" in strat_name else ("85%" if "RECON" in strat_name else "N/A"))
+            risk = "LOW" if "STRICT" in strat_name else ("MED" if "LOOSE" in strat_name else ("HIGH" if "RECON" in strat_name else "UNK"))
             result.append({
                 "id": t.id,
                 "time": t.entry_time.timestamp(),
@@ -332,7 +335,9 @@ async def get_all_trades():
                 "status": t.status,
                 "pnl": f"${(t.pnl or 0.0):.2f}",
                 "order_id": t.order_id,
-                "reason": t.strategy or "Auto Trade"
+                "reason": strat_name,
+                "conviction": conviction,
+                "risk": risk
             })
         session.close()
         return {"trades": result}

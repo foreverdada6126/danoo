@@ -175,10 +175,14 @@ class ScalperEngine:
             session.add(new_trade)
             session.commit()
             
+            conviction = "95%" if "STRICT" in reason else ("70%" if "LOOSE" in reason else "85%")
+            risk = "LOW" if "STRICT" in reason else ("MED" if "LOOSE" in reason else "HIGH")
+            
             ACTIVE_TRADES.append({
                 "id": new_trade.id, "time": new_trade.entry_time.timestamp(),
                 "symbol": symbol, "type": f"{side} ({reason.split('_')[0]})", "status": "OPEN",
-                "pnl": "$0.00", "order_id": new_trade.order_id, "reason": reason
+                "pnl": "$0.00", "order_id": new_trade.order_id, "reason": reason,
+                "conviction": conviction, "risk": risk
             })
             LOG_HISTORY.append({"time": time.time(), "msg": f"SCALPER: Entering {side} for {symbol} at ${price} via {reason}"})
             session.close()
