@@ -247,6 +247,25 @@ async def toggle_ai_state():
 @app.get("/api/logs")
 async def get_logs():
     return LOG_HISTORY
+
+@app.post("/api/data/collect")
+async def collect_historical_data(payload: dict):
+    from core.data_collector import HistoricalDataCollector
+    import asyncio
+    
+    symbol = payload.get("symbol", "BTCUSDT")
+    interval = payload.get("interval", "1m")
+    start_year = int(payload.get("start_year", 2023))
+    end_year = int(payload.get("end_year", 2023))
+    
+    collector = HistoricalDataCollector()
+    LOG_HISTORY.append({"time": time.time(), "msg": f"SYSTEM: Initiated historical data sync for {symbol} ({start_year}-{end_year})..."})
+    
+    # Fire and forget the task so we don't block the UI
+    asyncio.create_task(collector.collect_async(symbol, interval, start_year, end_year))
+    
+    return {"status": "success", "message": f"Started background download for {symbol}."}
+
 app.mount("/static", StaticFiles(directory="web_ui/static"), name="static")
 templates = Jinja2Templates(directory="web_ui/templates")
 

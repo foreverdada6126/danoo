@@ -639,6 +639,29 @@ document.addEventListener('DOMContentLoaded', () => {
         if (menu) menu.classList.toggle('hidden');
     };
 
+    async function triggerDataCollect() {
+        const symbol = get('hist-symbol').value;
+        const interval = get('hist-interval').value;
+        const start_year = parseInt(get('hist-start').value);
+        const end_year = parseInt(get('hist-end').value);
+
+        try {
+            const res = await fetch('/api/data/collect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ symbol, interval, start_year, end_year })
+            });
+            const data = await res.json();
+
+            const container = get('file-list');
+            if (container) {
+                container.innerHTML = `<div class="p-4 bg-brand-cyan/10 border border-brand-cyan/20 text-brand-cyan rounded text-center mb-4 text-[10px] uppercase font-bold tracking-widest">${data.message} ${symbol}<br/>Watch System Logs for exact completion.</div>` + container.innerHTML;
+            }
+        } catch (e) {
+            console.error("Data collection trigger failed:", e);
+        }
+    }
+
     window.openFabAction = (action) => {
         get('fab-menu').classList.add('hidden'); // Close menu after choice
 

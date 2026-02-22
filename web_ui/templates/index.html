@@ -337,11 +337,40 @@
                     <button class="text-lg opacity-5 hover:opacity-100 transition-opacity"
                         onclick="toggleOverlay('files-overlay')">×</button>
                 </div>
-                <div class="p-6 flex flex-col h-full overflow-hidden">
-                    <div class="flex items-center gap-2 mb-6 p-1 bg-white/5 border border-white/10 rounded-xl">
+                <div class="p-6 flex flex-col h-full overflow-hidden gap-6">
+
+                    <!-- NEW HISTORICAL DATA COLLECTOR PANEL -->
+                    <div class="border border-brand-cyan/20 rounded-xl p-4 bg-brand-cyan/5">
+                        <h4 class="text-[10px] font-bold tracking-widest text-brand-cyan uppercase mb-4">Historical Data
+                            Engine</h4>
+                        <div class="grid grid-cols-4 gap-3 mb-4">
+                            <input type="text" id="hist-symbol" placeholder="Symbol (e.g. BTCUSDT)"
+                                class="bg-black/40 border border-white/10 rounded px-3 py-2 text-[11px] text-white outline-none focus:border-brand-cyan transition-colors"
+                                value="BTCUSDT">
+                            <select id="hist-interval"
+                                class="bg-black/40 border border-white/10 rounded px-3 py-2 text-[11px] text-white outline-none focus:border-brand-cyan cursor-pointer transition-colors pt-2.5">
+                                <option value="1m">1 minute</option>
+                                <option value="5m">5 minute</option>
+                                <option value="15m">15 minute</option>
+                                <option value="1h">1 hour</option>
+                                <option value="1d">1 day</option>
+                            </select>
+                            <input type="number" id="hist-start" placeholder="Start Year"
+                                class="bg-black/40 border border-white/10 rounded px-3 py-2 text-[11px] text-white outline-none focus:border-brand-cyan transition-colors"
+                                value="2023">
+                            <input type="number" id="hist-end" placeholder="End Year"
+                                class="bg-black/40 border border-white/10 rounded px-3 py-2 text-[11px] text-white outline-none focus:border-brand-cyan transition-colors"
+                                value="2024">
+                        </div>
+                        <button onclick="triggerDataCollect()"
+                            class="w-full py-2.5 bg-brand-cyan/20 border border-brand-cyan/40 text-brand-cyan text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-brand-cyan/30 transition-all shadow-[0_0_15px_rgba(0,242,255,0.1)]">Sync
+                            Archive From Binance Vision</button>
+                    </div>
+
+                    <div class="flex items-center gap-2 p-1 bg-white/5 border border-white/10 rounded-xl">
                         <select id="file-target" class="bg-transparent text-[11px] font-bold px-3 py-2 outline-none">
                             <option value="reference">Reference Library</option>
-                            <option value="data">Market Data Sets</option>
+                            <option value="data">Local Target Datasets</option>
                         </select>
                         <button id="upload-btn"
                             class="flex-1 py-2 bg-white/5 hover:bg-white/10 text-[10px] font-bold uppercase rounded-lg transition-all">Upload
