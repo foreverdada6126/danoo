@@ -100,6 +100,12 @@ async def get_ohlcv_data(symbol: str = "BTCUSDT", timeframe: str = "15m"):
     
     return {"candles": candles, "trades": trades}
 
+@router.get("/api/market/prediction")
+async def get_prediction(symbol: str = "BTCUSDT"):
+    """Returns the latest AI forecast for the given symbol."""
+    from web_ui.state import PREDICTION_STATE
+    return PREDICTION_STATE.get(symbol, {"status": "Awaiting data..."})
+
 @router.get("/api/market/prices")
 async def get_all_prices():
     """Returns live prices for all supported assets."""

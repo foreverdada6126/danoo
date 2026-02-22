@@ -279,6 +279,46 @@
                     </div>
                 </div>
 
+                <!-- Prediction Engine Slot -->
+                <div id="prediction-panel" class="border-b border-brand-border h-[180px] flex flex-col bg-brand-cyan/5">
+                    <div
+                        class="flex items-center justify-between px-5 py-3 bg-brand-cyan/10 border-b border-brand-border">
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-[9px] font-bold tracking-[0.25em] text-brand-cyan uppercase">Prediction
+                                Engine</h2>
+                            <div
+                                class="w-1.5 h-1.5 rounded-full bg-brand-cyan shadow-[0_0_10px_rgba(0,242,255,0.8)] animate-pulse">
+                            </div>
+                        </div>
+                    </div>
+                    <div id="prediction-content" class="flex-1 p-5 flex flex-col gap-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex flex-col">
+                                <span class="text-[8px] text-brand-dim uppercase tracking-widest mb-1">Forecast
+                                    Trend</span>
+                                <span id="pred-direction"
+                                    class="text-xs font-bold font-mono text-white tracking-widest uppercase">Initializing...</span>
+                            </div>
+                            <div class="flex flex-col items-end">
+                                <span class="text-[8px] text-brand-dim uppercase tracking-widest mb-1">AI
+                                    Confidence</span>
+                                <span id="pred-confidence"
+                                    class="text-xs font-bold font-mono text-brand-cyan tracking-wider">--%</span>
+                            </div>
+                        </div>
+                        <div class="flex-1 flex flex-col justify-center">
+                            <div class="flex items-baseline justify-between mb-2">
+                                <span class="text-[8px] text-brand-dim uppercase tracking-widest">Next Target
+                                    (4H)</span>
+                                <span id="pred-change"
+                                    class="text-[10px] font-bold font-mono text-brand-green">--%</span>
+                            </div>
+                            <div id="pred-target-price"
+                                class="text-2xl font-bold font-mono text-white tracking-tighter">$ --.--</div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="flex items-center px-5 py-3 bg-brand-card/20 backdrop-blur-md border-b border-brand-border">
                     <h2 class="text-[10px] font-bold tracking-[0.25em] text-brand-dim uppercase">Approval Queue</h2>
                 </div>

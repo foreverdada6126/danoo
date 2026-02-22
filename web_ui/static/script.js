@@ -640,6 +640,40 @@ async function updateTrades() {
     }
 }
 
+async function updatePrediction() {
+    try {
+        const symbol = get('asset-selector').value;
+        const res = await fetch(`/api/market/prediction?symbol=${symbol}`);
+        const data = await res.json();
+
+        if (data.status === "Awaiting data...") {
+            get('pred-direction').textContent = "Calibrating Model...";
+            return;
+        }
+
+        const dirEl = get('pred-direction');
+        const changeEl = get('pred-change');
+        const priceEl = get('pred-target-price');
+        const confEl = get('pred-confidence');
+
+        if (!dirEl || !changeEl || !priceEl || !confEl) return;
+
+        dirEl.textContent = data.direction;
+        dirEl.className = `text-xs font-bold font-mono tracking-widest uppercase ${data.direction === 'BULLISH' ? 'text-brand-green' : 'text-brand-red'}`;
+
+        confEl.textContent = `${data.confidence || 0}%`;
+
+        const change = data.change_pct || 0;
+        changeEl.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
+        changeEl.className = `text-[10px] font-bold font-mono ${change >= 0 ? 'text-brand-green' : 'text-brand-red'}`;
+
+        const price = data.forecast ? data.forecast[data.forecast.length - 1] : 0;
+        priceEl.textContent = `$ ${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    } catch (e) {
+        console.error("Prediction Update Failed", e);
+    }
+}
+
 async function updateApprovals() {
     try {
         const res = await fetch('/api/system/approvals');
@@ -992,6 +1026,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateApprovals, 3000);
     setInterval(updateFiles, 10000);
     setInterval(updateTicker, 5000);
+    setInterval(updatePrediction, 10000);
 
     // Initialize candlestick chart (has built-in retry for CDN + dimensions)
     initPriceChart();

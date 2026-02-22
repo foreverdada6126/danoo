@@ -5,6 +5,7 @@ Shared state lives in web_ui/state.py.
 """
 import os
 import time
+import asyncio
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -14,8 +15,11 @@ from database.models import DB_SESSION, Trade
 # ─── Import Shared State ─────────────────────────────────────────
 from web_ui.state import (
     SYSTEM_STATE, LOG_HISTORY, RECON_HISTORY,
-    ACTIVE_TRADES, APPROVAL_QUEUE, EQUITY_HISTORY
+    ACTIVE_TRADES, APPROVAL_QUEUE, EQUITY_HISTORY,
+    PREDICTION_STATE
 )
+from core.prediction_engine import PredictionEngine
+predictor = PredictionEngine()
 
 # ─── Boot: Load Historical Logs ──────────────────────────────────
 def load_log_file():
@@ -138,8 +142,37 @@ if not globals().get("_UI_SINK_ADDED", False):
 # ─── Host Metrics Path (Docker) ──────────────────────────────────
 os.environ["PROCFS_PATH"] = "/host/proc"
 
+# --- Prediction Task ---
+async def prediction_loop():
+    """Background task to update market forecasts every 5 minutes."""
+    from core.exchange_handler import ExchangeHandler
+    while True:
+        try:
+            current_symbol = SYSTEM_STATE.get("symbol", "BTCUSDT")
+            timeframe = SYSTEM_STATE.get("timeframe", "15m")
+            
+            bridge = ExchangeHandler()
+            client = await bridge._get_client(force_public=True)
+            ohlcv = await client.fetch_ohlcv(current_symbol, timeframe, limit=300)
+            
+            forecast = await predictor.train_and_predict(current_symbol, ohlcv)
+            if forecast:
+                # Update global prediction state
+                PREDICTION_STATE[current_symbol] = forecast
+                logger.info(f"Prediction Update: {current_symbol} Forecast: {forecast['direction']} ({forecast['change_pct']}%). Confidence: {forecast['confidence']}%")
+            
+        except Exception as e:
+            logger.error(f"Prediction Loop Error: {e}")
+            
+        await asyncio.sleep(300) # Every 5 minutes
+
 # ─── FastAPI App ─────────────────────────────────────────────────
 app = FastAPI(title="DaNoo - Strategy Intelligence Engine v5.2")
+
+@app.on_event("startup")
+async def startup_event():
+    import asyncio
+    asyncio.create_task(prediction_loop())
 
 # Mount static files and templates
 app.mount("/static", StaticFiles(directory="web_ui/static"), name="static")

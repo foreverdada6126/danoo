@@ -32,6 +32,7 @@ SYSTEM_STATE = {
 
 # Per-Asset State Tracking (Equity/PNL)
 ASSET_STATE = {}
+PREDICTION_STATE = {}
 
 # ─── Data Containers ─────────────────────────────────────────────
 LOG_HISTORY = []
