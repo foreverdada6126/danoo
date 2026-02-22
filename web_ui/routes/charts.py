@@ -61,7 +61,7 @@ async def get_ohlcv_data(symbol: str = "BTCUSDT", timeframe: str = "15m"):
                 marker = {
                     "time": snapped_entry,
                     "position": "belowBar" if t.side.upper() in ["BUY", "LONG"] else "aboveBar",
-                    "color": "#22ab94" if t.side.upper() in ["BUY", "LONG"] else "#f23645",
+                    "color": "#089981" if t.side.upper() in ["BUY", "LONG"] else "#f23645",
                     "shape": "arrowUp" if t.side.upper() in ["BUY", "LONG"] else "arrowDown",
                     "text": f"{t.side[:1]} @ {t.entry_price:.2f}" if t.entry_price else t.side,
                 }

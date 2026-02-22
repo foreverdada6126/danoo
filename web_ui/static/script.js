@@ -130,8 +130,12 @@ async function initPriceChart() {
     }
 
     if (priceChart) {
-        priceChart.remove();
-        priceChart = null;
+        if (candleSeries) {
+            candleSeries.setData([]);
+            candleSeries.setMarkers([]);
+        }
+        await refreshPriceChart();
+        return;
     }
 
     priceChart = LightweightCharts.createChart(container, {
@@ -158,11 +162,11 @@ async function initPriceChart() {
     });
 
     candleSeries = priceChart.addCandlestickSeries({
-        upColor: '#22ab94',
+        upColor: '#089981',
         downColor: '#f23645',
-        borderUpColor: '#22ab94',
+        borderUpColor: '#089981',
         borderDownColor: '#f23645',
-        wickUpColor: '#22ab94',
+        wickUpColor: '#089981',
         wickDownColor: '#f23645',
     });
 

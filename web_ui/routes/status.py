@@ -25,10 +25,10 @@ async def get_status():
     try:
         session = DB_SESSION()
         
-        # Global Trade counts
-        SYSTEM_STATE["trades_total"] = session.query(Trade).count()
-        SYSTEM_STATE["trades_open"] = session.query(Trade).filter(Trade.status == 'OPEN').count()
-        SYSTEM_STATE["trades_closed"] = session.query(Trade).filter(Trade.status == 'CLOSED').count()
+        # Asset-specific Trade counts
+        SYSTEM_STATE["trades_total"] = session.query(Trade).filter(Trade.symbol == current_symbol).count()
+        SYSTEM_STATE["trades_open"] = session.query(Trade).filter(Trade.status == 'OPEN', Trade.symbol == current_symbol).count()
+        SYSTEM_STATE["trades_closed"] = session.query(Trade).filter(Trade.status == 'CLOSED', Trade.symbol == current_symbol).count()
         
         # --- Per-Asset Calculation ---
         # 1. Realized PnL (Last 24h for current asset)
