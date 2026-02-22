@@ -185,15 +185,25 @@
             <!-- Right: Execution Engine & Intel -->
             <section class="bg-brand-bg flex flex-col h-full overflow-hidden">
                 <!-- Recent Intel Slot -->
-                <div id="active-intel-panel" class="border-b border-brand-border h-[280px] flex flex-col">
-                    <div
-                        class="flex items-center justify-between px-5 py-3 bg-brand-card/20 border-b border-brand-border">
-                        <h2 class="text-[10px] font-bold tracking-[0.25em] text-brand-dim uppercase">Active Intelligence
-                        </h2>
-                        <button onclick="window.triggerManualRecon()"
-                            class="text-[8px] font-bold text-brand-cyan uppercase hover:underline">Scan</button>
+                <div id="active-intel-panel"
+                    class="border-b border-brand-border h-[280px] flex flex-col transition-all duration-300">
+                    <div class="flex items-center justify-between px-5 py-3 bg-brand-card/20 border-b border-brand-border cursor-pointer hover:bg-white/5 transition-colors"
+                        onclick="toggleActiveIntel()">
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-[10px] font-bold tracking-[0.25em] text-brand-dim uppercase">Active
+                                Intelligence</h2>
+                            <span id="intel-notif"
+                                class="hidden w-1.5 h-1.5 rounded-full bg-brand-cyan shadow-[0_0_10px_rgba(0,242,255,0.8)] animate-pulse"></span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button onclick="event.stopPropagation(); window.triggerManualRecon()" id="recon-btn-mini"
+                                class="text-[8px] font-bold text-brand-cyan uppercase hover:underline">Scan</button>
+                            <span id="intel-chevron"
+                                class="text-brand-dim text-[8px] transition-transform duration-300">▼</span>
+                        </div>
                     </div>
-                    <div id="recent-intel-content" class="flex-1 p-5 overflow-y-auto custom-scrollbar">
+                    <div id="recent-intel-content"
+                        class="flex-1 p-5 overflow-y-auto custom-scrollbar transition-all duration-300">
                         <div
                             class="flex flex-col items-center justify-center h-full opacity-20 pointer-events-none italic text-[10px]">
                             Awaiting Signal Analysis...

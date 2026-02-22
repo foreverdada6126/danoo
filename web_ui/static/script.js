@@ -4,6 +4,8 @@ let expandedGroups = new Set();
 let activeLogTab = "ALL";
 let isDraggingFab = false;
 let activeTradeTab = "ALL";
+let isIntelCollapsed = false;
+let lastReadIntelTime = 0;
 
 function toggleReconGroup(dateId) {
     console.log("Toggling Group:", dateId);
@@ -199,6 +201,20 @@ async function updateRecon() {
         // 2. Update Mini-Slot (Directly above Approval Queue)
         if (miniContainer) {
             const latestAction = data.recon_groups[0].items[0];
+            const notif = get('intel-notif');
+
+            // Check for new unread intel
+            if (latestAction.time > lastReadIntelTime) {
+                if (notif && isIntelCollapsed) {
+                    notif.classList.remove('hidden');
+                }
+                // If not collapsed, we assume they saw it, but let's be safe:
+                // only mark as read if it's currently expanded
+                if (!isIntelCollapsed) {
+                    lastReadIntelTime = latestAction.time;
+                }
+            }
+
             miniContainer.innerHTML = `
                 <div class="card-item" style="border-color: rgba(0, 242, 255, 0.2); background: rgba(0, 242, 255, 0.05);">
                     <div class="card-meta">
@@ -219,13 +235,35 @@ async function updateRecon() {
 
 window.triggerManualRecon = async () => {
     const btn = get('recon-btn-mini');
-    if (btn) btn.innerText = "SCANNIG...";
+    if (btn) btn.innerText = "SCANNING...";
     await fetch('/api/engine/recon', { method: 'POST' });
     setTimeout(() => {
         if (btn) btn.innerText = "SCAN";
         updateRecon();
     }, 2000);
 };
+
+function toggleActiveIntel() {
+    isIntelCollapsed = !isIntelCollapsed;
+    const panel = get('active-intel-panel');
+    const content = get('recent-intel-content');
+    const chevron = get('intel-chevron');
+    const notif = get('intel-notif');
+
+    if (isIntelCollapsed) {
+        panel.style.height = "42px";
+        content.style.opacity = "0";
+        content.style.pointerEvents = "none";
+        chevron.style.transform = "rotate(-90deg)";
+    } else {
+        panel.style.height = "280px";
+        content.style.opacity = "1";
+        content.style.pointerEvents = "auto";
+        chevron.style.transform = "rotate(0deg)";
+        // Mark as read when expanded
+        notif.classList.add('hidden');
+    }
+}
 
 function setTradeTab(cat) {
     activeTradeTab = cat;
@@ -256,21 +294,42 @@ async function updateTrades() {
             return;
         }
 
-        container.innerHTML = trades.map(t => {
-            const isClosed = t.status === 'CLOSED';
+        // Grouping by Date
+        const groups = {};
+        trades.forEach(t => {
+            const date = new Date(t.time * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+            if (!groups[date]) groups[date] = [];
+            groups[date].push(t);
+        });
+
+        container.innerHTML = Object.keys(groups).sort((a, b) => new Date(b) - new Date(a)).map(date => {
             return `
-                <div class="card-item ${isClosed ? 'opacity-60' : ''}">
-                    <div class="card-meta">
-                        <span class="${isClosed ? 'text-brand-dim' : 'text-brand-cyan'}">${t.type}</span>
-                        <span>${formatTime(t.time)}</span>
+                <div class="mb-6">
+                    <div class="flex items-center gap-3 mb-3 px-1">
+                        <div class="h-px flex-1 bg-brand-border"></div>
+                        <span class="text-[8px] font-bold text-brand-dim uppercase tracking-[0.2em] whitespace-nowrap">${date}</span>
+                        <div class="h-px flex-1 bg-brand-border"></div>
                     </div>
-                    <div class="card-header">${t.symbol} <span class="${t.pnl && t.pnl.includes('+') ? 'up' : 'down'}">${t.pnl}</span></div>
-                    <div class="card-body">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-[9px] uppercase tracking-wider ${isClosed ? 'text-brand-red' : 'text-brand-green'}">${t.status}</span>
-                        </div>
-                        <div style="font-size: 0.6rem; color: var(--text-dim); font-style: italic;">Reason: ${t.reason || 'Auto'}</div>
-                        ${!isClosed ? `<button onclick="closeTrade('${t.order_id}')" class="btn btn-approve mt-2 w-full text-[9px] bg-brand-red/10 border-brand-red/20 text-brand-red">CLOSE POSITION</button>` : ''}
+                    <div class="space-y-3">
+                        ${groups[date].map(t => {
+                const isClosed = t.status === 'CLOSED';
+                return `
+                            <div class="card-item ${isClosed ? 'opacity-60' : ''}">
+                                <div class="card-meta">
+                                    <span class="${isClosed ? 'text-brand-dim' : 'text-brand-cyan'}">${t.type}</span>
+                                    <span>${formatTime(t.time)}</span>
+                                </div>
+                                <div class="card-header">${t.symbol} <span class="${t.pnl && t.pnl.includes('+') ? 'up' : 'down'}">${t.pnl}</span></div>
+                                <div class="card-body">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-[9px] uppercase tracking-wider ${isClosed ? 'text-brand-red' : 'text-brand-green'}">${t.status}</span>
+                                    </div>
+                                    <div style="font-size: 0.6rem; color: var(--text-dim); font-style: italic;">Reason: ${t.reason || 'Auto'}</div>
+                                    ${!isClosed ? `<button onclick="closeTrade('${t.order_id}')" class="btn btn-approve mt-2 w-full text-[9px] bg-brand-red/10 border-brand-red/20 text-brand-red">CLOSE POSITION</button>` : ''}
+                                </div>
+                            </div>
+                        `;
+            }).join('')}
                     </div>
                 </div>
             `;
