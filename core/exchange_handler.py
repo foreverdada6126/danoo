@@ -9,8 +9,15 @@ from config.settings import SETTINGS
 class ExchangeHandler:
     def __init__(self):
         self.exchange_id = SETTINGS.EXCHANGE_ID
-        self.api_key = SETTINGS.BINANCE_API_KEY
-        self.secret = SETTINGS.BINANCE_SECRET
+        if self.exchange_id == "bybit":
+            self.api_key = SETTINGS.BYBIT_API_KEY
+            self.secret = SETTINGS.BYBIT_SECRET
+            _default_type = 'swap'
+        else:
+            self.api_key = SETTINGS.BINANCE_API_KEY
+            self.secret = SETTINGS.BINANCE_SECRET
+            _default_type = 'future'
+
         self.use_sandbox = SETTINGS.USE_SANDBOX
         
         # Initialize Async CCXT exchange
@@ -19,23 +26,27 @@ class ExchangeHandler:
             'apiKey': self.api_key,
             'secret': self.secret,
             'enableRateLimit': True,
-            'options': {'defaultType': 'future'} 
+            'options': {'defaultType': _default_type} 
         }
         
-        # If Sandbox (Testnet) is enabled, we manually override the URLs
-        # to point to the modern Binance STAGING environment
-        if self.use_sandbox:
-            config['urls'] = {
-                'api': {
-                    'public': 'https://testnet.binancefuture.com/fapi/v1',
-                    'private': 'https://testnet.binancefuture.com/fapi/v1',
-                },
-                'fapiPublic': 'https://testnet.binancefuture.com/fapi/v1',
-                'fapiPrivate': 'https://testnet.binancefuture.com/fapi/v1',
-            }
-            logger.info("Exchange Bridge: Configuring for Modern BINANCE TESTNET (Future-Ready).")
-        
         self.client = exchange_class(config)
+
+        if self.use_sandbox:
+            # If Sandbox (Testnet) is enabled, we manually override the URLs for Binance
+            if self.exchange_id == "binance":
+                self.client.urls.update({
+                    'api': {
+                        'public': 'https://testnet.binancefuture.com/fapi/v1',
+                        'private': 'https://testnet.binancefuture.com/fapi/v1',
+                    },
+                    'fapiPublic': 'https://testnet.binancefuture.com/fapi/v1',
+                    'fapiPrivate': 'https://testnet.binancefuture.com/fapi/v1',
+                })
+            else:
+                self.client.set_sandbox_mode(True)
+            
+            logger.info(f"Exchange Bridge: Configuring for {self.exchange_id.upper()} TESTNET.")
+        
         logger.info(f"Exchange Bridge: {self.exchange_id.upper()} initialized. Mode: {'TESTNET (Demo)' if self.use_sandbox else 'PRODUCTION'}")
 
     async def fetch_balance(self):

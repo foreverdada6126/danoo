@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     MODE: str = os.getenv("APP_MODE", "paper")
     
     # Exchange Config
-    EXCHANGE_ID: str = "binance"
+    EXCHANGE_ID: str = os.getenv("EXCHANGE_ID", "bybit")
     DEFAULT_SYMBOL: str = "BTCUSDT"
     DEFAULT_TIMEFRAME: str = "15m"
     
@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     # Exchange Secrets
     BINANCE_API_KEY: Optional[str] = os.getenv("BINANCE_API_KEY")
     BINANCE_SECRET: Optional[str] = os.getenv("BINANCE_SECRET")
+    BYBIT_API_KEY: Optional[str] = os.getenv("BYBIT_API_KEY")
+    BYBIT_SECRET: Optional[str] = os.getenv("BYBIT_SECRET")
     USE_SANDBOX: bool = os.getenv("USE_SANDBOX", "true").lower() == "true"
     
     # Telegram Config
