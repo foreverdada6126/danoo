@@ -10,7 +10,7 @@ let lastReadIntelTime = 0;
 
 function setStratFilter(cat) {
     activeStratFilter = cat;
-    const btns = document.querySelectorAll('#strat-filter-nav button');
+    const btns = document.querySelectorAll('#strat-filter-nav button[data-strat]');
     btns.forEach(b => {
         if (b.dataset.strat === cat) b.classList.add('active');
         else b.classList.remove('active');
@@ -353,7 +353,7 @@ function toggleActiveIntel() {
 
 function setTradeTab(cat) {
     activeTradeTab = cat;
-    document.querySelectorAll('.trade-tab').forEach(btn => {
+    document.querySelectorAll('#trade-tabs-nav button[data-category]').forEach(btn => {
         btn.classList.toggle('active', btn.getAttribute('data-category') === cat);
     });
     updateTrades();
