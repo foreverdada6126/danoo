@@ -1,4 +1,5 @@
 import ccxt
+import time
 from typing import Dict, Any, Optional
 from loguru import logger
 from config.settings import SETTINGS
