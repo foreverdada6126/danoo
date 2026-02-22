@@ -124,7 +124,6 @@ async def get_all_prices():
             
         target_symbols = list(sym_map.values())
         if not target_symbols:
-            logger.warning(f"Ticker: No symbols matched from watchlist. First 10 markets: {list(markets.keys())[:10]}")
             return {"prices": {}}
             
         try:
