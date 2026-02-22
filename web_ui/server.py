@@ -384,17 +384,36 @@ async def get_ohlcv_data(symbol: str = "BTCUSDT", timeframe: str = "15m"):
 @app.get("/api/system/trades")
 async def get_active_trades():
     """Returns active trades with real-time PnL calculations."""
-    current_price = SYSTEM_STATE.get("price", 0.0)
+    from core.exchange_handler import ExchangeHandler
+    
+    # Cache prices per symbol to avoid redundant API calls
+    price_cache = {}
+    
+    async def get_price(symbol):
+        if symbol in price_cache:
+            return price_cache[symbol]
+        try:
+            bridge = ExchangeHandler()
+            client = await bridge._get_client()
+            ticker = await client.fetch_ticker(symbol)
+            price_cache[symbol] = ticker.get("last", 0.0)
+            return price_cache[symbol]
+        except:
+            # Fallback: only use global price if it's the default symbol
+            if symbol == SYSTEM_STATE.get("symbol", "BTCUSDT"):
+                return SYSTEM_STATE.get("price", 0.0)
+            return 0.0
     
     for t in ACTIVE_TRADES:
         try:
             session = DB_SESSION()
             db_t = session.query(Trade).filter(Trade.id == t["id"]).first()
-            if db_t and db_t.entry_price and current_price > 0:
-                side_mult = 1 if db_t.side == "LONG" else -1
-                raw_pnl = (current_price - db_t.entry_price) * db_t.amount * side_mult
-                t["pnl"] = f"{'+' if raw_pnl >= 0 else ''}${raw_pnl:.2f}"
             if db_t:
+                current_price = await get_price(db_t.symbol)
+                if db_t.entry_price and current_price > 0:
+                    side_mult = 1 if db_t.side == "LONG" else -1
+                    raw_pnl = (current_price - db_t.entry_price) * db_t.amount * side_mult
+                    t["pnl"] = f"{'+' if raw_pnl >= 0 else ''}${raw_pnl:.2f}"
                 t["leverage"] = db_t.leverage or 1
             session.close()
         except:
