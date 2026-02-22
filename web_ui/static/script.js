@@ -80,36 +80,37 @@ function initChart() {
 }
 
 async function updateChart() {
-                                    try {
-                                        const res = await fetch(`/api/chart/ohlcv?symbol=${symbol}&timeframe=${timeframe}`);
-                                        const data = await res.json();
-                                        if (data.candles && data.candles.length > 0) {
-                                            candleSeries.setData(data.candles);
-                                        }
-                                        if (data.trades && data.trades.length > 0) {
-                                            candleSeries.setMarkers(data.trades);
-                                        }
-                                    } catch (e) {
-                                        console.warn('Failed to load chart data:', e);
-                                    }
-                                    
-                                    window.refreshChartData = async () => {
-                                        if (!candleSeries) return;
-                                        try {
-                                            const currentSymbol = document.getElementById('asset-selector')?.value || 'BTCUSDT';
-                                            const currentTimeframe = document.getElementById('timeframe-selector')?.value || '15m';
-                                            const res = await fetch(`/api/chart/ohlcv?symbol=${currentSymbol}&timeframe=${currentTimeframe}`);
-                                            const data = await res.json();
-                                            if (data.candles && data.candles.length > 0) {
-                                                candleSeries.setData(data.candles);
-                                            }
-                                            if (data.trades && data.trades.length > 0) {
-                                                candleSeries.setMarkers(data.trades);
-                                            }
-                                        } catch (e) {
-                                            console.warn('Failed to refresh chart:', e);
-                                        }
-                                    };
+    try {
+        const res = await fetch('/api/chart');
+        const data = await res.json();
+        if (pnlChart && pnlChart.data) {
+            pnlChart.data.labels = data.labels;
+            pnlChart.data.datasets[0].data = data.values;
+            pnlChart.update();
+        }
+    } catch (e) {
+        console.warn('Chart Link Down');
+    }
+}
+
+window.refreshChartData = async () => {
+    // Relying on global window.candleSeries created in HTML
+    if (typeof window.candleSeries === 'undefined' || !window.candleSeries) return;
+    try {
+        const currentSymbol = document.getElementById('asset-selector')?.value || 'BTCUSDT';
+        const currentTimeframe = document.getElementById('timeframe-selector')?.value || '15m';
+        const res = await fetch(`/api/chart/ohlcv?symbol=${currentSymbol}&timeframe=${currentTimeframe}`);
+        const data = await res.json();
+        if (data.candles && data.candles.length > 0) {
+            window.candleSeries.setData(data.candles);
+        }
+        if (data.trades && data.trades.length > 0) {
+            window.candleSeries.setMarkers(data.trades);
+        }
+    } catch (e) {
+        console.warn('Failed to refresh chart:', e);
+    }
+};
 
 // 2. OVERLAY CONTROLLER
 function toggleOverlay(id) {

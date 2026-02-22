@@ -169,7 +169,8 @@
             <section class="bg-brand-bg flex flex-col h-full overflow-hidden border-r border-brand-border">
                 <div class="flex flex-col h-full">
                     <!-- Chart -->
-                    <div class="h-[55%] bg-brand-bg flex flex-col overflow-hidden relative border-b border-brand-border">
+                    <div
+                        class="h-[55%] bg-brand-bg flex flex-col overflow-hidden relative border-b border-brand-border">
                         <div class="absolute top-4 left-4 z-10 pointer-events-none">
                             <div
                                 class="flex items-center gap-2 px-3 py-1 rounded bg-black/40 backdrop-blur-md border border-white/5">
@@ -180,20 +181,21 @@
                         </div>
                         <div class="flex-1 min-h-0 bg-brand-bg">
                             <div id="price-chart" class="h-full w-full"></div>
-                            <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+                            <script
+                                src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
                             <script type="text/javascript">
                                 let priceChart = null;
                                 let candleSeries = null;
                                 let markerSeries = null;
-                                
+
                                 window.initTradingView = async (symbol, timeframe) => {
                                     const container = document.getElementById('price-chart');
                                     if (!container) return;
-                                    
+
                                     if (priceChart) {
                                         priceChart.remove();
                                     }
-                                    
+
                                     priceChart = LightweightCharts.createChart(container, {
                                         width: container.clientWidth,
                                         height: container.clientHeight,
@@ -216,7 +218,7 @@
                                             timeVisible: true,
                                         },
                                     });
-                                    
+
                                     candleSeries = priceChart.addCandlestickSeries({
                                         upColor: '#00f2ff',
                                         downColor: '#3b82f6',
@@ -225,7 +227,8 @@
                                         wickUpColor: '#00f2ff',
                                         wickDownColor: '#3b82f6',
                                     });
-                                    
+                                    window.candleSeries = candleSeries;
+
                                     try {
                                         const res = await fetch(`/api/chart/ohlcv?symbol=${symbol}&timeframe=${timeframe}`);
                                         const data = await res.json();
@@ -238,7 +241,7 @@
                                     } catch (e) {
                                         console.warn('Failed to load chart data:', e);
                                     }
-                                    
+
                                     window.addEventListener('resize', () => {
                                         if (priceChart && container) {
                                             priceChart.applyOptions({
