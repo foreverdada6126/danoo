@@ -4,7 +4,7 @@ let expandedGroups = new Set();
 let activeLogTab = "ALL";
 let isDraggingFab = false;
 let activeTradeTab = "ALL";
-let isIntelCollapsed = false;
+let isIntelCollapsed = true;
 let lastReadIntelTime = 0;
 
 function toggleReconGroup(dateId) {
@@ -242,6 +242,31 @@ window.triggerManualRecon = async () => {
         updateRecon();
     }, 2000);
 };
+
+// Global Config Sync (Asset/Timeframe)
+async function changeGlobalConfig(type, value) {
+    try {
+        const res = await fetch('/api/system/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ [type]: value })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            // Instantly update UI labels
+            if (type === 'symbol') {
+                get('market-symbol-title').textContent = `${value} (${get('timeframe-selector').value.toUpperCase()})`;
+                if (window.initTradingView) window.initTradingView(value, get('timeframe-selector').value);
+            } else {
+                get('market-symbol-title').textContent = `${get('asset-selector').value} (${value.toUpperCase()})`;
+                if (window.initTradingView) window.initTradingView(get('asset-selector').value, value);
+            }
+            syncDashboard();
+        }
+    } catch (e) {
+        console.error("Config Sync Failed", e);
+    }
+}
 
 function toggleActiveIntel() {
     isIntelCollapsed = !isIntelCollapsed;
@@ -613,6 +638,19 @@ document.addEventListener('DOMContentLoaded', () => {
             up.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
         }
     }, 1000);
+
+    // Initial State for Intelligence (Collapsed by default)
+    setTimeout(() => {
+        const panel = get('active-intel-panel');
+        const content = get('recent-intel-content');
+        const chevron = get('intel-chevron');
+        if (panel && isIntelCollapsed) {
+            panel.style.height = "42px";
+            content.style.opacity = "0";
+            content.style.pointerEvents = "none";
+            chevron.style.transform = "rotate(-90deg)";
+        }
+    }, 500);
 
     // Draggable FAB Logic
     const fabWidget = get('fab-widget');

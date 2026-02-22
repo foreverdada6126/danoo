@@ -92,13 +92,36 @@
                     <span id="exchange-name" class="uppercase tracking-wide">Connecting...</span>
                 </div>
 
-                <div class="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/10">
+                <div class="flex items-center gap-1.5 bg-brand-card/20 p-1 rounded-lg border border-brand-border h-9">
+                    <select id="asset-selector" onchange="changeGlobalConfig('symbol', this.value)"
+                        class="bg-transparent text-[10px] font-bold text-white uppercase outline-none px-2 cursor-pointer border-r border-brand-border">
+                        <option value="BTCUSDT">BTC</option>
+                        <option value="ETHUSDT">ETH</option>
+                        <option value="SOLUSDT">SOL</option>
+                        <option value="XRPUSDT">XRP</option>
+                        <option value="HBARUSDT">HBAR</option>
+                        <option value="DOGEUSDT">DOGE</option>
+                        <option value="XLMUSDT">XLM</option>
+                        <option value="XDCUSDT">XDC</option>
+                    </select>
+                    <select id="timeframe-selector" onchange="changeGlobalConfig('timeframe', this.value)"
+                        class="bg-transparent text-[10px] font-mono text-brand-dim outline-none px-2 cursor-pointer">
+                        <option value="1m">1m</option>
+                        <option value="3m">3m</option>
+                        <option value="5m">5m</option>
+                        <option value="15m" selected>15m</option>
+                        <option value="1h">1h</option>
+                        <option value="4h">4h</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/10 h-9">
                     <div id="mode-tag" class="px-2 py-1 text-[9px] font-bold text-brand-dim uppercase tracking-tighter">
                         Paper Mode</div>
                 </div>
 
                 <button id="ai-toggle-btn"
-                    class="px-4 py-1.5 rounded-lg bg-brand-green/10 border border-brand-green/20 text-brand-green text-[11px] font-bold hover:bg-brand-green/20 transition-all uppercase shadow-[0_0_15px_rgba(34,171,148,0.1)]"
+                    class="px-4 py-1.5 rounded-lg bg-brand-green/10 border border-brand-green/20 text-brand-green text-[11px] font-bold hover:bg-brand-green/20 transition-all uppercase shadow-[0_0_15px_rgba(34,171,148,0.1)] h-9"
                     onclick="toggleAI()">AI: Active</button>
             </div>
         </header>
@@ -145,22 +168,35 @@
                             </div>
                             <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
                             <script type="text/javascript">
-                                new TradingView.widget({
-                                    "autosize": true,
-                                    "symbol": "BYBIT:BTCUSDT",
-                                    "interval": "15",
-                                    "timezone": "Etc/UTC",
-                                    "theme": "dark",
-                                    "style": "1",
-                                    "locale": "en",
-                                    "enable_publishing": false,
-                                    "backgroundColor": "rgba(5, 6, 8, 1)",
-                                    "gridColor": "rgba(255, 255, 255, 0.03)",
-                                    "hide_top_toolbar": true,
-                                    "hide_legend": true,
-                                    "save_image": false,
-                                    "container_id": "tradingview_1"
-                                });
+                                window.initTradingView = (symbol, timeframe) => {
+                                    // Map timeframe to TV format
+                                    let tvInterval = "15";
+                                    if (timeframe === '1m') tvInterval = "1";
+                                    if (timeframe === '3m') tvInterval = "3";
+                                    if (timeframe === '5m') tvInterval = "5";
+                                    if (timeframe === '15m') tvInterval = "15";
+                                    if (timeframe === '1h') tvInterval = "60";
+                                    if (timeframe === '4h') tvInterval = "240";
+
+                                    new TradingView.widget({
+                                        "autosize": true,
+                                        "symbol": "BYBIT:" + symbol,
+                                        "interval": tvInterval,
+                                        "timezone": "Etc/UTC",
+                                        "theme": "dark",
+                                        "style": "1",
+                                        "locale": "en",
+                                        "container_id": "tradingview_1",
+                                        "enable_publishing": false,
+                                        "backgroundColor": "rgba(5, 6, 8, 1)",
+                                        "gridColor": "rgba(255, 255, 255, 0.03)",
+                                        "hide_top_toolbar": true,
+                                        "hide_legend": true,
+                                        "save_image": false,
+                                        "container_id": "tradingview_1"
+                                    });
+                                };
+                                window.initTradingView("BTCUSDT", "15m");
                             </script>
                         </div>
                     </div>

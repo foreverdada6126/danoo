@@ -193,6 +193,25 @@ async def git_sync():
     except subprocess.CalledProcessError as e:
         return {"status": "error", "message": f"Git Error: {str(e)}"}
 
+@app.post("/api/system/config")
+async def update_config(data: Dict[str, str]):
+    """Updates the global asset or timeframe."""
+    if "symbol" in data:
+        new_symbol = data["symbol"]
+        SYSTEM_STATE["symbol"] = new_symbol
+        SETTINGS.DEFAULT_SYMBOL = new_symbol
+        LOG_HISTORY.append({"time": time.time(), "msg": f"SYSTEM: Asset switched to {new_symbol}. Re-init scanning..."})
+        return {"status": "success", "symbol": new_symbol}
+    
+    if "timeframe" in data:
+        new_tf = data["timeframe"]
+        SYSTEM_STATE["timeframe"] = new_tf
+        SETTINGS.DEFAULT_TIMEFRAME = new_tf
+        LOG_HISTORY.append({"time": time.time(), "msg": f"SYSTEM: Timeframe switched to {new_tf}. Recalculating indicators..."})
+        return {"status": "success", "timeframe": new_tf}
+    
+    return {"status": "error", "message": "Invalid config keys"}
+
 @app.post("/api/system/toggle_ai")
 async def toggle_ai_state():
     """Enables or disables OpenAI calls globally."""
