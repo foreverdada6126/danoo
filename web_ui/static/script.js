@@ -394,47 +394,49 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 1000);
 
     // Draggable FAB Logic
-    const fabContainer = get('fab-container');
+    const fabBox = get('master-command-box');
     const dragHandle = get('fab-drag-handle');
     let isDragging = false;
     let dragStartX = 0;
     let dragStartY = 0;
 
-    // Default position is handled via absolute bottom/right styling 
-    if (dragHandle && fabContainer) {
+    if (dragHandle && fabBox) {
         dragHandle.addEventListener('mousedown', (e) => {
             isDragging = true;
-            dragStartX = e.clientX - fabContainer.getBoundingClientRect().left;
-            dragStartY = e.clientY - fabContainer.getBoundingClientRect().top;
-            fabContainer.style.cursor = 'grabbing';
+            const rect = fabBox.getBoundingClientRect();
+            dragStartX = e.clientX - rect.left;
+            dragStartY = e.clientY - rect.top;
             dragHandle.style.cursor = 'grabbing';
+            // Disable transition during drag for smoothness
+            fabBox.style.transition = 'none';
         });
 
         document.addEventListener('mousemove', (e) => {
             if (!isDragging) return;
             e.preventDefault();
 
-            // Calculate new position relative to the viewport
             let newX = e.clientX - dragStartX;
             let newY = e.clientY - dragStartY;
 
-            // Boundary checks
-            const rect = fabContainer.getBoundingClientRect();
+            const rect = fabBox.getBoundingClientRect();
             if (newX < 0) newX = 0;
             if (newY < 0) newY = 0;
             if (newX + rect.width > window.innerWidth) newX = window.innerWidth - rect.width;
             if (newY + rect.height > window.innerHeight) newY = window.innerHeight - rect.height;
 
-            // Reset Right/Bottom positioning to use Top/Left strictly during dragging
-            fabContainer.style.right = 'auto';
-            fabContainer.style.bottom = 'auto';
-            fabContainer.style.left = `${newX}px`;
-            fabContainer.style.top = `${newY}px`;
+            // Break out of the static bottom/right layout
+            fabBox.style.position = 'fixed';
+            fabBox.style.bottom = 'auto';
+            fabBox.style.right = 'auto';
+            fabBox.style.left = `${newX}px`;
+            fabBox.style.top = `${newY}px`;
         });
 
         document.addEventListener('mouseup', () => {
-            isDragging = false;
-            if (dragHandle) dragHandle.style.cursor = 'grab';
+            if (isDragging) {
+                isDragging = false;
+                dragHandle.style.cursor = 'grab';
+            }
         });
     }
 });
