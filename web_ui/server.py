@@ -235,12 +235,6 @@ async def get_status():
     # Dynamic sync of order count for the UI counter
     SYSTEM_STATE["active_orders"] = len(ACTIVE_TRADES)
     
-    # Simple check if exchange is connected based on if we have recorded a non-zero equity or price
-    if SYSTEM_STATE["equity"] > 0 or SYSTEM_STATE["price"] > 0:
-        SYSTEM_STATE["exchange_connected"] = True
-    else:
-        SYSTEM_STATE["exchange_connected"] = False
-        
     return SYSTEM_STATE
 
 @app.get("/api/system/health")

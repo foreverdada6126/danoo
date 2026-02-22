@@ -419,7 +419,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let dragStartY = 0;
 
     function initDrag(e) {
-        if (e.target.tagName && e.target.tagName.toLowerCase() === 'button') return;
+        // Only ignore the close '×' button, allow dragging for the FAB itself
+        if (e.currentTarget.id !== 'fab-button' && e.target.tagName && e.target.tagName.toLowerCase() === 'button') return;
+
         isDraggingFab = false;
 
         const rect = fabWidget.getBoundingClientRect();
