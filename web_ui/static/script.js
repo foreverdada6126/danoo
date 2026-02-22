@@ -347,6 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initChart();
 
     // Bind Globals
+    // Bind Globals
     window.toggleOverlay = toggleOverlay;
     window.toggleReconGroup = toggleReconGroup;
     window.toggleFabChat = (e) => {
@@ -355,13 +356,16 @@ document.addEventListener('DOMContentLoaded', () => {
             e.stopPropagation();
         }
         const box = get('master-command-box');
-        if (box) box.classList.toggle('hidden');
+        if (box) {
+            box.classList.toggle('hidden');
+            console.log("FAB Toggle: ", box.classList.contains('hidden') ? "HIDDEN" : "VISIBLE");
+        }
     };
 
     let isDraggingFab = false;
-    window.toggleFabIfClicked = () => {
+    window.toggleFabIfClicked = (e) => {
         if (!isDraggingFab) {
-            window.toggleFabChat();
+            window.toggleFabChat(e);
         }
     };
 
@@ -439,10 +443,10 @@ document.addEventListener('DOMContentLoaded', () => {
         let newX = e.clientX - dragStartX;
         let newY = e.clientY - dragStartY;
 
-        if (newX < 320) newX = 320;
-        if (newY < 465) newY = 465;
-        if (newX > window.innerWidth - 50) newX = window.innerWidth - 50;
-        if (newY > window.innerHeight - 50) newY = window.innerHeight - 50;
+        if (newX < 0) newX = 0;
+        if (newY < 0) newY = 0;
+        if (newX > window.innerWidth - 60) newX = window.innerWidth - 60;
+        if (newY > window.innerHeight - 60) newY = window.innerHeight - 60;
 
         fabWidget.style.left = `${newX}px`;
         fabWidget.style.top = `${newY}px`;
@@ -453,7 +457,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.removeEventListener('mouseup', onDragEnd);
         if (dragHandle) dragHandle.style.cursor = 'grab';
 
-        setTimeout(() => { isDraggingFab = false; }, 10);
+        // Short delay to prevent click fire after drag
+        setTimeout(() => { isDraggingFab = false; }, 100);
     }
 
     if (dragHandle) dragHandle.addEventListener('mousedown', initDrag);

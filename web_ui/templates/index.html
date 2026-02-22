@@ -293,7 +293,7 @@
                 class="px-5 py-3 bg-brand-cyan/10 border-b border-brand-cyan/20 flex items-center justify-between cursor-grab active:cursor-grabbing">
                 <span class="text-[10px] font-bold tracking-[0.2em] text-brand-cyan uppercase">Master Command</span>
                 <button class="text-brand-cyan/40 hover:text-brand-cyan transition-colors"
-                    onmousedown="toggleFabChat(event)">×</button>
+                    onclick="toggleFabChat(event)">×</button>
             </div>
             <div id="chat-messages" class="chat-messages custom-scrollbar">
                 <div class="msg bot">Terminal ready. Awaiting institutional directive.</div>
@@ -304,7 +304,7 @@
             </div>
         </div>
 
-        <button id="fab-button" onclick="toggleFabIfClicked()"
+        <button id="fab-button" onclick="toggleFabIfClicked(event)"
             class="absolute bottom-0 right-0 w-14 h-14 bg-brand-cyan rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(0,242,255,0.4)] hover:scale-105 transition-transform active:scale-95 animate-pulse-cyan">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5"
                 stroke-linecap="round" stroke-linejoin="round">
@@ -314,7 +314,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="/static/script.js?v=5.3.1"></script>
+    <script src="/static/script.js?v=5.3.2"></script>
 </body>
 
 </html>
