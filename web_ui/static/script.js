@@ -158,52 +158,73 @@ async function updateRecon() {
     try {
         const res = await fetch('/api/system/recon');
         const data = await res.json();
-        const container = get('recon-history');
+        const archiveContainer = get('recon-history');
+        const miniContainer = get('recent-intel-content');
 
-        if (!data.recon_groups || data.recon_groups.length === 0) {
-            // If empty, we can show a subtle message or keep previous state
-            return;
-        }
+        if (!data.recon_groups || data.recon_groups.length === 0) return;
 
-        // Auto-expand first group if nothing is expanded
-        if (expandedGroups.size === 0 && data.recon_groups.length > 0) {
-            expandedGroups.add(data.recon_groups[0].date_id);
-        }
-
-        const html = data.recon_groups.map(group => {
-            const isColl = !expandedGroups.has(group.date_id);
-            const pnlCls = group.daily_pnl > 0 ? 'up' : (group.daily_pnl < 0 ? 'down' : '');
-
-            return `
-                <div id="recon-group-${group.date_id}" class="recon-group ${isColl ? 'collapsed' : ''}">
-                    <div class="recon-date-header ${pnlCls}" onclick="toggleReconGroup('${group.date_id}')">
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <span>${group.date}</span>
-                            <span class="recon-meta">Close: $${(group.closing_price || 0).toLocaleString()}</span>
+        // 1. Update Archives Overlay
+        if (archiveContainer) {
+            if (expandedGroups.size === 0) expandedGroups.add(data.recon_groups[0].date_id);
+            archiveContainer.innerHTML = data.recon_groups.map(group => {
+                const isColl = !expandedGroups.has(group.date_id);
+                const pnlCls = group.daily_pnl > 0 ? 'up' : (group.daily_pnl < 0 ? 'down' : '');
+                return `
+                    <div id="recon-group-${group.date_id}" class="recon-group ${isColl ? 'collapsed' : ''}">
+                        <div class="recon-date-header ${pnlCls}" onclick="toggleReconGroup('${group.date_id}')">
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span>${group.date}</span>
+                                <span class="recon-meta">Close: $${(group.closing_price || 0).toLocaleString()}</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <span class="recon-meta ${pnlCls}">PnL: $${(group.daily_pnl || 0).toFixed(2)}</span>
+                                <span class="chevron">▼</span>
+                            </div>
                         </div>
-                        <div style="display:flex; align-items:center; gap:12px;">
-                            <span class="recon-meta ${pnlCls}" style="font-weight:700;">PnL: $${(group.daily_pnl || 0).toFixed(2)}</span>
-                            <span class="chevron">▼</span>
+                        <div class="recon-items-content">
+                            ${group.items.map(item => `
+                                <div class="card-item sub-item">
+                                    <div class="card-meta"><span>RECON</span><span>${formatTime(item.time)}</span></div>
+                                    <div class="card-header">${item.title}</div>
+                                    <div class="card-body">${item.content}</div>
+                                </div>
+                            `).join('')}
                         </div>
                     </div>
-                    <div class="recon-items-content">
-                        ${group.items.map(item => `
-                            <div class="card-item sub-item">
-                                <div class="card-meta"><span>RECON</span><span>${formatTime(item.time)}</span></div>
-                                <div class="card-header">${item.title}</div>
-                                <div class="card-body">${item.content}</div>
-                            </div>
-                        `).join('')}
+                `;
+            }).join('');
+        }
+
+        // 2. Update Mini-Slot (Directly above Approval Queue)
+        if (miniContainer) {
+            const latestAction = data.recon_groups[0].items[0];
+            miniContainer.innerHTML = `
+                <div class="card-item" style="border-color: rgba(0, 242, 255, 0.2); background: rgba(0, 242, 255, 0.05);">
+                    <div class="card-meta">
+                        <span class="text-brand-cyan">LATEST INTEL</span>
+                        <span>${formatTime(latestAction.time)}</span>
+                    </div>
+                    <div class="card-header" style="font-size: 11px;">${latestAction.title}</div>
+                    <div class="card-body" style="font-size: 10px; line-height: 1.4; color: #fff;">${latestAction.content.substring(0, 150)}${latestAction.content.length > 150 ? '...' : ''}</div>
+                    <div class="mt-2 flex items-center justify-between">
+                         <span class="text-[9px] font-mono text-brand-dim uppercase">Score: ${latestAction.score}</span>
+                         <button onclick="openFabAction('recon')" class="text-[8px] font-bold text-brand-cyan uppercase hover:underline">View All</button>
                     </div>
                 </div>
             `;
-        }).join('');
-
-        container.innerHTML = html;
-    } catch (err) {
-        console.error("Recon Update Failed:", err);
-    }
+        }
+    } catch (err) { }
 }
+
+window.triggerManualRecon = async () => {
+    const btn = get('recon-btn-mini');
+    if (btn) btn.innerText = "SCANNIG...";
+    await fetch('/api/engine/recon', { method: 'POST' });
+    setTimeout(() => {
+        if (btn) btn.innerText = "SCAN";
+        updateRecon();
+    }, 2000);
+};
 
 async function updateTrades() {
     try {
@@ -436,6 +457,8 @@ document.addEventListener('DOMContentLoaded', () => {
             toggleOverlay('logs-overlay');
         } else if (action === 'files') {
             toggleOverlay('files-overlay');
+        } else if (action === 'recon') {
+            toggleOverlay('recon-overlay');
         }
     };
 
