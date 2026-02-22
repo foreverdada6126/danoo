@@ -278,7 +278,7 @@ SYSTEM_STATE = {
     "exchange_id": SETTINGS.EXCHANGE_ID.upper(),
     "exchange_connected": False,
     "regime": "RANGING",
-    "equity": 0.0,
+    "equity": 5000.0 if SETTINGS.MODE == "paper" else 0.0,
     "pnl_24h": 0.0,
     "active_orders": 0,
     "symbol": "BTCUSDT",
@@ -336,11 +336,20 @@ async def get_ohlcv_data(symbol: str = "BTCUSDT", timeframe: str = "15m"):
         session = DB_SESSION()
         db_trades = session.query(Trade).filter(Trade.symbol == symbol).order_by(Trade.entry_time.desc()).limit(50).all()
         
+        candle_times = [c["time"] for c in candles]
+        
+        def snap_time(t):
+            if not candle_times: return t
+            # Find closest valid candle time that is <= trade time
+            valid_times = [ct for ct in candle_times if ct <= t]
+            return max(valid_times) if valid_times else candle_times[0]
+        
         for t in db_trades:
             entry_time = int(t.entry_time.timestamp()) if t.entry_time else None
             if entry_time:
+                snapped_entry = snap_time(entry_time)
                 marker = {
-                    "time": entry_time,
+                    "time": snapped_entry,
                     "position": "belowBar" if t.side.upper() in ["BUY", "LONG"] else "aboveBar",
                     "color": "#00f2ff" if t.side.upper() in ["BUY", "LONG"] else "#f23645",
                     "shape": "arrowUp" if t.side.upper() in ["BUY", "LONG"] else "arrowDown",
@@ -350,8 +359,9 @@ async def get_ohlcv_data(symbol: str = "BTCUSDT", timeframe: str = "15m"):
             
             if t.exit_time and t.exit_price:
                 exit_time = int(t.exit_time.timestamp())
+                snapped_exit = snap_time(exit_time)
                 exit_marker = {
-                    "time": exit_time,
+                    "time": snapped_exit,
                     "position": "aboveBar" if t.side.upper() in ["BUY", "LONG"] else "belowBar",
                     "color": "#22ab94" if t.pnl and t.pnl >= 0 else "#f23645",
                     "shape": "circle",
@@ -384,6 +394,8 @@ async def get_active_trades():
                 side_mult = 1 if db_t.side == "LONG" else -1
                 raw_pnl = (current_price - db_t.entry_price) * db_t.amount * side_mult
                 t["pnl"] = f"{'+' if raw_pnl >= 0 else ''}${raw_pnl:.2f}"
+            if db_t:
+                t["leverage"] = db_t.leverage or 1
             session.close()
         except:
             pass
@@ -411,7 +423,8 @@ async def get_all_trades():
                 "order_id": t.order_id,
                 "reason": strat_name,
                 "conviction": conviction,
-                "risk": risk
+                "risk": risk,
+                "leverage": t.leverage or 1
             })
         session.close()
         return {"trades": result}
