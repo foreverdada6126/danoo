@@ -301,11 +301,17 @@ async function updateHealth() {
 async function updateLogs() {
     try {
         const res = await fetch('/api/logs');
+        if (!res.ok) throw new Error("Server Log Error");
         const logs = await res.json();
         const container = get('log-list');
         if (!container) return;
 
-        const isScrolledToBottom = container.scrollHeight - container.clientHeight <= container.scrollTop + 50;
+        if (!logs || logs.length === 0) {
+            container.innerHTML = '<div class="text-[10px] text-brand-dim text-center py-10">Awaiting system events...</div>';
+            return;
+        }
+
+        const isScrolledToBottom = container.scrollHeight - container.clientHeight <= container.scrollTop + 60;
 
         container.innerHTML = logs.map(l => `
             <div style="margin-bottom: 8px; font-size: 11px; line-height: 1.4; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 4px;">
@@ -317,7 +323,11 @@ async function updateLogs() {
         if (isScrolledToBottom) {
             container.scrollTop = container.scrollHeight;
         }
-    } catch (e) { console.error("Logs sync failed", e); }
+    } catch (e) {
+        console.error("Logs sync failed", e);
+        const container = get('log-list');
+        if (container) container.innerHTML = `<div class="text-red-500/50 text-[10px] text-center py-4">Sync Error: ${e.message}</div>`;
+    }
 }
 
 // 4. CHAT INTERFACE
@@ -419,23 +429,21 @@ document.addEventListener('DOMContentLoaded', () => {
     let dragStartY = 0;
 
     function initDrag(e) {
-        // Only ignore the close '×' button, allow dragging for the FAB itself
-        if (e.currentTarget.id !== 'fab-button' && e.target.tagName && e.target.tagName.toLowerCase() === 'button') return;
+        // Stop drag if clicking buttons inside the box (except the handle itself)
+        if (e.target.tagName && e.target.tagName.toLowerCase() === 'button' && e.currentTarget.id !== 'fab-button') return;
 
         isDraggingFab = false;
 
         const rect = fabWidget.getBoundingClientRect();
-        if (fabWidget.style.bottom !== 'auto' || fabWidget.style.right !== 'auto') {
-            fabWidget.style.left = `${rect.left}px`;
-            fabWidget.style.top = `${rect.top}px`;
-            fabWidget.style.bottom = 'auto';
-            fabWidget.style.right = 'auto';
-        }
+
+        // Reset positioning to handle dragging correctly
+        fabWidget.style.right = 'auto';
+        fabWidget.style.bottom = 'auto';
+        fabWidget.style.left = `${rect.left}px`;
+        fabWidget.style.top = `${rect.top}px`;
 
         dragStartX = e.clientX - rect.left;
         dragStartY = e.clientY - rect.top;
-
-        if (dragHandle) dragHandle.style.cursor = 'grabbing';
 
         document.addEventListener('mousemove', onDragMove);
         document.addEventListener('mouseup', onDragEnd);
@@ -448,26 +456,23 @@ document.addEventListener('DOMContentLoaded', () => {
         let newX = e.clientX - dragStartX;
         let newY = e.clientY - dragStartY;
 
-        // Boundaries with padding
-        const pad = 20;
+        // Constraint check
+        const pad = 10;
         if (newX < pad) newX = pad;
         if (newY < pad) newY = pad;
-        if (newX > window.innerWidth - 80) newX = window.innerWidth - 80;
-        if (newY > window.innerHeight - 80) newY = window.innerHeight - 80;
+        if (newX > window.innerWidth - 60) newX = window.innerWidth - 60;
+        if (newY > window.innerHeight - 60) newY = window.innerHeight - 60;
 
         fabWidget.style.left = `${newX}px`;
         fabWidget.style.top = `${newY}px`;
-        fabWidget.style.bottom = 'auto'; // Force override
-        fabWidget.style.right = 'auto';  // Force override
     }
 
     function onDragEnd(e) {
         document.removeEventListener('mousemove', onDragMove);
         document.removeEventListener('mouseup', onDragEnd);
-        if (dragHandle) dragHandle.style.cursor = 'grab';
 
-        // Wait a bit before allowing clicks to prevent drag-triggering-click
-        setTimeout(() => { isDraggingFab = false; }, 150);
+        // Block click if it was a drag
+        setTimeout(() => { isDraggingFab = false; }, 200);
     }
 
     if (dragHandle) dragHandle.addEventListener('mousedown', initDrag);

@@ -12,25 +12,38 @@ async def cycle_15m():
     SYSTEM_STATE["heartbeat"] = "SCANNING"
     logger.info("[Cycle 15m] Fetching real-time market data...")
     
-    bridge = ExchangeHandler()
-    data = await bridge.fetch_market_data()
-    balance = await bridge.fetch_balance()
-    await bridge.close()
-    
-    if balance is not None:
-        SYSTEM_STATE["equity"] = balance
-        SYSTEM_STATE["exchange_connected"] = True
-    else:
-        SYSTEM_STATE["exchange_connected"] = False
+    try:
+        bridge = ExchangeHandler()
+        # Set a 15-second timeout for the entire sequence to prevent hanging the scheduler
+        data = await asyncio.wait_for(bridge.fetch_market_data(), timeout=15)
+        balance = await asyncio.wait_for(bridge.fetch_balance(), timeout=15)
+        await bridge.close()
+        
+        if balance is not None:
+            SYSTEM_STATE["equity"] = balance
+            SYSTEM_STATE["exchange_connected"] = True
+            logger.info(f"Exchange Sync: Success. Balance discovered: ${balance}")
+        else:
+            SYSTEM_STATE["exchange_connected"] = False
+            logger.warning("Exchange Sync: Balance returned None (Check API Keys).")
 
-    if data:
-        SYSTEM_STATE["rsi"] = data["rsi"]
-        SYSTEM_STATE["price"] = data["price"]
-        SYSTEM_STATE["funding_rate"] = data["funding_rate"]
-        log_msg = f"Market Sync: BTC @ ${data['price']} | RSI: {data['rsi']} | Funding: {data['funding_rate']}%"
-        log_entry = {"time": time.time(), "msg": log_msg}
-    else:
-        log_entry = {"time": time.time(), "msg": "Market Sync Error: Could not reach exchange."}
+        if data:
+            SYSTEM_STATE["rsi"] = data["rsi"]
+            SYSTEM_STATE["price"] = data["price"]
+            SYSTEM_STATE["funding_rate"] = data["funding_rate"]
+            log_msg = f"Market Sync: BTC @ ${data['price']} | RSI: {data['rsi']} | Funding: {data['funding_rate']}%"
+            log_entry = {"time": time.time(), "msg": log_msg}
+        else:
+            log_entry = {"time": time.time(), "msg": "Market Sync Error: Exchange data incomplete."}
+            
+    except asyncio.TimeoutError:
+        SYSTEM_STATE["exchange_connected"] = False
+        logger.error("Exchange Sync Error: Timeout reaching Bybit API.")
+        log_entry = {"time": time.time(), "msg": "System Alert: Bybit API timeout. Connectivity compromised."}
+    except Exception as e:
+        SYSTEM_STATE["exchange_connected"] = False
+        logger.error(f"Exchange Sync Error: {e}")
+        log_entry = {"time": time.time(), "msg": f"System Alert: Exchange Bridge failure: {str(e)[:100]}"}
     
     LOG_HISTORY.append(log_entry)
     if len(LOG_HISTORY) > 50: LOG_HISTORY.pop(0)

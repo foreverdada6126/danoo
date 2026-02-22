@@ -3,12 +3,14 @@ Adaptive Strategy Intelligence Engine v5.2 - Main Orchestrator
 """
 import asyncio
 import sys
+import os
+import time
 from loguru import logger
 from config.settings import SETTINGS
 from core.regime_engine import RegimeEngine
 from telegram_bot.bot import TelegramBot
 from scheduler import start_scheduler_async
-from web_ui.server import start_ui_server
+from web_ui.server import start_ui_server, SYSTEM_STATE, LOG_HISTORY
 
 import httpx
 
@@ -56,7 +58,6 @@ async def run_market_intelligence(bot):
                     SYSTEM_STATE["sentiment_score"] = sentiment
                     
                     # 3. Log it
-                    import time
                     log_entry = {"time": time.time(), "msg": f"AI Insight: Sentiment calibrated at {sentiment}."}
                     LOG_HISTORY.append(log_entry)
                     if len(LOG_HISTORY) > 50: LOG_HISTORY.pop(0)
@@ -96,6 +97,9 @@ async def main():
         from scheduler import cycle_15m
         asyncio.create_task(cycle_15m())
         
+        # 7. Initial System Log
+        LOG_HISTORY.append({"time": time.time(), "msg": "SYSTEM: DaNoo Command Hub is now LIVE. Monitoring all vectors."})
+        
         logger.info("Main loop active. System operational.")
         # Keep the main process alive
         while True:
@@ -105,7 +109,6 @@ async def main():
         logger.info("Shutdown signal received.")
     except Exception as e:
         logger.error(f"Critical System Error: {e}")
-        # Only try to send alert if bot was initialized
     finally:
         logger.info("Clean shutdown complete.")
 
