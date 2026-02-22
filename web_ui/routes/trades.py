@@ -52,21 +52,52 @@ async def get_active_trades():
 @router.get("/api/system/trades/all")
 async def get_all_trades():
     """Returns all trades (opened and closed) from the database."""
+    from core.exchange_handler import ExchangeHandler
+    
     try:
         session = DB_SESSION()
         db_trades = session.query(Trade).order_by(Trade.entry_time.desc()).limit(50).all()
         result = []
+        
+        # Cache prices for live PnL on open trades
+        price_cache = {}
+        
+        async def get_price(symbol):
+            if symbol in price_cache:
+                return price_cache[symbol]
+            try:
+                bridge = ExchangeHandler()
+                client = await bridge._get_client()
+                ticker = await client.fetch_ticker(symbol)
+                price_cache[symbol] = ticker.get("last", 0.0)
+                return price_cache[symbol]
+            except:
+                return 0.0
+        
         for t in db_trades:
             strat_name = t.strategy or "Auto Trade"
             conviction = "95%" if "STRICT" in strat_name else ("70%" if "LOOSE" in strat_name else ("85%" if "RECON" in strat_name else "N/A"))
             risk = "LOW" if "STRICT" in strat_name else ("MED" if "LOOSE" in strat_name else ("HIGH" if "RECON" in strat_name else "UNK"))
+            
+            # Calculate live PnL for open trades
+            if t.status == "OPEN" and t.entry_price and t.amount:
+                current_price = await get_price(t.symbol)
+                if current_price > 0:
+                    side_mult = 1 if t.side.upper() in ["BUY", "LONG"] else -1
+                    raw_pnl = (current_price - t.entry_price) * t.amount * side_mult
+                    pnl_str = f"{'+' if raw_pnl >= 0 else ''}${raw_pnl:.2f}"
+                else:
+                    pnl_str = "$0.00"
+            else:
+                pnl_str = f"${(t.pnl or 0.0):.2f}"
+            
             result.append({
                 "id": t.id,
                 "time": t.entry_time.timestamp(),
                 "symbol": t.symbol,
                 "type": f"{t.side.upper()}",
                 "status": t.status,
-                "pnl": f"${(t.pnl or 0.0):.2f}",
+                "pnl": pnl_str,
                 "order_id": t.order_id,
                 "reason": strat_name,
                 "conviction": conviction,
