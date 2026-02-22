@@ -1,8 +1,8 @@
-// --- 🛰️ DANOO COMMAND HUB ORCHESTRATOR v5.2 ---
-
 const get = (id) => document.getElementById(id);
 
 let expandedGroups = new Set();
+let activeLogTab = "ALL";
+let isDraggingFab = false;
 
 function toggleReconGroup(dateId) {
     console.log("Toggling Group:", dateId);
@@ -302,12 +302,17 @@ async function updateLogs() {
     try {
         const res = await fetch('/api/logs');
         if (!res.ok) throw new Error("Server Log Error");
-        const logs = await res.json();
+        let logs = await res.json();
         const container = get('log-list');
         if (!container) return;
 
+        // Filter by Tab
+        if (activeLogTab !== "ALL") {
+            logs = logs.filter(l => l.cat === activeLogTab);
+        }
+
         if (!logs || logs.length === 0) {
-            container.innerHTML = '<div class="text-[10px] text-brand-dim text-center py-10">Awaiting system events...</div>';
+            container.innerHTML = `<div class="text-[10px] text-brand-dim text-center py-10 italic">No events found for ${activeLogTab}</div>`;
             return;
         }
 
@@ -335,6 +340,50 @@ async function updateLogs() {
         const container = get('log-list');
         if (container) container.innerHTML = `<div class="text-red-500/50 text-[10px] text-center py-4">Sync Error: ${e.message}</div>`;
     }
+}
+
+async function updateFiles() {
+    try {
+        const res = await fetch('/api/files');
+        const data = await res.json();
+        const container = get('file-list');
+        if (!container) return;
+
+        const target = get('file-target').value;
+        const files = target === "reference" ? data.reference : data.processed_data;
+
+        if (!files || files.length === 0) {
+            container.innerHTML = '<div class="py-4 text-center opacity-30 italic">No assets discovered.</div>';
+            return;
+        }
+
+        container.innerHTML = files.map(f => `
+            <div class="flex items-center justify-between p-2 rounded bg-white/5 border border-white/5 group">
+                <div class="flex items-center gap-2 overflow-hidden">
+                    <span class="text-brand-cyan">📄</span>
+                    <span class="truncate">${f}</span>
+                </div>
+                <button onclick="deleteFile('${f}')" class="opacity-0 group-hover:opacity-100 text-brand-red transition-opacity px-2">×</button>
+            </div>
+        `).join('');
+    } catch (e) { }
+}
+
+async function deleteFile(filename) {
+    if (!confirm(`Relinquish ${filename}?`)) return;
+    const target = get('file-target').value;
+    try {
+        await fetch(`/api/files/${filename}?target=${target}`, { method: 'DELETE' });
+        updateFiles();
+    } catch (e) { }
+}
+
+function setLogTab(category) {
+    activeLogTab = category;
+    document.querySelectorAll('.log-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-category') === category);
+    });
+    updateLogs();
 }
 
 // 4. CHAT INTERFACE
@@ -370,6 +419,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // Bind Globals
     window.toggleOverlay = toggleOverlay;
     window.toggleReconGroup = toggleReconGroup;
+    window.setLogTab = setLogTab;
+
+    window.toggleFabMenu = (e) => {
+        if (isDraggingFab) return;
+        const menu = get('fab-menu');
+        if (menu) menu.classList.toggle('hidden');
+    };
+
+    window.openFabAction = (action) => {
+        get('fab-menu').classList.add('hidden'); // Close menu after choice
+
+        if (action === 'command') {
+            get('master-command-box').classList.toggle('hidden');
+        } else if (action === 'logs') {
+            toggleOverlay('logs-overlay');
+        } else if (action === 'files') {
+            toggleOverlay('files-overlay');
+        }
+    };
+
     window.toggleFabChat = (e) => {
         if (e) {
             e.preventDefault();
@@ -378,48 +447,42 @@ document.addEventListener('DOMContentLoaded', () => {
         const box = get('master-command-box');
         if (box) {
             box.classList.toggle('hidden');
-            console.log("FAB Toggle: ", box.classList.contains('hidden') ? "HIDDEN" : "VISIBLE");
         }
     };
 
-    let isDraggingFab = false;
-    window.toggleFabIfClicked = (e) => {
-        if (!isDraggingFab) {
-            window.toggleFabChat(e);
-        }
-    };
+    const sendBtn = get('send-btn');
+    if (sendBtn) sendBtn.onclick = sendCommand;
 
-    get('send-btn').onclick = sendCommand;
-    get('chat-input').onkeypress = (e) => { if (e.key === 'Enter') sendCommand(); };
+    const chatInput = get('chat-input');
+    if (chatInput) chatInput.onkeypress = (e) => { if (e.key === 'Enter') sendCommand(); };
 
-    get('recon-btn').onclick = async () => {
-        get('recon-btn').classList.add('pulse');
-        await fetch('/api/engine/recon', { method: 'POST' });
-        setTimeout(() => get('recon-btn').classList.remove('pulse'), 2000);
-    };
+    const reconBtn = get('recon-btn');
+    if (reconBtn) {
+        reconBtn.onclick = async () => {
+            reconBtn.classList.add('pulse');
+            await fetch('/api/engine/recon', { method: 'POST' });
+            setTimeout(() => reconBtn.classList.remove('pulse'), 2000);
+        };
+    }
 
-    get('report-btn').onclick = async () => {
-        get('report-terminal').classList.remove('hidden');
-        get('report-content').textContent = "Scanning infrastructure...";
-        const res = await fetch('/api/system/report');
-        const data = await res.json();
-        get('report-content').textContent = data.report;
-    };
-
-    get('cleanup-btn').onclick = async () => {
-        if (!confirm("Purge logs?")) return;
-        await fetch('/api/system/cleanup', { method: 'POST' });
-        updateLogs();
-    };
+    const cleanupBtn = get('cleanup-btn');
+    if (cleanupBtn) {
+        cleanupBtn.onclick = async () => {
+            if (!confirm("Purge logs?")) return;
+            await fetch('/api/system/cleanup', { method: 'POST' });
+            updateLogs();
+        };
+    }
 
     // Loops
     setInterval(syncDashboard, 1500);
-    setInterval(updateChart, 3000); // Dynamic chart update
-    setInterval(updateHealth, 3000);
+    setInterval(updateChart, 5000);
+    setInterval(updateHealth, 5000);
     setInterval(updateLogs, 2000);
-    setInterval(updateRecon, 3000);
+    setInterval(updateRecon, 5000);
     setInterval(updateTrades, 3000);
     setInterval(updateApprovals, 3000);
+    setInterval(updateFiles, 10000);
     setInterval(() => {
         const up = get('uptime');
         if (up) {

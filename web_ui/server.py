@@ -31,11 +31,25 @@ def load_log_file():
             with open(log_file, "r") as f:
                 lines = f.readlines()[-200:] # Load last 200 lines
                 for line in lines:
-                    # Very basic parsing of loguru lines: 2026-02-22 ... | INFO | msg
                     if " | " in line:
                         parts = line.split(" | ", 2)
-                        msg = parts[-1].strip()
-                        LOG_HISTORY.append({"time": time.time(), "msg": msg})
+                        level = parts[1].strip()
+                        raw_msg = parts[-1].strip()
+                        
+                        # Determine Category
+                        cat = "CORE"
+                        if any(x in raw_msg.upper() for x in ["EXCHANGE", "SYNC", "MARKET", "BTC", "RSI", "FUNDING"]):
+                            cat = "EXCH"
+                        if any(x in raw_msg.upper() for x in ["ORDER", "TRADE", "PNL", "EXECUTION", "POSITION"]):
+                            cat = "TRADE"
+                        if level in ["ERROR", "CRITICAL", "WARNING"]:
+                            cat = "ERR"
+                            
+                        LOG_HISTORY.append({
+                            "time": time.time(),
+                            "msg": f"[{level}] {raw_msg}",
+                            "cat": cat
+                        })
         except Exception as e:
             logger.error(f"Failed to load historical logs: {e}")
 
@@ -67,12 +81,25 @@ load_persistence()
 
 # --- Real-time Log Bridge ---
 def ui_log_sink(message):
-    """Pushes every 'logger.info' from the terminal into the Dashboard UI."""
+    """Pushes every 'logger.info' from the terminal into the Dashboard UI with categorization."""
     try:
         record = message.record
+        msg_text = record["message"]
+        level = record["level"].name
+        
+        # Smart Categorization
+        cat = "CORE"
+        if any(x in msg_text.upper() for x in ["SYNC", "MARKET", "PRICE", "RSI", "FUNDING", "TICKER"]):
+            cat = "EXCH"
+        if any(x in msg_text.upper() for x in ["ORDER", "TRADE", "CLOSED", "ENTRY", "PNL", "FILLED", "POSITION"]):
+            cat = "TRADE"
+        if level in ["ERROR", "CRITICAL", "WARNING"] or "ALERT" in msg_text.upper() or "FAILURE" in msg_text.upper():
+            cat = "ERR"
+            
         log_entry = {
-            "time": time.time(), # Use Unix time for browser localization
-            "msg": f"[{record['level'].name}] {record['message']}"
+            "time": time.time(),
+            "msg": f"[{level}] {msg_text}",
+            "cat": cat
         }
         LOG_HISTORY.append(log_entry)
         if len(LOG_HISTORY) > 1000: LOG_HISTORY.pop(0)
