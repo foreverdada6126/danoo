@@ -5,8 +5,20 @@ let activeLogTab = "ALL";
 let isDraggingFab = false;
 let activeTradeTab = "ALL";
 let activeStratFilter = "ALL";
+let activeAssetFilter = true;
 let isIntelCollapsed = true;
 let lastReadIntelTime = 0;
+
+function toggleAssetFocus() {
+    activeAssetFilter = !activeAssetFilter;
+    const btn = get('asset-focus-toggle');
+    if (btn) {
+        btn.innerHTML = activeAssetFilter ? "Focus: ON" : "Focus: OFF";
+        btn.classList.toggle('text-brand-cyan', activeAssetFilter);
+        btn.classList.toggle('opacity-40', !activeAssetFilter);
+    }
+    updateTrades();
+}
 
 function setStratFilter(cat) {
     activeStratFilter = cat;
@@ -542,6 +554,12 @@ async function updateTrades() {
             });
         }
 
+        // Asset Specific Filter
+        if (activeAssetFilter) {
+            const currentSymbol = get('asset-selector').value;
+            trades = trades.filter(t => t.symbol === currentSymbol);
+        }
+
         if (trades.length === 0) {
             container.innerHTML = '<div class="card-item"><div class="card-body" style="color: var(--text-dim); text-align: center; font-size: 10px;">No trades found in this category.</div></div>';
             return;
@@ -872,6 +890,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.toggleOverlay = toggleOverlay;
     window.toggleReconGroup = toggleReconGroup;
     window.setLogTab = setLogTab;
+    window.toggleAssetFocus = toggleAssetFocus;
 
     window.toggleFabMenu = (e) => {
         if (isDraggingFab) return;

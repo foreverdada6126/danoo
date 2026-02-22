@@ -349,42 +349,45 @@ body {
     transform: translateX(0) scale(1);
 }
 
-/* Log/Trade Tabs */
+/* Log/Trade Tabs - REFINED SLEEK */
 .log-tab,
 .trade-tab {
     padding: 6px 14px;
-    border-radius: 6px;
-    font-size: 10px;
+    border-radius: 4px;
+    font-size: 9px;
     font-weight: 700;
     color: var(--text-dim);
     text-transform: uppercase;
-    transition: all 0.2s;
+    letter-spacing: 1px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     background: transparent;
-    border: none;
+    border: 1px solid transparent;
     cursor: pointer;
 }
 
 .trade-tab {
-    padding: 4px 8px;
+    padding: 4px 10px;
     font-size: 8px;
-    letter-spacing: 0.5px;
 }
 
 .log-tab:hover,
 .trade-tab:hover {
     color: #fff;
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.03);
 }
 
 .log-tab.active,
 .trade-tab.active {
-    background: var(--cyan-brand);
-    color: #000;
+    background: rgba(0, 242, 255, 0.08) !important;
+    color: var(--cyan-brand) !important;
+    border: 1px solid rgba(0, 242, 255, 0.25) !important;
+    box-shadow: 0 0 15px rgba(0, 242, 255, 0.05);
 }
 
 .log-tab.text-red-400.active {
-    background: #f87171;
-    color: #000;
+    background: rgba(248, 113, 113, 0.1) !important;
+    color: #f87171 !important;
+    border: 1px solid rgba(248, 113, 113, 0.3) !important;
 }
 
 /* Price Ticker Animation */

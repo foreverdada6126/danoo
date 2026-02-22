@@ -151,7 +151,13 @@
             <section class="bg-brand-bg flex flex-col h-full min-h-0 overflow-hidden border-r border-brand-border">
 
                 <div class="px-5 py-2.5 border-b border-brand-border bg-brand-bg/80 flex flex-col gap-2 shrink-0">
-                    <span class="text-[9px] font-bold tracking-[0.2em] text-brand-dim uppercase">Strategy Filter</span>
+                    <div class="flex items-center justify-between">
+                        <span class="text-[9px] font-bold tracking-[0.2em] text-brand-dim uppercase">Strategy
+                            Filter</span>
+                        <button id="asset-focus-toggle" onclick="toggleAssetFocus()"
+                            class="text-[8px] font-bold text-brand-cyan uppercase tracking-wider transition-all hover:opacity-100">Focus:
+                            ON</button>
+                    </div>
                     <div id="strat-filter-nav" class="flex gap-1 p-0.5 bg-black/40 rounded border border-white/5">
                         <button onclick="setStratFilter('ALL')" data-strat="ALL" class="trade-tab active">All</button>
                         <button onclick="setStratFilter('STRICT')" data-strat="STRICT" class="trade-tab">Strict</button>
@@ -162,12 +168,12 @@
                 </div>
 
                 <div
-                    class="flex items-center justify-between px-5 py-3.5 bg-brand-card/20 backdrop-blur-md border-b border-brand-border shrink-0">
-                    <h2 class="text-[10px] font-bold tracking-[0.25em] text-brand-dim uppercase">Trade Desk</h2>
-                    <div id="trade-tabs-nav" class="flex gap-1 p-0.5 bg-black/40 rounded border border-white/5">
+                    class="flex items-center justify-between px-5 py-3 border-b border-brand-border shrink-0 bg-brand-bg/40 backdrop-blur-md">
+                    <h2 class="text-[9px] font-bold tracking-[0.3em] text-brand-dim uppercase italic">Terminal Feed</h2>
+                    <div id="trade-tabs-nav" class="flex gap-1 p-0.5">
                         <button onclick="setTradeTab('ALL')" data-category="ALL"
                             class="trade-tab active">Trades</button>
-                        <button onclick="setTradeTab('OPENED')" data-category="OPENED" class="trade-tab">Opened</button>
+                        <button onclick="setTradeTab('OPENED')" data-category="OPENED" class="trade-tab">Open</button>
                         <button onclick="setTradeTab('CLOSED')" data-category="CLOSED" class="trade-tab">Closed</button>
                     </div>
                 </div>
