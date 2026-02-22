@@ -159,10 +159,52 @@ class ScalperEngine:
             if t in ACTIVE_TRADES: ACTIVE_TRADES.remove(t)
 
     async def execute_scalp(self, symbol: str, side: str, price: float, reason: str = "STRICT_SCALP"):
-        """Execute and Persist Scalp Trade."""
-        from web_ui.server import ACTIVE_TRADES, LOG_HISTORY
+        """Execute and Persist Scalp Trade using Dynamic Position Sizing."""
+        from web_ui.server import ACTIVE_TRADES, LOG_HISTORY, SYSTEM_STATE
+        from config.risk_config import RISK_CONFIG
         
-        amount = 0.001 
+        # 1. Base Portfolio Constraint
+        equity = SYSTEM_STATE.get("equity", 1000.0)
+        if equity <= 0: equity = 1000.0  # Safe default if missing
+        
+        # 2. Base Risk Allocation (default: 1% of equity to risk losing)
+        base_risk_amount = equity * RISK_CONFIG.max_risk_per_trade
+        
+        # 3. Modify Risk by Strategy Conviction Factor
+        if "STRICT" in reason:
+            conviction_multiplier = 1.0   # Highest conviction => Risk 100% of allowed limit
+        elif "LOOSE" in reason:
+            conviction_multiplier = 0.5   # Risky/Frequent => Risk 50% of allowable limit
+        else: # RECON SYNC
+            conviction_multiplier = 0.75  # Momentum/News => Risk 75% of allowable limit
+            
+        adjusted_max_loss_usdt = base_risk_amount * conviction_multiplier
+        
+        # 4. Calculate Required Leveraged Position Size
+        # Formula: Position Size = Max Loss / Stop Loss Percentage
+        stop_loss_pct = 0.003  # 0.3% static stop loss used in `manage_open_positions`
+        position_size_usdt = adjusted_max_loss_usdt / stop_loss_pct
+        
+        # 5. Cap Position Size by Maximum Allowed Account Leverage
+        absolute_max_position = equity * RISK_CONFIG.max_leverage
+        position_size_usdt = min(position_size_usdt, absolute_max_position)
+        
+        # Enforce Minimum Order Value (Exchange requires > $10 in most cases)
+        if position_size_usdt < RISK_CONFIG.min_order_size_usdt:
+            logger.warning(f"[Scalper] Capital constraint. Calculated position ${position_size_usdt:.2f} too small.")
+            return
+
+        # 6. Calculate Final Asset Amount based on Price
+        amount = position_size_usdt / price
+        
+        # Precision Adjustments based on asset height (Approximated since live markets dict not available synchronously)
+        if price > 10000:
+            amount = round(amount, 3) # BTC
+        elif price > 100:
+            amount = round(amount, 2) # ETH, SOL
+        else:
+            amount = max(1.0, round(amount, 0)) # XRP, DOGE, HBAR
+            
         result = self.executor.execute_order(symbol, side.lower(), amount=amount, price=price)
         
         if result["status"] == "FILLED":
