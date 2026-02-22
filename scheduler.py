@@ -13,7 +13,7 @@ SCALPER = ScalperEngine()
 
 async def cycle_15m():
     """Background Intelligence Scan for all assets in the Watchlist."""
-    from web_ui.server import SYSTEM_STATE, LOG_HISTORY, RECON_HISTORY
+    from web_ui.state import SYSTEM_STATE, LOG_HISTORY, RECON_HISTORY
     from core.exchange_handler import ExchangeHandler
     
     SYSTEM_STATE["heartbeat"] = "SCANNING_ALL"
@@ -71,7 +71,7 @@ async def cycle_15m():
 
 async def cycle_1h():
     """Recalculate scores and check trade changes."""
-    from web_ui.server import SYSTEM_STATE, LOG_HISTORY
+    from web_ui.state import SYSTEM_STATE, LOG_HISTORY
     from core.executor import ExecutionEngine
     
     SYSTEM_STATE["heartbeat"] = "CHECKING_TRADE"
@@ -89,7 +89,7 @@ async def cycle_1h():
 
 async def cycle_4h():
     """Update regime state using full RegimeEngine analysis."""
-    from web_ui.server import SYSTEM_STATE, LOG_HISTORY
+    from web_ui.state import SYSTEM_STATE, LOG_HISTORY
     from core.exchange_handler import ExchangeHandler
     from core.regime_engine import RegimeEngine
     

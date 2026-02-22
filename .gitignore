@@ -21,7 +21,12 @@ database/*.db
 # IDEs
 .vscode/
 .idea/
+.cursorrules
 
 # OS
 .DS_Store
 Thumbs.db
+
+# Test/Debug artifacts
+test_*.py
+test_*.json

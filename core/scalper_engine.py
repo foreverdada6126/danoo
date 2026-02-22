@@ -24,7 +24,7 @@ class ScalperEngine:
 
     async def scan_market(self):
         """Monitor every asset in the watchlist (1m heartbeat)."""
-        from web_ui.server import SYSTEM_STATE, LOG_HISTORY, ACTIVE_TRADES
+        from web_ui.state import SYSTEM_STATE, LOG_HISTORY, ACTIVE_TRADES
         
         # Don't overlap scans
         if time.time() - self.last_scan_time < 50:
@@ -109,7 +109,7 @@ class ScalperEngine:
 
     async def manage_open_positions(self):
         """Monitors open scalps and executes exits based on TP/SL."""
-        from web_ui.server import ACTIVE_TRADES, LOG_HISTORY, SYSTEM_STATE
+        from web_ui.state import ACTIVE_TRADES, LOG_HISTORY, SYSTEM_STATE
         
         current_price = SYSTEM_STATE.get("price", 0.0)
         # Note: In multi-asset mode, we'd ideally fetch current price per symbol.
@@ -161,7 +161,7 @@ class ScalperEngine:
 
     async def execute_scalp(self, symbol: str, side: str, price: float, reason: str = "STRICT_SCALP"):
         """Execute and Persist Scalp Trade using Dynamic Position Sizing."""
-        from web_ui.server import ACTIVE_TRADES, LOG_HISTORY, SYSTEM_STATE
+        from web_ui.state import ACTIVE_TRADES, LOG_HISTORY, SYSTEM_STATE
         from config.risk_config import RISK_CONFIG
         
         # 1. Base Portfolio Constraint

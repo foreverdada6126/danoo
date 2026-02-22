@@ -10,7 +10,8 @@ from config.settings import SETTINGS
 from core.regime_engine import RegimeEngine
 from telegram_bot.bot import TelegramBot
 from scheduler import start_scheduler_async
-from web_ui.server import start_ui_server, SYSTEM_STATE, LOG_HISTORY
+from web_ui.server import start_ui_server
+from web_ui.state import SYSTEM_STATE, LOG_HISTORY
 
 import httpx
 
