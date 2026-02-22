@@ -313,6 +313,10 @@ async function updateTrades() {
                     <div class="space-y-3">
                         ${groups[date].map(t => {
                 const isClosed = t.status === 'CLOSED';
+                const strategy = t.reason || 'Auto';
+                const isScalp = strategy.includes('SCALP');
+                const badgeColor = isScalp ? 'bg-brand-red/20 text-brand-red border-brand-red/30' : 'bg-brand-cyan/20 text-brand-cyan border-brand-cyan/30';
+
                 return `
                             <div class="card-item ${isClosed ? 'opacity-60' : ''}">
                                 <div class="card-meta">
@@ -321,10 +325,10 @@ async function updateTrades() {
                                 </div>
                                 <div class="card-header">${t.symbol} <span class="${t.pnl && t.pnl.includes('+') ? 'up' : 'down'}">${t.pnl}</span></div>
                                 <div class="card-body">
-                                    <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center justify-between mb-3">
                                         <span class="text-[9px] uppercase tracking-wider ${isClosed ? 'text-brand-red' : 'text-brand-green'}">${t.status}</span>
+                                        <span class="px-1.5 py-0.5 rounded text-[7px] font-bold uppercase border ${badgeColor}">${strategy}</span>
                                     </div>
-                                    <div style="font-size: 0.6rem; color: var(--text-dim); font-style: italic;">Reason: ${t.reason || 'Auto'}</div>
                                     ${!isClosed ? `<button onclick="closeTrade('${t.order_id}')" class="btn btn-approve mt-2 w-full text-[9px] bg-brand-red/10 border-brand-red/20 text-brand-red">CLOSE POSITION</button>` : ''}
                                 </div>
                             </div>
