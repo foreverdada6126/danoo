@@ -141,12 +141,13 @@ class ScalperEngine:
                 
                 if exit_triggered:
                     close_side = "sell" if side == "BUY" else "buy"
-                    result = await self.bridge.place_limit_order(trade["symbol"], close_side, 0.001, 0)
+                    close_amount = db_t.amount
+                    result = await self.bridge.place_limit_order(trade["symbol"], close_side, close_amount, 0)
                     if result["success"]:
                         db_t.status = "CLOSED"
                         db_t.exit_price = price
                         db_t.exit_time = datetime.utcnow()
-                        db_t.pnl = (price - entry_price) * 0.001 * (1 if side == "BUY" else -1)
+                        db_t.pnl = (price - entry_price) * close_amount * (1 if side == "BUY" else -1)
                         session.commit()
                         to_close.append(trade)
                         LOG_HISTORY.append({"time": time.time(), "msg": f"SCALPER: Finalized {trade['symbol']} scalp at ${price} ({pnl_pct*100:.2f}%)"})
@@ -165,20 +166,40 @@ class ScalperEngine:
         
         # 1. Base Portfolio Constraint
         equity = SYSTEM_STATE.get("equity", 1000.0)
-        if equity <= 0: equity = 1000.0  # Safe default if missing
+        if equity <= 0: equity = 1000.0
         
         # 2. Base Risk Allocation (default: 1% of equity to risk losing)
         base_risk_amount = equity * RISK_CONFIG.max_risk_per_trade
         
         # 3. Modify Risk by Strategy Conviction Factor
         if "STRICT" in reason:
-            conviction_multiplier = 1.0   # Highest conviction => Risk 100% of allowed limit
+            conviction_multiplier = 1.0
         elif "LOOSE" in reason:
-            conviction_multiplier = 0.5   # Risky/Frequent => Risk 50% of allowable limit
-        else: # RECON SYNC
-            conviction_multiplier = 0.75  # Momentum/News => Risk 75% of allowable limit
-            
-        adjusted_max_loss_usdt = base_risk_amount * conviction_multiplier
+            conviction_multiplier = 0.5
+        else:
+            conviction_multiplier = 0.75
+        
+        # 4. Apply Regime-Based Weight Adjustment
+        regime_weights = SYSTEM_STATE.get("regime_weights", {})
+        regime = SYSTEM_STATE.get("regime", "RANGING")
+        
+        momentum_weight = regime_weights.get("Momentum", 1.0)
+        mean_reversion_weight = regime_weights.get("MeanReversion", 1.0)
+        
+        if regime == "BULL_TREND" and side == "BUY":
+            regime_multiplier = momentum_weight
+        elif regime == "BEAR_TREND" and side == "SELL":
+            regime_multiplier = momentum_weight
+        elif regime == "RANGING":
+            regime_multiplier = mean_reversion_weight
+        elif regime == "HIGH_VOLATILITY":
+            regime_multiplier = 0.7
+        elif regime == "COMPRESSED":
+            regime_multiplier = 1.2
+        else:
+            regime_multiplier = 1.0
+        
+        adjusted_max_loss_usdt = base_risk_amount * conviction_multiplier * regime_multiplier
         
         # 4. Calculate Required Leveraged Position Size
         # Formula: Position Size = Max Loss / Stop Loss Percentage

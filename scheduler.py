@@ -88,18 +88,39 @@ async def cycle_1h():
     SYSTEM_STATE["heartbeat"] = "IDLE"
 
 async def cycle_4h():
-    """Update regime state."""
+    """Update regime state using full RegimeEngine analysis."""
     from web_ui.server import SYSTEM_STATE, LOG_HISTORY
+    from core.exchange_handler import ExchangeHandler
+    from core.regime_engine import RegimeEngine
+    
     SYSTEM_STATE["heartbeat"] = "REGIME_SCAN"
-    logger.info("[Cycle 4h] Updating market regime classification...")
-    if SYSTEM_STATE.get("rsi", 50) > 60:
-        SYSTEM_STATE["regime"] = "BULL_TREND"
-    elif SYSTEM_STATE.get("rsi", 50) < 40:
-        SYSTEM_STATE["regime"] = "BEAR_TREND"
-    else:
-        SYSTEM_STATE["regime"] = "RANGING"
-
-    log_entry = {"time": time.time(), "msg": f"Regime Engine: 4h Trend Analysis completed. Current: {SYSTEM_STATE['regime']}"}
+    logger.info("[Cycle 4h] Running full market regime classification...")
+    
+    try:
+        bridge = ExchangeHandler()
+        client = await bridge._get_client()
+        ohlcv = await client.fetch_ohlcv(SETTINGS.DEFAULT_SYMBOL, "4h", limit=100)
+        df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+        await bridge.close()
+        
+        regime_engine = RegimeEngine()
+        regime = regime_engine.analyze(df)
+        weights = regime_engine.get_regime_weights(regime)
+        
+        SYSTEM_STATE["regime"] = regime
+        SYSTEM_STATE["regime_weights"] = weights
+        
+        log_entry = {"time": time.time(), "msg": f"Regime Engine: 4h Analysis complete. Regime: {regime} | Weights: VolExp={weights.get('VolatilityExpansion', 1.0):.1f}, MR={weights.get('MeanReversion', 1.0):.1f}, Mom={weights.get('Momentum', 1.0):.1f}"}
+    except Exception as e:
+        logger.error(f"Regime analysis failed: {e}")
+        if SYSTEM_STATE.get("rsi", 50) > 60:
+            SYSTEM_STATE["regime"] = "BULL_TREND"
+        elif SYSTEM_STATE.get("rsi", 50) < 40:
+            SYSTEM_STATE["regime"] = "BEAR_TREND"
+        else:
+            SYSTEM_STATE["regime"] = "RANGING"
+        log_entry = {"time": time.time(), "msg": f"Regime Engine: Fallback RSI classification. Current: {SYSTEM_STATE['regime']}"}
+    
     LOG_HISTORY.append(log_entry)
     SYSTEM_STATE["heartbeat"] = "IDLE"
 

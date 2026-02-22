@@ -303,16 +303,68 @@ if not APPROVAL_QUEUE:
 @app.get("/api/chart")
 async def get_chart_data():
     """Returns the history of equity for the Performance chart."""
-    # Ensure current equity is the last item
     if not EQUITY_HISTORY or EQUITY_HISTORY[-1] != SYSTEM_STATE["equity"]:
         EQUITY_HISTORY.append(SYSTEM_STATE["equity"])
     
-    # Return last 50 points
     history = EQUITY_HISTORY[-50:]
     return {
         "labels": [f"T-{len(history)-i-1}" for i in range(len(history))],
         "values": history
     }
+
+@app.get("/api/chart/ohlcv")
+async def get_ohlcv_data(symbol: str = "BTCUSDT", timeframe: str = "15m"):
+    """Returns OHLCV candles and trade markers for the price chart."""
+    from core.exchange_handler import ExchangeHandler
+    
+    candles = []
+    trades = []
+    
+    try:
+        bridge = ExchangeHandler()
+        client = await bridge._get_client()
+        ohlcv = await client.fetch_ohlcv(symbol, timeframe, limit=200)
+        
+        candles = [{
+            "time": int(row[0] / 1000),
+            "open": row[1],
+            "high": row[2],
+            "low": row[3],
+            "close": row[4],
+        } for row in ohlcv]
+        
+        session = DB_SESSION()
+        db_trades = session.query(Trade).filter(Trade.symbol == symbol).order_by(Trade.entry_time.desc()).limit(50).all()
+        
+        for t in db_trades:
+            entry_time = int(t.entry_time.timestamp()) if t.entry_time else None
+            if entry_time:
+                marker = {
+                    "time": entry_time,
+                    "position": "belowBar" if t.side.upper() in ["BUY", "LONG"] else "aboveBar",
+                    "color": "#00f2ff" if t.side.upper() in ["BUY", "LONG"] else "#f23645",
+                    "shape": "arrowUp" if t.side.upper() in ["BUY", "LONG"] else "arrowDown",
+                    "text": f"{t.side[:1]} @ {t.entry_price:.2f}" if t.entry_price else t.side,
+                }
+                trades.append(marker)
+            
+            if t.exit_time and t.exit_price:
+                exit_time = int(t.exit_time.timestamp())
+                exit_marker = {
+                    "time": exit_time,
+                    "position": "aboveBar" if t.side.upper() in ["BUY", "LONG"] else "belowBar",
+                    "color": "#22ab94" if t.pnl and t.pnl >= 0 else "#f23645",
+                    "shape": "circle",
+                    "text": f"Exit @ {t.exit_price:.2f}",
+                }
+                trades.append(exit_marker)
+        
+        session.close()
+        
+    except Exception as e:
+        logger.error(f"Chart data fetch error: {e}")
+    
+    return {"candles": candles, "trades": trades}
 
 # (Global states moved to top)
 
@@ -468,20 +520,29 @@ async def close_trade(order_id: str):
     try:
         from core.exchange_handler import ExchangeHandler
         
-        # 1. Identify the trade in memory
+        # 1. Identify the trade in memory and DB
         trade = next((t for t in ACTIVE_TRADES if t["order_id"] == order_id), None)
         if not trade:
             return {"status": "error", "message": "Trade not found in active memory."}
 
+        session = DB_SESSION()
+        db_trade = session.query(Trade).filter(Trade.order_id == order_id).first()
+        if not db_trade:
+            session.close()
+            return {"status": "error", "message": "Trade not found in database."}
+        
+        actual_amount = db_trade.amount
+        session.close()
+
         # 2. Send Close Order to Exchange (Market Order in opposite direction)
         bridge = ExchangeHandler()
-        side = "sell" if "LONG" in trade["type"].upper() else "buy"
+        side = "sell" if "LONG" in trade["type"].upper() or "BUY" in trade["type"].upper() else "buy"
         
-        logger.info(f"Closing Trade {order_id} via Market {side.upper()}...")
+        logger.info(f"Closing Trade {order_id} via Market {side.upper()} {actual_amount}...")
         result = await bridge.place_limit_order(
             symbol=trade["symbol"],
             side=side,
-            amount=0.001, # Should be the actual amount from DB, but using 0.001 for now
+            amount=actual_amount,
             price=0 
         )
         await bridge.close()

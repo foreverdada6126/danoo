@@ -142,8 +142,25 @@ class ExchangeHandler:
         try:
             client = await self._get_client()
             await client.load_markets()
+            
+            market = client.market(symbol)
+            min_amount = market.get('limits', {}).get('amount', {}).get('min', 0.001)
+            min_cost = market.get('limits', {}).get('cost', {}).get('min', 0)
+            
             formatted_amount = float(client.amount_to_precision(symbol, amount))
-            logger.info(f"EXCHANGE ATTEMPT: MARKET {side.upper()} {formatted_amount} {symbol}")
+            
+            if formatted_amount < min_amount:
+                formatted_amount = min_amount
+                logger.warning(f"Amount adjusted to minimum: {min_amount} for {symbol}")
+            
+            current_price = (await client.fetch_ticker(symbol)).get('last', 0)
+            notional_value = formatted_amount * current_price
+            
+            if min_cost and notional_value < min_cost:
+                logger.error(f"Order rejected: Notional value ${notional_value:.2f} below minimum ${min_cost}")
+                return {"success": False, "error": f"Order size ${notional_value:.2f} below minimum ${min_cost}"}
+            
+            logger.info(f"EXCHANGE ATTEMPT: MARKET {side.upper()} {formatted_amount} {symbol} (~${notional_value:.2f})")
             order = await client.create_market_order(symbol, side, formatted_amount)
             logger.success(f"EXCHANGE SUCCESS: {order['id']}")
             return {"success": True, "order": order}
