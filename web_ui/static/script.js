@@ -356,6 +356,24 @@ async function syncDashboard() {
                 aiBtn.style.borderColor = "#ff646422";
             }
         }
+
+        // Right Panel Switching (PAPER / WALK_FORWARD)
+        const appMode = (data.mode || '').toUpperCase();
+        const approvalPanel = get('approval-panel');
+        const walkForwardPanel = get('walk-forward-panel');
+
+        if (approvalPanel && walkForwardPanel) {
+            if (appMode === 'WALK_FORWARD') {
+                approvalPanel.classList.add('hidden');
+                walkForwardPanel.classList.remove('hidden');
+            } else if (appMode === 'PAPER') {
+                approvalPanel.classList.add('hidden');
+                walkForwardPanel.classList.add('hidden');
+            } else {
+                approvalPanel.classList.remove('hidden');
+                walkForwardPanel.classList.add('hidden');
+            }
+        }
     } catch (e) { }
 }
 
@@ -603,10 +621,14 @@ async function updateTrades() {
                                     <span class="font-mono ${isProfit ? 'up' : 'down'} text-[13px]">${t.pnl || '$0.00'}</span>
                                 </div>
                                 <div class="card-body">
-                                    <div class="flex items-center justify-between mb-4 text-[10px]">
+                                    <div class="flex items-center justify-between mb-2 text-[10px]">
                                         <div class="flex flex-col">
                                             <span class="text-brand-dim text-[8px] uppercase font-bold tracking-tighter">Conviction</span>
                                             <span class="text-white font-bold">${t.conviction || '95%'}</span>
+                                        </div>
+                                        <div class="flex flex-col items-center">
+                                            <span class="text-brand-dim text-[8px] uppercase font-bold tracking-tighter">Size (USD)</span>
+                                            <span class="text-brand-cyan font-bold">${t.cost || '$0.00'}</span>
                                         </div>
                                         <div class="flex flex-col items-end">
                                             <span class="text-brand-dim text-[8px] uppercase font-bold tracking-tighter">Risk Level</span>
@@ -655,20 +677,28 @@ async function updatePrediction() {
         const changeEl = get('pred-change');
         const priceEl = get('pred-target-price');
         const confEl = get('pred-confidence');
+        const confBar = get('pred-conf-bar');
 
         if (!dirEl || !changeEl || !priceEl || !confEl) return;
 
-        dirEl.textContent = data.direction;
-        dirEl.className = `text-xs font-bold font-mono tracking-widest uppercase ${data.direction === 'BULLISH' ? 'text-brand-green' : 'text-brand-red'}`;
+        const isBull = data.direction === 'BULLISH';
+        const confidence = data.confidence || 0;
 
-        confEl.textContent = `${data.confidence || 0}%`;
+        dirEl.textContent = data.direction;
+        dirEl.className = `text-[11px] font-bold font-mono tracking-widest uppercase ${isBull ? 'text-glow-bull' : 'text-glow-bear'}`;
+
+        confEl.textContent = `${confidence.toFixed(1)}%`;
+        if (confBar) confBar.style.width = `${confidence}%`;
 
         const change = data.change_pct || 0;
-        changeEl.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
-        changeEl.className = `text-[10px] font-bold font-mono ${change >= 0 ? 'text-brand-green' : 'text-brand-red'}`;
+        changeEl.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(3)}%`;
+        changeEl.className = `text-[10px] font-bold font-mono ${isBull ? 'text-glow-bull' : 'text-glow-bear'}`;
 
         const price = data.forecast ? data.forecast[data.forecast.length - 1] : 0;
-        priceEl.textContent = `$ ${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        priceEl.textContent = `$ ${price.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`;
+
+        // Add active pulse to show engine is live
+        get('prediction-content').classList.add('pulse-discovery');
     } catch (e) {
         console.error("Prediction Update Failed", e);
     }

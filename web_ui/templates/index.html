@@ -279,54 +279,138 @@
                     </div>
                 </div>
 
-                <!-- Prediction Engine Slot -->
-                <div id="prediction-panel" class="border-b border-brand-border h-[180px] flex flex-col bg-brand-cyan/5">
+                <!-- Prediction Engine Slot (Institutional Discovery) -->
+                <div id="prediction-panel"
+                    class="border-b border-brand-border h-[190px] flex flex-col bg-brand-cyan/[0.03] relative overflow-hidden shadow-cyan-glow transition-all duration-700">
+                    <!-- Scanline effect -->
                     <div
-                        class="flex items-center justify-between px-5 py-3 bg-brand-cyan/10 border-b border-brand-border">
+                        class="absolute inset-x-0 bg-gradient-to-b from-brand-cyan/20 to-transparent h-px animate-scanline pointer-events-none z-10 shadow-[0_0_15px_rgba(0,242,255,0.8)]">
+                    </div>
+
+                    <div
+                        class="flex items-center justify-between px-5 py-3 bg-brand-cyan/[0.07] border-b border-brand-cyan/10">
                         <div class="flex items-center gap-2">
-                            <h2 class="text-[9px] font-bold tracking-[0.25em] text-brand-cyan uppercase">Prediction
-                                Engine</h2>
+                            <h2 class="text-[9px] font-bold tracking-[0.3em] text-brand-cyan uppercase">Prediction Hub
+                            </h2>
                             <div
-                                class="w-1.5 h-1.5 rounded-full bg-brand-cyan shadow-[0_0_10px_rgba(0,242,255,0.8)] animate-pulse">
+                                class="w-1.5 h-1.5 rounded-full bg-brand-cyan shadow-[0_0_12px_rgba(0,242,255,1)] animate-pulse">
                             </div>
                         </div>
+                        <span
+                            class="text-[7px] font-bold text-brand-cyan/60 uppercase tracking-widest font-mono">Real-time
+                            ML</span>
                     </div>
-                    <div id="prediction-content" class="flex-1 p-5 flex flex-col gap-4">
-                        <div class="flex items-center justify-between">
+
+                    <div id="prediction-content" class="flex-1 p-5 flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-2">
                             <div class="flex flex-col">
-                                <span class="text-[8px] text-brand-dim uppercase tracking-widest mb-1">Forecast
-                                    Trend</span>
+                                <span class="text-[7px] text-brand-dim uppercase tracking-[0.2em] mb-1">Forecast
+                                    Direction</span>
                                 <span id="pred-direction"
-                                    class="text-xs font-bold font-mono text-white tracking-widest uppercase">Initializing...</span>
+                                    class="text-[11px] font-bold font-mono tracking-widest uppercase text-white">Discovery
+                                    Initializing...</span>
                             </div>
                             <div class="flex flex-col items-end">
-                                <span class="text-[8px] text-brand-dim uppercase tracking-widest mb-1">AI
-                                    Confidence</span>
-                                <span id="pred-confidence"
-                                    class="text-xs font-bold font-mono text-brand-cyan tracking-wider">--%</span>
+                                <span class="text-[7px] text-brand-dim uppercase tracking-[0.2em] mb-1">Model
+                                    Accuracy</span>
+                                <div class="flex items-center gap-2">
+                                    <span id="pred-confidence"
+                                        class="text-[11px] font-bold font-mono text-brand-cyan">00.0%</span>
+                                    <div class="w-12 h-1 bg-white/5 rounded-full overflow-hidden">
+                                        <div id="pred-conf-bar"
+                                            class="h-full bg-brand-cyan shadow-[0_0_8px_rgba(0,242,255,0.5)] transition-all duration-1000"
+                                            style="width: 0%"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="flex-1 flex flex-col justify-center">
-                            <div class="flex items-baseline justify-between mb-2">
-                                <span class="text-[8px] text-brand-dim uppercase tracking-widest">Projected
+
+                        <div class="pt-4 border-t border-brand-border/30">
+                            <div class="flex items-baseline justify-between mb-1">
+                                <span class="text-[7px] text-brand-dim uppercase tracking-[0.2em]">Institutional
                                     Target</span>
                                 <span id="pred-change"
-                                    class="text-[10px] font-bold font-mono text-brand-green">--%</span>
+                                    class="text-[10px] font-bold font-mono text-brand-green tracking-tighter">--.---%</span>
                             </div>
                             <div id="pred-target-price"
-                                class="text-2xl font-bold font-mono text-white tracking-tighter">$ --.--</div>
+                                class="text-2xl font-black font-mono text-white tracking-widest drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                                $ --.----</div>
                         </div>
                     </div>
                 </div>
 
-                <div class="flex items-center px-5 py-3 bg-brand-card/20 backdrop-blur-md border-b border-brand-border">
-                    <h2 class="text-[10px] font-bold tracking-[0.25em] text-brand-dim uppercase">Approval Queue</h2>
-                </div>
-                <div id="approval-list" class="flex-1 overflow-y-auto p-5 custom-scrollbar space-y-4">
-                    <div class="flex flex-col items-center justify-center py-20 opacity-20 select-none">
-                        <p
-                            class="text-[10px] uppercase tracking-[0.4em] font-bold text-brand-dim text-center leading-relaxed">
-                            System Idle<br>Awaiting Signal...</p>
+                <!-- Right Side Panels Wrapper -->
+                <div id="right-sidebar-content" class="flex flex-col flex-1 min-h-0">
+                    <!-- Approval Queue (Default for REAL mode) -->
+                    <div id="approval-panel" class="flex flex-col flex-1 min-h-0">
+                        <div
+                            class="flex items-center px-5 py-3 bg-brand-card/20 backdrop-blur-md border-b border-brand-border">
+                            <h2 class="text-[10px] font-bold tracking-[0.25em] text-brand-dim uppercase">Approval Queue
+                            </h2>
+                        </div>
+                        <div id="approval-list" class="flex-1 overflow-y-auto p-5 custom-scrollbar space-y-4">
+                            <div class="flex flex-col items-center justify-center py-20 opacity-20 select-none">
+                                <p
+                                    class="text-[10px] uppercase tracking-[0.4em] font-bold text-brand-dim text-center leading-relaxed">
+                                    System Idle<br>Awaiting Signal...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Walk Forward Panel (Active in WALK_FORWARD mode) -->
+                    <div id="walk-forward-panel" class="hidden flex flex-col flex-1 min-h-0 bg-brand-bg">
+                        <div class="flex items-center px-5 py-3 bg-brand-card/20 border-b border-brand-border">
+                            <h2 class="text-[10px] font-bold tracking-[0.25em] text-brand-cyan uppercase">Walk Forward
+                                Intel</h2>
+                        </div>
+                        <div class="p-5 flex flex-col gap-6 overflow-y-auto custom-scrollbar">
+                            <!-- Categorized Data -->
+                            <div>
+                                <h3 class="text-[9px] font-bold text-brand-dim uppercase tracking-widest mb-3">Market
+                                    Archetypes</h3>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div class="archetype-card bull">
+                                        <div class="text-[10px] font-bold text-brand-green">BULLISH</div>
+                                        <div class="text-[8px] text-brand-dim">Strong Trend</div>
+                                    </div>
+                                    <div class="archetype-card bear">
+                                        <div class="text-[10px] font-bold text-brand-red">BEARISH</div>
+                                        <div class="text-[8px] text-brand-dim">Deep Reject</div>
+                                    </div>
+                                    <div class="archetype-card">
+                                        <div class="text-[10px] font-bold text-white">RANGING</div>
+                                        <div class="text-[8px] text-brand-dim">Mean Revert</div>
+                                    </div>
+                                    <div class="archetype-card">
+                                        <div class="text-[10px] font-bold text-brand-cyan">VOLATILE</div>
+                                        <div class="text-[8px] text-brand-dim">High ATR</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Historical Engine (Local Version) -->
+                            <div class="border border-brand-border rounded-xl p-4 bg-black/20">
+                                <h4 class="text-[9px] font-bold tracking-widest text-brand-cyan uppercase mb-3 italic">
+                                    Direct History Feed</h4>
+                                <div class="space-y-3">
+                                    <div class="flex items-center justify-between text-[9px] text-brand-dim">
+                                        <span>Local Archive:</span>
+                                        <span class="text-white font-mono">1.2 GB</span>
+                                    </div>
+                                    <div class="flex items-center justify-between text-[9px] text-brand-dim">
+                                        <span>Last Index:</span>
+                                        <span class="text-white font-mono">02/22/26</span>
+                                    </div>
+                                    <button
+                                        class="w-full py-2 bg-brand-cyan/10 border border-brand-cyan/30 text-brand-cyan text-[8px] font-bold uppercase rounded hover:bg-brand-cyan/20 transition-all">Optimize
+                                        Parameters</button>
+                                </div>
+                            </div>
+
+                            <div id="historical-stats" class="text-[10px] text-brand-dim italic text-center p-4">
+                                Analyzing historical walk-forward paths...
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>

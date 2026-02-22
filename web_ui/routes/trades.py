@@ -43,6 +43,8 @@ async def get_active_trades():
                     side_mult = 1 if db_t.side.upper() in ["BUY", "LONG"] else -1
                     raw_pnl = (current_price - db_t.entry_price) * db_t.amount * side_mult
                     t["pnl"] = f"{'+' if raw_pnl >= 0 else ''}${raw_pnl:.2f}"
+                    t["cost"] = f"${(db_t.entry_price * db_t.amount):.2f}"
+                    t["value"] = f"${(current_price * db_t.amount):.2f}"
                 t["leverage"] = db_t.leverage or 1
             session.close()
         except:
@@ -81,6 +83,7 @@ async def get_all_trades():
             risk = "LOW" if "STRICT" in strat_name else ("MED" if "LOOSE" in strat_name else ("HIGH" if "RECON" in strat_name else "UNK"))
             
             # Calculate live PnL for open trades
+            cost_val = (t.entry_price or 0) * (t.amount or 0)
             if t.status == "OPEN" and t.entry_price and t.amount:
                 current_price = await get_price(t.symbol)
                 if current_price > 0:
@@ -99,6 +102,7 @@ async def get_all_trades():
                 "type": f"{t.side.upper()}",
                 "status": t.status,
                 "pnl": pnl_str,
+                "cost": f"${cost_val:.2f}",
                 "order_id": t.order_id,
                 "reason": strat_name,
                 "conviction": conviction,
