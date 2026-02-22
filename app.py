@@ -61,6 +61,8 @@ async def run_market_intelligence(bot):
         except Exception as e:
             logger.error(f"Intelligence Task Error: {e}")
         
+        await asyncio.sleep(3600) # Run every hour
+
 async def run_prediction_engine():
     """Background task to update market forecasts every 5 minutes."""
     from core.exchange_handler import ExchangeHandler
