@@ -109,10 +109,23 @@ async def get_all_prices():
     try:
         bridge = ExchangeHandler()
         client = await bridge._get_client()
-        tickers = await client.fetch_tickers(symbols)
-        for s in symbols:
-            if s in tickers:
-                prices[s] = tickers[s].get("last", 0.0)
+        await client.load_markets()
+        
+        # Use fetch_tickers which is efficient for multi-symbol
+        try:
+            tickers = await client.fetch_tickers(symbols)
+            for s in symbols:
+                if s in tickers:
+                    prices[s] = tickers[s].get("last", 0.0)
+        except Exception as e:
+            logger.warning(f"fetch_tickers failed, falling back to sequential: {e}")
+            for s in symbols:
+                try:
+                    t = await client.fetch_ticker(s)
+                    prices[s] = t.get("last", 0.0)
+                except:
+                    prices[s] = 0.0
+                    
         await bridge.close()
     except Exception as e:
         logger.error(f"Multi-price fetch error: {e}")
