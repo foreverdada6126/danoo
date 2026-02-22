@@ -20,6 +20,14 @@ llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 RESEARCH_CACHE = {} 
 CACHE_TTL = 900 # 15 minutes
 
+# Productivity Stats
+REPORT_STATS = {} # YYYY-MM-DD -> count
+
+def log_activity():
+    """Increments the report counter for the current day."""
+    day = time.strftime("%Y-%m-%d")
+    REPORT_STATS[day] = REPORT_STATS.get(day, 0) + 1
+
 class ResearchRequest(BaseModel):
     query: str
     context: str = ""
@@ -56,6 +64,10 @@ async def scientist_status():
                     > Accessing neural clusters...<br>
                     > Objective: BTC Sentiment Analysis<br>
                     > <span class="glow">Mood:</span> {flavor_sub}<br><br>
+                    <span style="color: #444;">--- PRODUCTIVITY LOG ---</span><br>
+                    {"".join([f"> {d}: {c} reports<br>" for d, c in sorted(REPORT_STATS.items(), reverse=True)[:5]])}
+                    {"> No data yet." if not REPORT_STATS else ""}
+                    <br>
                     <span style="color: #444;">------------------------------</span><br>
                     > <span style="color: #fff">Lab Status:</span> All systems nominal. I am watching the markets so you don't have to. <span class="cursor"></span>
                 </div>
@@ -161,6 +173,7 @@ async def run_autonomous_research():
                         logger.warning(f"Failed to push to Mission Control: {mc_err}")
 
             logger.info(f"Scientist: Scan completed. Findings: {result_text}")
+            log_activity()
             
         except Exception as e:
             logger.error(f"Autonomous scan error: {e}")
@@ -214,6 +227,7 @@ async def analyze_market(req: ResearchRequest):
                     "message": f"SCIENTIST_REPORT: {result_text}"
                 })
                 logger.info(f"Scientist: Push status: {resp.status_code}")
+                log_activity()
             except Exception as push_err:
                 logger.error(f"Scientist: Failed to push to dashboard: {push_err}")
 
