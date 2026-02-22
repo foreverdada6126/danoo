@@ -76,6 +76,33 @@ class StrategyLibrary:
         return rsi
 
     @staticmethod
+    def calculate_stochastic(high: np.ndarray, low: np.ndarray, close: np.ndarray, k_period: int = 9, d_period: int = 3, slow_period: int = 3) -> Dict[str, np.ndarray]:
+        """
+        Calculates Stochastic Oscillator (%K, %D).
+        Standard scalping settings: 9, 3, 3 or 5, 3, 3.
+        """
+        if len(close) < k_period:
+            return {"k": np.full(len(close), np.nan), "d": np.full(len(close), np.nan)}
+            
+        # Lowest Low and Highest High over k_period
+        low_min = pd.Series(low).rolling(window=k_period).min()
+        high_max = pd.Series(high).rolling(window=k_period).max()
+        
+        # Raw %K
+        k_raw = 100 * (pd.Series(close) - low_min) / (high_max - low_min)
+        
+        # Smooth %K (Slowing)
+        k_smoothed = k_raw.rolling(window=slow_period).mean()
+        
+        # %D (Signal line)
+        d_line = k_smoothed.rolling(window=d_period).mean()
+        
+        return {
+            "k": k_smoothed.values,
+            "d": d_line.values
+        }
+
+    @staticmethod
     def calculate_adx(high: np.ndarray, low: np.ndarray, close: np.ndarray, period: int = 14) -> Dict[str, np.ndarray]:
         plus_dm = np.where((high - np.roll(high, 1) > np.roll(low, 1) - low) & (high - np.roll(high, 1) > 0), high - np.roll(high, 1), 0)
         minus_dm = np.where((np.roll(low, 1) - low > high - np.roll(high, 1)) & (np.roll(low, 1) - low > 0), np.roll(low, 1) - low, 0)

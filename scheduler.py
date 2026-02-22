@@ -3,6 +3,10 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from loguru import logger
 
 import time
+from core.scalper_engine import ScalperEngine
+
+# Initialize Scalper
+SCALPER = ScalperEngine()
 
 async def cycle_15m():
     """Update data, indicators, and signals using real exchange data."""
@@ -88,6 +92,10 @@ async def cycle_4h():
     LOG_HISTORY.append(log_entry)
     SYSTEM_STATE["heartbeat"] = "IDLE"
 
+async def cycle_scalp_1m():
+    """High-frequency scalper loop."""
+    await SCALPER.scan_market()
+
 async def cycle_daily():
     """Walk forward, strategy memory, ai review, reports."""
     logger.info("[Cycle Daily] Running walk-forward validation and AI meta-review...")
@@ -99,6 +107,9 @@ async def start_scheduler_async():
     
     # 15m Cycle (Run immediately)
     scheduler.add_job(cycle_15m, 'interval', minutes=15, next_run_time=datetime.now())
+    
+    # 1m Scalper Cycle
+    scheduler.add_job(cycle_scalp_1m, 'interval', minutes=1, next_run_time=datetime.now())
     
     # 1h Cycle
     scheduler.add_job(cycle_1h, 'interval', hours=1, next_run_time=datetime.now())
