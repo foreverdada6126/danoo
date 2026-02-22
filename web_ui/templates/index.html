@@ -51,8 +51,8 @@
                     class="w-8 h-8 rounded-lg bg-brand-cyan shadow-[0_0_20px_rgba(0,242,255,0.4)] flex items-center justify-center font-display font-bold text-black text-xl">
                     D</div>
                 <div class="flex flex-col leading-tight">
-                    <h1 class="font-display font-bold text-lg tracking-tight text-white lowercase">da<span
-                            class="text-brand-cyan italic">noo</span></h1>
+                    <h1 class="font-display font-bold text-lg tracking-tight text-white">Da<span
+                            class="text-brand-cyan italic">Noo</span></h1>
                     <span class="text-[9px] font-mono text-brand-dim uppercase tracking-widest">v5.2.5
                         [Institutional]</span>
                 </div>
@@ -336,32 +336,31 @@
                 <div class="fab-menu-icon bg-white/20">📁</div>
             </button>
         </div>
-    </div>
 
-    <div id="master-command-box" class="hidden glass"
-        style="position: absolute; bottom: 75px; right: 0; width: 340px; height: 450px; border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.6); overflow: hidden; display: flex; flex-direction: column;">
-        <div id="fab-drag-handle"
-            class="px-5 py-3 bg-brand-cyan/10 border-b border-brand-cyan/20 flex items-center justify-between cursor-grab active:cursor-grabbing">
-            <span class="text-[10px] font-bold tracking-[0.2em] text-brand-cyan uppercase">Master Command</span>
-            <button class="text-brand-cyan/40 hover:text-brand-cyan transition-colors"
-                onclick="openFabAction('command')" style="font-size: 1.5rem; line-height: 1;">×</button>
+        <div id="master-command-box" class="hidden glass"
+            style="position: absolute; bottom: 75px; right: 0; width: 340px; height: 450px; border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.6); overflow: hidden; display: flex; flex-direction: column;">
+            <div id="fab-drag-handle"
+                class="px-5 py-3 bg-brand-cyan/10 border-b border-brand-cyan/20 flex items-center justify-between cursor-grab active:cursor-grabbing">
+                <span class="text-[10px] font-bold tracking-[0.2em] text-brand-cyan uppercase">Master Command</span>
+                <button class="text-brand-cyan/40 hover:text-brand-cyan transition-colors"
+                    onclick="openFabAction('command')" style="font-size: 1.5rem; line-height: 1;">×</button>
+            </div>
+            <div id="chat-messages" class="chat-messages custom-scrollbar">
+                <div class="msg bot">Terminal ready. Awaiting institutional directive.</div>
+            </div>
+            <div class="chat-input-row bg-brand-bg/50 backdrop-blur-md">
+                <input type="text" id="chat-input" placeholder="Execute command..." autocomplete="off">
+                <button id="send-btn">EXEC</button>
+            </div>
         </div>
-        <div id="chat-messages" class="chat-messages custom-scrollbar">
-            <div class="msg bot">Terminal ready. Awaiting institutional directive.</div>
-        </div>
-        <div class="chat-input-row bg-brand-bg/50 backdrop-blur-md">
-            <input type="text" id="chat-input" placeholder="Execute command..." autocomplete="off">
-            <button id="send-btn">EXEC</button>
-        </div>
-    </div>
 
-    <button id="fab-button" onclick="toggleFabMenu(event)"
-        class="w-14 h-14 bg-brand-cyan rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(0,242,255,0.4)] hover:scale-105 transition-transform active:scale-95 animate-pulse-cyan">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-        </svg>
-    </button>
+        <button id="fab-button" onclick="toggleFabMenu(event)"
+            class="w-14 h-14 bg-brand-cyan rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(0,242,255,0.4)] hover:scale-105 transition-transform active:scale-95 animate-pulse-cyan">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+        </button>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

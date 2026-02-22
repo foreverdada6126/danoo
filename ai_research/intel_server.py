@@ -58,7 +58,7 @@ async def scientist_status():
         </head>
         <body>
             <div class="container">
-                <h1>da<span>noo</span> scientist</h1>
+                <h1>Da<span class="text-brand-cyan">Noo</span> scientist</h1>
                 <div class="status-badge">{status_text}</div>
                 <div class="terminal">
                     > Accessing neural clusters...<br>
