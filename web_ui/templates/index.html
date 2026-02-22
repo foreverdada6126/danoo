@@ -4,217 +4,317 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DaNoo - Commmand Hub v5.2</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <title>DaNoo | Institutional Command Hub</title>
+    <!-- Modern Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&family=Space+Mono&display=swap"
+        rel="stylesheet">
+    <!-- Tailwind CSS Play CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            bg: '#050608',
+                            card: 'rgba(17, 21, 28, 0.7)',
+                            border: 'rgba(255, 255, 255, 0.08)',
+                            cyan: '#00f2ff',
+                            green: '#22ab94',
+                            red: '#f23645',
+                            text: '#d1d4dc',
+                            dim: '#787b86'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Space Grotesk', 'sans-serif'],
+                        mono: ['Space Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
-    <div class="app-wrapper">
-        <header>
-            <div class="brand">DANOO <span>v5.2</span></div>
-            <div class="top-vitals">
-                <div class="vital-item">
-                    <label>EQUITY:</label>
-                    <span id="equity-value" class="val">$1,000.00</span>
-                </div>
-                <div class="vital-item">
-                    <label>REGIME:</label>
-                    <span id="regime-value" class="val">RANGING</span>
-                </div>
-                <div class="vital-item">
-                    <label>PRICE:</label>
-                    <span id="price-value" class="val">$0.00</span>
-                </div>
-                <div class="vital-item">
-                    <label>FUNDING:</label>
-                    <span id="funding-value" class="val">0.0%</span>
-                </div>
-                <div class="vital-item">
-                    <label>SENTIMENT:</label>
-                    <span id="sentiment-value" class="val">0.0</span>
+    <div class="min-h-screen bg-brand-bg text-brand-text font-sans antialiased overflow-hidden flex flex-col">
+        <!-- Main Header -->
+        <header
+            class="h-14 flex items-center justify-between px-6 bg-brand-card/30 backdrop-blur-xl border-b border-brand-border sticky top-0 z-50">
+            <div class="flex items-center gap-4">
+                <div
+                    class="w-8 h-8 rounded-lg bg-brand-cyan shadow-[0_0_20px_rgba(0,242,255,0.4)] flex items-center justify-center font-display font-bold text-black text-xl">
+                    D</div>
+                <div class="flex flex-col leading-tight">
+                    <h1 class="font-display font-bold text-lg tracking-tight text-white lowercase">da<span
+                            class="text-brand-cyan italic">noo</span></h1>
+                    <span class="text-[9px] font-mono text-brand-dim uppercase tracking-widest">v5.2.5
+                        [Institutional]</span>
                 </div>
             </div>
-            <div class="nav-actions">
-                <div id="exchange-status" class="btn-sm"
-                    style="display: flex; align-items: center; gap: 6px; background: rgba(255, 100, 100, 0.1); color: #ff6464; border: 1px solid #ff646422;">
-                    <div id="exchange-dot"
-                        style="width: 8px; height: 8px; border-radius: 50%; background: #ff6464; box-shadow: 0 0 5px #ff6464;">
-                    </div>
-                    <span id="exchange-name">NOT CONNECTED</span>
+
+            <div class="hidden xl:flex items-center gap-10">
+                <div class="flex flex-col items-center">
+                    <span class="text-[9px] text-brand-dim uppercase tracking-widest mb-0.5">Account Equity</span>
+                    <span id="equity-value"
+                        class="font-display font-bold text-brand-cyan text-sm tracking-tight">$0.00</span>
                 </div>
-                <button class="btn-sm" onclick="toggleOverlay('vps-overlay')">HEALTH</button>
-                <button class="btn-sm" onclick="toggleOverlay('logs-overlay')">LOGS</button>
-                <button class="btn-sm" onclick="toggleOverlay('files-overlay')">FILES</button>
-                <button id="ai-toggle-btn" class="btn-sm" onclick="toggleAI()"
-                    style="background: rgba(0, 255, 100, 0.1); color: #00ff64; border: 1px solid #00ff6422;">AI:
-                    ON</button>
-                <div id="mode-tag" class="btn-sm"
-                    style="background: rgba(255, 170, 0, 0.1); color: #ffaa00; border: 1px solid #ffaa0022;">PAPER MODE
+                <div class="flex flex-col items-center border-l border-brand-border pl-10">
+                    <span class="text-[9px] text-brand-dim uppercase tracking-widest mb-0.5">Market Regime</span>
+                    <span id="regime-value"
+                        class="font-display font-bold text-white text-sm tracking-tight uppercase">Scanning</span>
                 </div>
+                <div class="flex flex-col items-center border-l border-brand-border pl-10">
+                    <span class="text-[9px] text-brand-dim uppercase tracking-widest mb-0.5">BTC Price</span>
+                    <span id="price-value" class="font-display font-bold text-white text-sm tracking-tight">$0.00</span>
+                </div>
+                <div class="flex flex-col items-center border-l border-brand-border pl-10">
+                    <span class="text-[9px] text-brand-dim uppercase tracking-widest mb-0.5">Avg Funding</span>
+                    <span id="funding-value"
+                        class="font-display font-bold text-brand-dim text-sm tracking-tight">0%</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <div id="exchange-status"
+                    class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-red/10 border border-brand-red/20 text-brand-red text-[11px] font-bold">
+                    <div id="exchange-dot" class="w-1.5 h-1.5 rounded-full bg-brand-red animate-pulse"></div>
+                    <span id="exchange-name" class="uppercase tracking-wide">Connecting...</span>
+                </div>
+
+                <div class="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/10">
+                    <button
+                        class="px-2.5 py-1 rounded md hover:bg-white/5 text-[10px] font-bold transition-all uppercase"
+                        onclick="toggleOverlay('logs-overlay')">Logs</button>
+                    <button
+                        class="px-2.5 py-1 rounded md hover:bg-white/5 text-[10px] font-bold transition-all uppercase border-l border-white/10"
+                        onclick="toggleOverlay('files-overlay')">Files</button>
+                </div>
+
+                <button id="ai-toggle-btn"
+                    class="px-4 py-1.5 rounded-lg bg-brand-green/10 border border-brand-green/20 text-brand-green text-[11px] font-bold hover:bg-brand-green/20 transition-all uppercase shadow-[0_0_15px_rgba(34,171,148,0.1)]"
+                    onclick="toggleAI()">AI: Active</button>
             </div>
         </header>
 
-        <main>
-            <!-- Column 1: Intelligence -->
-            <section class="panel">
-                <div class="panel-title">MISSION RECON <button id="recon-btn" class="btn-sm"
-                        style="font-size: 0.5rem; padding: 2px 6px;">SCAN</button></div>
-                <div id="recon-history" class="feed">
-                    <div class="card-item">
-                        <div class="card-body">Awaiting tactical research...</div>
+        <main
+            class="flex-1 grid grid-cols-1 lg:grid-cols-[400px_1fr_340px] gap-px bg-brand-border h-[calc(100vh-56px-32px)] overflow-hidden">
+            <!-- Left: Intelligence -->
+            <section class="bg-brand-bg flex flex-col h-full overflow-hidden">
+                <div
+                    class="flex items-center justify-between px-5 py-3.5 bg-brand-card/20 backdrop-blur-md border-b border-brand-border">
+                    <h2 class="text-[10px] font-bold tracking-[0.25em] text-brand-dim uppercase">Mission Reconnaissance
+                    </h2>
+                    <button id="recon-btn"
+                        class="group relative px-3 py-1 bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/30 rounded text-[10px] font-bold uppercase tracking-widest hover:bg-brand-cyan hover:text-black transition-all">
+                        <span class="relative z-10">Scan</span>
+                    </button>
+                </div>
+                <div id="recon-history" class="flex-1 overflow-y-auto p-5 custom-scrollbar space-y-4">
+                    <div class="p-6 rounded-2xl bg-brand-card/40 border border-brand-border animate-pulse shadow-inner">
+                        <div class="h-2 w-24 bg-brand-border rounded mb-3"></div>
+                        <div class="h-4 w-full bg-brand-border rounded mb-1.5"></div>
+                        <div class="h-4 w-3/4 bg-brand-border rounded"></div>
                     </div>
                 </div>
             </section>
 
-            <!-- Column 2: Execution & Performance -->
-            <section class="panel center-content">
-                <div class="panel">
-                    <div class="panel-title">LIVE MARKET <span id="market-symbol-title"
-                            style="color: var(--text-dim); font-size: 0.6rem;">BTCUSDT</span></div>
-                    <div class="chart-zone" style="padding: 0; height: 100%;">
-                        <div class="tradingview-widget-container" style="height:100%;width:100%">
-                            <div id="tradingview_1" style="height:calc(100% - 32px);width:100%"></div>
+            <!-- Center: Market Terminal -->
+            <section class="bg-brand-bg flex flex-col h-full overflow-hidden border-x border-brand-border">
+                <div class="grid grid-rows-[1.4fr_200px_1fr] h-full gap-px bg-brand-border">
+                    <!-- Chart -->
+                    <div class="bg-brand-bg flex flex-col overflow-hidden relative">
+                        <div class="absolute top-4 left-4 z-10 pointer-events-none">
+                            <div
+                                class="flex items-center gap-2 px-3 py-1 rounded bg-black/40 backdrop-blur-md border border-white/5">
+                                <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                                <span id="market-symbol-title" class="text-[10px] font-mono text-white/80">BTCUSDT
+                                    (15M)</span>
+                            </div>
+                        </div>
+                        <div class="flex-1 min-h-0 bg-brand-bg">
+                            <div id="tradingview_1" class="h-full w-full opacity-90 grayscale-[0.2] contrast-[1.1]">
+                            </div>
                             <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
                             <script type="text/javascript">
-                                new TradingView.widget(
-                                    {
-                                        "autosize": true,
-                                        "symbol": "BYBIT:BTCUSDT",
-                                        "interval": "15",
-                                        "timezone": "Etc/UTC",
-                                        "theme": "dark",
-                                        "style": "1",
-                                        "locale": "en",
-                                        "enable_publishing": false,
-                                        "backgroundColor": "#0a0b0d",
-                                        "gridColor": "#131722",
-                                        "hide_top_toolbar": true,
-                                        "hide_legend": true,
-                                        "save_image": false,
-                                        "container_id": "tradingview_1"
-                                    }
-                                );
+                                new TradingView.widget({
+                                    "autosize": true,
+                                    "symbol": "BYBIT:BTCUSDT",
+                                    "interval": "15",
+                                    "timezone": "Etc/UTC",
+                                    "theme": "dark",
+                                    "style": "1",
+                                    "locale": "en",
+                                    "enable_publishing": false,
+                                    "backgroundColor": "rgba(5, 6, 8, 1)",
+                                    "gridColor": "rgba(255, 255, 255, 0.03)",
+                                    "hide_top_toolbar": true,
+                                    "hide_legend": true,
+                                    "save_image": false,
+                                    "container_id": "tradingview_1"
+                                });
                             </script>
                         </div>
                     </div>
-                </div>
-                <div class="panel" style="border-top: 1px solid var(--border);">
-                    <div class="panel-title">PERFORMANCE <span style="color: var(--text-dim); font-size: 0.6rem;">EQUITY
-                            GROWTH</span></div>
-                    <div class="chart-zone">
-                        <div class="chart-container">
-                            <canvas id="pnlChart"></canvas>
+
+                    <!-- Performance -->
+                    <div class="bg-brand-bg flex flex-col overflow-hidden">
+                        <div
+                            class="flex items-center justify-between px-5 py-3 bg-brand-card/10 border-b border-brand-border">
+                            <h2 class="text-[10px] font-bold tracking-[0.25em] text-brand-dim uppercase italic">Equity
+                                Velocity</h2>
+                            <span class="text-[10px] text-brand-cyan/60 font-mono tracking-widest">LIVE DATA FEED</span>
+                        </div>
+                        <div class="flex-1 p-6">
+                            <div class="h-full w-full relative">
+                                <canvas id="pnlChart"></canvas>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="panel" style="border-top: 1px solid var(--border);">
-                    <div class="panel-title">ACTIVE TRADES <span id="orders-count" class="up">0</span></div>
-                    <div id="trade-list" class="feed">
-                        <div class="card-item">
-                            <div class="card-body" style="color: var(--text-dim); text-align: center;">No exposure
-                                found.</div>
+
+                    <!-- Active Trades -->
+                    <div class="bg-brand-bg flex flex-col overflow-hidden">
+                        <div
+                            class="flex items-center justify-between px-5 py-3 bg-brand-card/10 border-b border-brand-border">
+                            <div class="flex items-center gap-3">
+                                <h2 class="text-[10px] font-bold tracking-[0.25em] text-brand-dim uppercase">Open
+                                    Positions</h2>
+                                <span id="orders-count"
+                                    class="px-1.5 py-0.5 rounded bg-brand-cyan/10 text-brand-cyan text-[10px] font-bold font-mono">0</span>
+                            </div>
+                        </div>
+                        <div id="trade-list" class="flex-1 overflow-y-auto p-5 custom-scrollbar space-y-3">
+                            <div
+                                class="flex flex-col items-center justify-center py-10 opacity-30 select-none pointer-events-none">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+                                    class="mb-4 stroke-brand-dim">
+                                    <path
+                                        d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
+                                        stroke-width="1.5" />
+                                    <path d="M12 8V12L14 14" stroke-width="1.5" stroke-linecap="round" />
+                                </svg>
+                                <p class="text-[10px] uppercase tracking-[0.3em] font-bold text-brand-dim text-center">
+                                    Zero Market Exposure</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- Column 3: Ops & Control -->
-            <section class="panel">
-                <div class="panel-title">APPROVAL QUEUE</div>
-                <div id="approval-list" class="feed" style="max-height: 100%;">
-                    <div class="card-item">
-                        <div class="card-body" style="color: var(--text-dim); text-align: center;">Queue empty.</div>
+            <!-- Right: Execution Engine -->
+            <section class="bg-brand-bg flex flex-col h-full overflow-hidden">
+                <div
+                    class="flex items-center px-5 py-3.5 bg-brand-card/20 backdrop-blur-md border-b border-brand-border">
+                    <h2 class="text-[10px] font-bold tracking-[0.25em] text-brand-dim uppercase">Approval Queue</h2>
+                </div>
+                <div id="approval-list" class="flex-1 overflow-y-auto p-5 custom-scrollbar space-y-4">
+                    <div class="flex flex-col items-center justify-center py-20 opacity-20 select-none">
+                        <p
+                            class="text-[10px] uppercase tracking-[0.4em] font-bold text-brand-dim text-center leading-relaxed">
+                            System Idle<br>Awaiting Signal...</p>
                     </div>
                 </div>
             </section>
         </main>
 
-        <footer>
-            <div>SYMBOL: <span id="meta-symbol">BTCUSDT</span></div>
-            <div>VPS: OPERATIONAL</div>
-            <div id="uptime">00:00:00</div>
+        <footer
+            class="h-8 flex items-center justify-between px-6 bg-brand-bg border-t border-brand-border text-[9px] font-mono tracking-widest text-brand-dim uppercase">
+            <div class="flex items-center gap-6">
+                <div>Ticker: <span id="meta-symbol" class="text-brand-cyan">BTCUSDT</span></div>
+                <div class="flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-brand-green"></span>
+                    Node: <span class="text-white">PROD_VPS_OS_01</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-6">
+                <div>Latency: <span class="text-brand-green">14ms</span></div>
+                <div id="uptime" class="text-white">00:00:00</div>
+            </div>
         </footer>
 
-        <!-- Overlays -->
-        <div id="vps-overlay" class="overlay hidden">
-            <div class="overlay-header">
-                <h3>VPS HEALTH</h3><button class="close-btn" onclick="toggleOverlay('vps-overlay')">×</button>
-            </div>
-            <div class="feed" style="padding: 1.5rem;">
-                <div class="vital-item" style="margin-bottom: 1rem;"><label>CPU:</label><span id="cpu-val"
-                        class="val">0%</span></div>
-                <div class="vital-item" style="margin-bottom: 1rem;"><label>RAM:</label><span id="ram-val"
-                        class="val">0%</span></div>
-                <div class="vital-item" style="margin-bottom: 1rem;"><label>DISK:</label><span id="disk-val"
-                        class="val">0%</span></div>
-                <button id="report-btn" class="btn-sm" style="width: 100%; margin-top: 1rem;">GENERATE FULL
-                    REPORT</button>
-                <div id="report-terminal" class="hidden"
-                    style="background:#000; padding: 10px; font-family: 'Space Mono', monospace; font-size: 0.6rem; margin-top: 10px; border: 1px solid var(--border); max-height: 200px; overflow-y: auto;">
-                    <pre id="report-content" style="white-space: pre-wrap; color: #8b949e;"></pre>
+        <!-- Overlays Layer -->
+        <div id="logs-overlay"
+            class="overlay hidden fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
+            <div
+                class="w-full max-w-2xl bg-brand-bg border border-brand-border rounded-2xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-brand-border bg-brand-card/30">
+                    <h3 class="text-xs font-bold tracking-widest uppercase">System Execution Logs</h3>
+                    <button class="text-lg opacity-5 hover:opacity-100 transition-opacity"
+                        onclick="toggleOverlay('logs-overlay')">×</button>
+                </div>
+                <div id="log-list"
+                    class="flex-1 overflow-y-auto p-6 font-mono text-[11px] leading-relaxed space-y-1 custom-scrollbar">
+                </div>
+                <div class="p-4 border-t border-brand-border bg-brand-card/10">
+                    <button id="cleanup-btn"
+                        class="w-full py-2 bg-brand-red/10 text-brand-red text-[10px] font-bold uppercase rounded-lg border border-brand-red/20 hover:bg-brand-red/20 transition-all">Purge
+                        Logs</button>
                 </div>
             </div>
         </div>
 
-        <div id="logs-overlay" class="overlay hidden">
-            <div class="overlay-header">
-                <h3>SYSTEM LOGS</h3><button class="close-btn" onclick="toggleOverlay('logs-overlay')">×</button>
-            </div>
-            <div id="log-list" class="feed" style="font-family: 'Space Mono', monospace; font-size: 0.65rem;"></div>
-            <div style="padding: 10px; border-top: 1px solid var(--border);"><button id="cleanup-btn" class="btn-sm"
-                    style="width: 100%;">PURGE LOGS</button></div>
-        </div>
-
-        <div id="files-overlay" class="overlay hidden">
-            <div class="overlay-header">
-                <h3>FILE VAULT</h3><button class="close-btn" onclick="toggleOverlay('files-overlay')">×</button>
-            </div>
-            <div class="feed">
-                <div class="chat-input-row" style="border:none;">
-                    <select id="file-target"
-                        style="background:#1e222d; color:#fff; border:1px solid var(--border); padding:5px; border-radius:4px;">
-                        <option value="reference">Reference</option>
-                        <option value="data">Data</option>
-                    </select>
-                    <button id="upload-btn" class="btn-sm">UPLOAD NEW</button>
+        <div id="files-overlay"
+            class="overlay hidden fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
+            <div
+                class="w-full max-w-lg bg-brand-bg border border-brand-border rounded-2xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-brand-border bg-brand-card/30">
+                    <h3 class="text-xs font-bold tracking-widest uppercase">Intel Data Vault</h3>
+                    <button class="text-lg opacity-5 hover:opacity-100 transition-opacity"
+                        onclick="toggleOverlay('files-overlay')">×</button>
                 </div>
-                <div id="file-list" class="feed" style="font-size: 0.7rem;"></div>
+                <div class="p-6 flex flex-col h-full overflow-hidden">
+                    <div class="flex items-center gap-2 mb-6 p-1 bg-white/5 border border-white/10 rounded-xl">
+                        <select id="file-target" class="bg-transparent text-[11px] font-bold px-3 py-2 outline-none">
+                            <option value="reference">Reference Library</option>
+                            <option value="data">Market Data Sets</option>
+                        </select>
+                        <button id="upload-btn"
+                            class="flex-1 py-2 bg-white/5 hover:bg-white/10 text-[10px] font-bold uppercase rounded-lg transition-all">Upload
+                            File</button>
+                    </div>
+                    <div id="file-list"
+                        class="flex-1 overflow-y-auto custom-scrollbar font-mono text-[10px] text-brand-dim space-y-2">
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Master Command Draggable Box -->
-    <div id="master-command-box" class="panel hidden"
-        style="position: fixed; bottom: 100px; right: 40px; z-index: 1000; width: 320px; height: 400px; border: 1px solid var(--border); box-shadow: 0 10px 40px rgba(0,0,0,0.8); border-radius: 8px;">
-        <div id="fab-drag-handle" class="panel-title"
-            style="cursor: grab; border-top-left-radius: 8px; border-top-right-radius: 8px; background: rgba(0, 242, 255, 0.1); border-bottom: 1px solid var(--cyan);">
-            MASTER COMMAND
-            <button class="close-btn" onclick="toggleFabChat()"
-                style="font-size: 1rem; pointer-events: auto;">×</button>
+    <!-- Master Command Draggable Widget -->
+    <div id="fab-widget" style="position: fixed; bottom: 40px; right: 40px; z-index: 1000; width: 0; height: 0;">
+        <div id="master-command-box" class="panel hidden glass"
+            style="position: absolute; bottom: 65px; right: 0; width: 340px; height: 450px; border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.6); overflow: hidden; display: flex; flex-direction: column;">
+            <div id="fab-drag-handle"
+                class="px-5 py-3 bg-brand-cyan/10 border-b border-brand-cyan/20 flex items-center justify-between cursor-grab active:cursor-grabbing">
+                <span class="text-[10px] font-bold tracking-[0.2em] text-brand-cyan uppercase">Master Command</span>
+                <button class="text-brand-cyan/40 hover:text-brand-cyan transition-colors"
+                    onmousedown="toggleFabChat(event)">×</button>
+            </div>
+            <div id="chat-messages" class="chat-messages custom-scrollbar">
+                <div class="msg bot">Terminal ready. Awaiting institutional directive.</div>
+            </div>
+            <div class="chat-input-row bg-brand-bg/50 backdrop-blur-md">
+                <input type="text" id="chat-input" placeholder="Execute command..." autocomplete="off">
+                <button id="send-btn">EXEC</button>
+            </div>
         </div>
-        <div id="chat-messages" class="chat-messages">
-            <div class="msg bot">System initialized. Ready for instructions.</div>
-        </div>
-        <div class="chat-input-row"
-            style="background: var(--bg-card); border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
-            <input type="text" id="chat-input" placeholder="Enter command..." autocomplete="off">
-            <button id="send-btn">SEND</button>
-        </div>
-    </div>
 
-    <!-- Master Command Trigger Button -->
-    <div id="fab-button" onclick="toggleFabChat()"
-        style="position: fixed; bottom: 40px; right: 40px; z-index: 1000; width: 50px; height: 50px; background: var(--cyan); border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 0 15px rgba(0, 242, 255, 0.5); transition: transform 0.2s;">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-        </svg>
+        <button id="fab-button" onclick="toggleFabIfClicked()"
+            class="absolute bottom-0 right-0 w-14 h-14 bg-brand-cyan rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(0,242,255,0.4)] hover:scale-105 transition-transform active:scale-95 animate-pulse-cyan">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+        </button>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="/static/script.js?v=5.2.4"></script>
+    <script src="/static/script.js?v=5.3.1"></script>
 </body>
 
 </html>
