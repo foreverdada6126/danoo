@@ -225,6 +225,40 @@ async function toggleAI() {
     }
 }
 
+// ─── Live Price Ticker ───────────────────────────────
+let lastPrices = {};
+async function updateTicker() {
+    try {
+        const res = await fetch('/api/market/prices');
+        const data = await res.json();
+        const container = get('price-ticker');
+        if (!container || !data.prices) return;
+
+        const symbols = Object.keys(data.prices);
+        // Duplicate for seamless loop if needed, for now just list them
+        const items = symbols.map(s => {
+            const price = data.prices[s];
+            const last = lastPrices[s] || price;
+            const diff = price - last;
+            lastPrices[s] = price;
+
+            const colorClass = diff > 0 ? 'up' : (diff < 0 ? 'down' : '');
+            const icon = diff > 0 ? '↗' : (diff < 0 ? '↘' : '→');
+
+            return `
+                <div class="ticker-item">
+                    <span class="ticker-symbol">${s.replace('USDT', '')}</span>
+                    <span class="ticker-price">$${price.toLocaleString()}</span>
+                    <span class="ticker-change ${colorClass}">${icon}</span>
+                </div>
+            `;
+        }).join('');
+
+        // Provide enough items to fill the width for animation
+        container.innerHTML = items + items + items;
+    } catch (e) { }
+}
+
 async function syncDashboard() {
     try {
         const res = await fetch('/api/status');
@@ -914,6 +948,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateTrades, 3000);
     setInterval(updateApprovals, 3000);
     setInterval(updateFiles, 10000);
+    setInterval(updateTicker, 5000);
 
     // Initialize candlestick chart (has built-in retry for CDN + dimensions)
     initPriceChart();

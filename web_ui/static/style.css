@@ -355,3 +355,50 @@ body {
     background: #f87171;
     color: #000;
 }
+
+/* Price Ticker Animation */
+.animate-ticker {
+    display: inline-flex;
+    animation: ticker 45s linear infinite;
+}
+
+@keyframes ticker {
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(-50%);
+    }
+}
+
+.pause {
+    animation-play-state: paused;
+}
+
+.ticker-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+}
+
+.ticker-symbol {
+    font-weight: 700;
+    color: #fff;
+    opacity: 0.6;
+}
+
+.ticker-price {
+    font-weight: 700;
+    color: var(--cyan-brand);
+}
+
+.ticker-change.up {
+    color: var(--green-brand) !important;
+}
+
+.ticker-change.down {
+    color: var(--red-brand) !important;
+}

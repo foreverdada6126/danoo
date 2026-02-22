@@ -77,7 +77,7 @@ async def update_config(data: Dict[str, str]):
     
     if "mode" in data:
         new_mode = data["mode"].upper()
-        if new_mode in ["PAPER", "LIVE"]:
+        if new_mode in ["PAPER", "LIVE", "WALK_FORWARD"]:
             SYSTEM_STATE["mode"] = new_mode
             SETTINGS.MODE = new_mode.lower()
             try:

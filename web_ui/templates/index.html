@@ -123,6 +123,7 @@
                     <select id="mode-selector" onchange="changeGlobalConfig('mode', this.value)"
                         class="bg-transparent px-2 py-1 text-[9px] font-bold text-brand-dim uppercase tracking-tighter outline-none cursor-pointer appearance-none border-none">
                         <option value="paper" selected class="bg-[#11151c] text-white">PAPER MODE</option>
+                        <option value="walk_forward" class="bg-[#11151c] text-brand-cyan">WALK-FORWARD</option>
                         <option value="live" class="bg-[#11151c] text-brand-red">LIVE MODE</option>
                     </select>
                 </div>
@@ -132,6 +133,16 @@
                     onclick="toggleAI()">AI: Active</button>
             </div>
         </header>
+
+        <!-- Live Asset Ticker -->
+        <div
+            class="h-8 bg-brand-card/20 border-b border-brand-border flex items-center overflow-hidden whitespace-nowrap z-40 shrink-0">
+            <div id="price-ticker" class="flex gap-8 px-6 animate-ticker hover:pause">
+                <!-- Populated by JS -->
+                <span class="text-[9px] font-bold text-brand-dim uppercase tracking-widest italic">Initializing Market
+                    Data Stream...</span>
+            </div>
+        </div>
 
         <main
             class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[340px_1fr_340px] gap-px bg-brand-border h-[calc(100vh-56px-32px)] overflow-hidden">
