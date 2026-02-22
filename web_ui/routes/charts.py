@@ -32,9 +32,9 @@ async def get_ohlcv_data(symbol: str = "BTCUSDT", timeframe: str = "15m"):
     
     try:
         bridge = ExchangeHandler()
-        client = await bridge._get_client()
+        # Use Force Public for Mainnet Prices
+        client = await bridge._get_client(force_public=True)
         ohlcv = await client.fetch_ohlcv(symbol, timeframe, limit=200)
-        await bridge.close()
         
         candles = [{
             "time": int(row[0] / 1000),
@@ -108,25 +108,24 @@ async def get_all_prices():
     prices = {}
     try:
         bridge = ExchangeHandler()
-        client = await bridge._get_client()
-        await client.load_markets()
+        # Force Public for Real Prices
+        client = await bridge._get_client(force_public=True)
+        markets = await client.load_markets()
+        logger.info(f"Ticker: Loaded {len(markets)} markets. BTCUSDT in: {'BTCUSDT' in markets}")
         
-        # Use fetch_tickers which is efficient for multi-symbol
         try:
             tickers = await client.fetch_tickers(symbols)
             for s in symbols:
                 if s in tickers:
                     prices[s] = tickers[s].get("last", 0.0)
         except Exception as e:
-            logger.warning(f"fetch_tickers failed, falling back to sequential: {e}")
+            logger.warning(f"fetch_tickers failed: {e}")
             for s in symbols:
                 try:
                     t = await client.fetch_ticker(s)
                     prices[s] = t.get("last", 0.0)
-                except:
-                    prices[s] = 0.0
+                except: prices[s] = 0.0
                     
-        await bridge.close()
     except Exception as e:
         logger.error(f"Multi-price fetch error: {e}")
     return {"prices": prices}

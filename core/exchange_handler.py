@@ -6,12 +6,25 @@ import time
 from loguru import logger
 from config.settings import SETTINGS
 
-# --- Persistent Global Client ---
-# Singleton pattern to prevent recreation of TCP sessions and market loading
+# --- Persistent Global Clients ---
 _CLIENT_INSTANCE = None
+_PUBLIC_CLIENT = None
 
-async def get_exchange_client():
-    global _CLIENT_INSTANCE
+async def get_exchange_client(force_public=False):
+    global _CLIENT_INSTANCE, _PUBLIC_CLIENT
+    
+    if force_public:
+        if _PUBLIC_CLIENT is None:
+            exchange_id = SETTINGS.EXCHANGE_ID
+            exchange_class = getattr(ccxt, exchange_id)
+            # Public mainnet client for real data display
+            _PUBLIC_CLIENT = exchange_class({
+                'enableRateLimit': True,
+                'options': {'defaultType': 'swap' if exchange_id == "bybit" else 'future'}
+            })
+            logger.info(f"Exchange Bridge: Public Mainnet Client created for {exchange_id.upper()}.")
+        return _PUBLIC_CLIENT
+
     if _CLIENT_INSTANCE is None:
         exchange_id = SETTINGS.EXCHANGE_ID
         if exchange_id == "bybit":
@@ -23,7 +36,6 @@ async def get_exchange_client():
             secret = SETTINGS.BINANCE_SECRET
             _default_type = 'future'
 
-        # Initialize Async CCXT exchange
         exchange_class = getattr(ccxt, exchange_id)
         config = {
             'apiKey': api_key,
@@ -31,7 +43,6 @@ async def get_exchange_client():
             'enableRateLimit': True,
             'options': {'defaultType': _default_type} 
         }
-        
         client = exchange_class(config)
 
         if SETTINGS.USE_SANDBOX:
@@ -58,43 +69,31 @@ class ExchangeHandler:
         self.api_key = SETTINGS.BYBIT_API_KEY if SETTINGS.EXCHANGE_ID == "bybit" else SETTINGS.BINANCE_API_KEY
         self.use_sandbox = SETTINGS.USE_SANDBOX
 
-    async def _get_client(self):
-        return await get_exchange_client()
+    async def _get_client(self, force_public=False):
+        return await get_exchange_client(force_public)
 
     async def fetch_balance(self):
-        """Aggressively fetches the USDT balance from the futures wallet."""
         if not self.api_key:
             return 5000.0 if self.use_sandbox else 0.0
-            
         try:
             client = await self._get_client()
             await client.load_markets()
             balance = await client.fetch_balance()
-            
             usdt_bal = balance.get('total', {}).get('USDT', 0.0)
             if usdt_bal == 0:
                 usdt_bal = balance.get('USDT', {}).get('total', 0.0)
-            if usdt_bal == 0 and 'info' in balance:
-                assets = balance['info'].get('assets', [])
-                for asset in assets:
-                    if asset.get('asset') == 'USDT':
-                        usdt_bal = float(asset.get('walletBalance', 0.0))
-                        break
-            
             logger.info(f"Exchange Bridge: Connection SUCCESS. Detected Balance: ${usdt_bal}")
             return float(usdt_bal)
         except Exception as e:
-            logger.error(f"Exchange Bridge: Connection FAILURE. Cause: {str(e)}")
+            logger.error(f"Exchange Bridge: Balance Failure: {str(e)}")
             return None
 
     async def fetch_market_data(self, symbol=None, timeframe=None):
-        """Fetches RSI and Funding Rate for the dashboard."""
         symbol = symbol or SETTINGS.DEFAULT_SYMBOL
         timeframe = timeframe or SETTINGS.DEFAULT_TIMEFRAME
-        
         try:
-            client = await self._get_client()
-            # Reuse pre-loaded markets
+            # Always use public mainnet for stats display
+            client = await self._get_client(force_public=True)
             await client.load_markets()
             ohlcv = await client.fetch_ohlcv(symbol, timeframe, limit=100)
             df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
@@ -121,54 +120,17 @@ class ExchangeHandler:
             return None
 
     async def place_limit_order(self, symbol, side, amount, price):
-        """Places a real (sandbox) limit order with paper fallback."""
         if not self.api_key:
-            if self.use_sandbox:
-                logger.info("Exchange Bridge: No API keys found. Simulating Paper Execution...")
-                return {
-                    "success": True,
-                    "order": {
-                        'id': f'sim-{int(time.time())}',
-                        'info': {'status': 'FILLED', 'type': 'PAPER_SIM'},
-                        'status': 'closed',
-                        'symbol': symbol,
-                        'side': side,
-                        'price': price,
-                        'amount': amount
-                    }
-                }
-            return {"success": False, "error": "Production Keys Missing"}
-
+            return {"success": True, "order": {"id": f"sim-{int(time.time())}", "status": "closed", "price": price, "amount": amount}}
         try:
-            client = await self._get_client()
+            client = await self._get_client() # Uses Sandbox if SETTINGS.USE_SANDBOX
             await client.load_markets()
-            
-            market = client.market(symbol)
-            min_amount = market.get('limits', {}).get('amount', {}).get('min', 0.001)
-            min_cost = market.get('limits', {}).get('cost', {}).get('min', 0)
-            
             formatted_amount = float(client.amount_to_precision(symbol, amount))
-            
-            if formatted_amount < min_amount:
-                formatted_amount = min_amount
-                logger.warning(f"Amount adjusted to minimum: {min_amount} for {symbol}")
-            
-            current_price = (await client.fetch_ticker(symbol)).get('last', 0)
-            notional_value = formatted_amount * current_price
-            
-            if min_cost and notional_value < min_cost:
-                logger.error(f"Order rejected: Notional value ${notional_value:.2f} below minimum ${min_cost}")
-                return {"success": False, "error": f"Order size ${notional_value:.2f} below minimum ${min_cost}"}
-            
-            logger.info(f"EXCHANGE ATTEMPT: MARKET {side.upper()} {formatted_amount} {symbol} (~${notional_value:.2f})")
             order = await client.create_market_order(symbol, side, formatted_amount)
-            logger.success(f"EXCHANGE SUCCESS: {order['id']}")
             return {"success": True, "order": order}
         except Exception as e:
-            error_msg = str(e)
-            logger.error(f"EXCHANGE REJECTION: {error_msg}")
-            return {"success": False, "error": error_msg}
+            logger.error(f"EXCHANGE REJECTION: {str(e)}")
+            return {"success": False, "error": str(e)}
 
     async def close(self):
-        """No longer closes the global client, but keeps it alive for efficiency."""
         pass

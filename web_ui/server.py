@@ -50,21 +50,54 @@ load_log_file()
 # ─── Boot: Load Open Trades from DB ──────────────────────────────
 def load_persistence():
     """Loads previous session state from SQLite."""
+    from web_ui.state import TRADE_LOG_HISTORY
     try:
         session = DB_SESSION()
+        # 1. Load Active Trades
         trades = session.query(Trade).filter(Trade.status == 'OPEN').all()
         for t in trades:
             ACTIVE_TRADES.append({
                 "id": t.id,
                 "time": t.entry_time.timestamp(),
                 "symbol": t.symbol,
-                "type": f"{t.side.upper()} (REAL/DEMO)",
+                "type": f"{t.side.upper()} ({t.strategy.split('_')[0] if t.strategy else 'MANUAL'})",
                 "status": t.status,
                 "pnl": f"${t.pnl:.2f}" if t.pnl else "$0.00",
                 "order_id": t.order_id,
-                "reason": t.strategy or "Persistent Trade"
+                "reason": t.strategy or "Persistent Trade",
+                "leverage": t.leverage or 1
             })
-        logger.info(f"Database: Loaded {len(ACTIVE_TRADES)} active trades from persistence.")
+            
+        # 2. Re-hydrate Trade Log History with last 20 events
+        history = session.query(Trade).order_by(Trade.id.desc()).limit(20).all()
+        for h in reversed(history):
+            # Add Entry Event
+            TRADE_LOG_HISTORY.append({
+                "timestamp": h.entry_time.timestamp(),
+                "action": "ENTRY",
+                "symbol": h.symbol,
+                "type": h.side,
+                "price": h.entry_price,
+                "amount": h.amount,
+                "leverage": h.leverage or 1,
+                "reason": h.strategy
+            })
+            # Add Exit Event if closed
+            if h.status == "CLOSED" and h.exit_time:
+                TRADE_LOG_HISTORY.append({
+                    "timestamp": h.exit_time.timestamp(),
+                    "action": "EXIT",
+                    "symbol": h.symbol,
+                    "type": h.side,
+                    "price": h.exit_price,
+                    "amount": h.amount,
+                    "leverage": h.leverage or 1,
+                    "pnl": h.pnl,
+                    "pnl_pct": ((h.exit_price - h.entry_price) / h.entry_price * 100 * (1 if h.side == "BUY" else -1)) if h.entry_price else 0,
+                    "reason": "Persistence Recovery"
+                })
+        
+        logger.info(f"Database: Loaded {len(ACTIVE_TRADES)} active and {len(TRADE_LOG_HISTORY)} historical events.")
         session.close()
     except Exception as e:
         logger.error(f"Persistence Load Error: {e}")

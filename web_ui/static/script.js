@@ -557,39 +557,58 @@ async function updateTrades() {
 
         container.innerHTML = Object.keys(groups).sort((a, b) => new Date(b) - new Date(a)).map(date => {
             return `
-                <div class="mb-6">
-                    <div class="flex items-center gap-3 mb-3 px-1">
-                        <div class="h-px flex-1 bg-brand-border"></div>
-                        <span class="text-[8px] font-bold text-brand-dim uppercase tracking-[0.2em] whitespace-nowrap">${date}</span>
-                        <div class="h-px flex-1 bg-brand-border"></div>
+                <div class="mb-8">
+                    <div class="flex items-center gap-4 mb-4 px-1">
+                        <span class="text-[9px] font-bold text-brand-dim uppercase tracking-[0.3em] whitespace-nowrap">${date}</span>
+                        <div class="h-px flex-1 bg-gradient-to-r from-brand-border to-transparent"></div>
                     </div>
-                    <div class="space-y-3">
+                    <div class="space-y-4">
                         ${groups[date].map(t => {
                 const isClosed = t.status === 'CLOSED';
                 const strategy = t.reason || 'Auto';
                 const isScalp = strategy.includes('SCALP');
-                const badgeColor = isScalp ? 'bg-brand-red/20 text-brand-red border-brand-red/30' : 'bg-brand-cyan/20 text-brand-cyan border-brand-cyan/30';
+                const badgeColor = isScalp ? 'text-brand-red border-brand-red/30' : 'text-brand-cyan border-brand-cyan/30';
+                const pnlValue = t.pnl ? t.pnl.replace('$', '').replace('+', '') : '0.00';
+                const isProfit = parseFloat(pnlValue) >= 0;
 
                 return `
-                            <div class="card-item ${isClosed ? 'opacity-60' : ''}">
+                            <div class="card-item group ${isClosed ? 'opacity-50' : ''}">
                                 <div class="card-meta">
-                                    <span class="${isClosed ? 'text-brand-dim' : 'text-brand-cyan'}">${t.type}</span>
+                                    <span class="flex items-center gap-2">
+                                        <span class="w-1 h-1 rounded-full ${isClosed ? 'bg-brand-dim' : 'bg-brand-green animate-pulse'}"></span>
+                                        ${t.type}
+                                    </span>
                                     <span>${formatTime(t.time)}</span>
                                 </div>
-                                <div class="card-header">${t.symbol} <span class="${t.pnl && t.pnl.includes('+') ? 'up' : 'down'}">${t.pnl}</span></div>
+                                <div class="card-header">
+                                    <span class="tracking-tight">${t.symbol}</span>
+                                    <span class="font-mono ${isProfit ? 'up' : 'down'} text-[13px]">${t.pnl || '$0.00'}</span>
+                                </div>
                                 <div class="card-body">
-                                    <div class="flex items-center justify-between mb-3 text-[10px]">
-                                        <span class="text-brand-dim">Conviction: <span class="text-white">${t.conviction || 'N/A'}</span></span>
-                                        <span class="text-brand-dim">Risk: <span class="${t.risk === 'HIGH' ? 'text-brand-red' : (t.risk === 'MED' ? 'text-brand-orange' : 'text-brand-green')}">${t.risk || 'UNK'}</span></span>
-                                    </div>
-                                    <div class="flex items-center justify-between mb-3">
-                                        <span class="text-[9px] uppercase tracking-wider ${isClosed ? 'text-brand-red' : 'text-brand-green'}">${t.status}</span>
-                                        <div class="flex items-center gap-1.5">
-                                            <span class="px-1.5 py-0.5 rounded text-[7px] font-bold uppercase border bg-white/5 border-white/10 text-brand-dim">${t.leverage || 1}x</span>
-                                            <span class="px-1.5 py-0.5 rounded text-[7px] font-bold uppercase border ${badgeColor}">${strategy}</span>
+                                    <div class="flex items-center justify-between mb-4 text-[10px]">
+                                        <div class="flex flex-col">
+                                            <span class="text-brand-dim text-[8px] uppercase font-bold tracking-tighter">Conviction</span>
+                                            <span class="text-white font-bold">${t.conviction || '95%'}</span>
+                                        </div>
+                                        <div class="flex flex-col items-end">
+                                            <span class="text-brand-dim text-[8px] uppercase font-bold tracking-tighter">Risk Level</span>
+                                            <span class="${t.risk === 'HIGH' ? 'text-brand-red' : (t.risk === 'MED' ? 'text-brand-cyan' : 'text-brand-green')} font-bold text-shadow-glow">${t.risk || 'LOW'}</span>
                                         </div>
                                     </div>
-                                    ${!isClosed ? `<button onclick="closeTrade('${t.order_id}')" class="btn btn-approve mt-2 w-full text-[9px] bg-brand-red/10 border-brand-red/20 text-brand-red">CLOSE POSITION</button>` : ''}
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex gap-1.5">
+                                            <span class="badge-sleek">${t.leverage || 1}X</span>
+                                            <span class="badge-sleek ${badgeColor}">${strategy}</span>
+                                        </div>
+                                        ${!isClosed ? `
+                                            <button onclick="closeTrade('${t.order_id}')" 
+                                                class="px-3 py-1 bg-brand-red/10 border border-brand-red/20 text-brand-red text-[8px] font-bold rounded uppercase hover:bg-brand-red hover:text-black transition-all">
+                                                EXIT
+                                            </button>
+                                        ` : `
+                                            <span class="text-[8px] text-brand-dim uppercase font-bold tracking-widest italic">SETTLED</span>
+                                        `}
+                                    </div>
                                 </div>
                             </div>
                         `;

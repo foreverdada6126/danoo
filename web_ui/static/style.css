@@ -65,46 +65,77 @@ body {
     color: var(--cyan-brand) !important;
 }
 
-/* Dashboard Cards */
+/* Dashboard Cards - SLEEK REDESIGN */
 .card-item {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid var(--border-brand);
-    border-radius: 12px;
-    padding: 16px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 20px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.card-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 2px;
+    height: 100%;
+    background: transparent;
+    transition: background 0.3s;
 }
 
 .card-item:hover {
-    background: rgba(255, 255, 255, 0.04);
-    border-color: rgba(0, 242, 255, 0.2);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border-color: rgba(0, 242, 255, 0.15);
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+}
+
+.card-item:hover::before {
+    background: var(--cyan-brand);
 }
 
 .card-meta {
     display: flex;
     justify-content: space-between;
     font-family: 'Space Mono', monospace;
-    font-size: 10px;
+    font-size: 9px;
     color: var(--text-dim);
     text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 8px;
+    letter-spacing: 1.5px;
+    margin-bottom: 12px;
 }
 
 .card-header {
     font-family: 'Space Grotesk', sans-serif;
     font-weight: 700;
-    font-size: 14px;
+    font-size: 16px;
     color: #fff;
-    margin-bottom: 4px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .card-body {
-    font-size: 12px;
+    font-size: 11px;
     line-height: 1.6;
     color: var(--text-brand);
-    opacity: 0.8;
+    opacity: 0.9;
+}
+
+.badge-sleek {
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 8px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Recon Grouping */

@@ -23,10 +23,10 @@ async def get_active_trades():
             return price_cache[symbol]
         try:
             bridge = ExchangeHandler()
-            client = await bridge._get_client()
+            # Force Public for Real Prices in Dashboard
+            client = await bridge._get_client(force_public=True)
             ticker = await client.fetch_ticker(symbol)
             price_cache[symbol] = ticker.get("last", 0.0)
-            await bridge.close()
             return price_cache[symbol]
         except:
             if symbol == SYSTEM_STATE.get("symbol", "BTCUSDT"):
@@ -68,10 +68,9 @@ async def get_all_trades():
                 return price_cache[symbol]
             try:
                 bridge = ExchangeHandler()
-                client = await bridge._get_client()
+                client = await bridge._get_client(force_public=True)
                 ticker = await client.fetch_ticker(symbol)
                 price_cache[symbol] = ticker.get("last", 0.0)
-                await bridge.close()
                 return price_cache[symbol]
             except:
                 return 0.0
@@ -271,3 +270,8 @@ async def approve_trade(signal_id: int):
     except Exception as e:
         logger.error(f"Approval Error: {e}")
         return {"status": "error", "message": str(e)}
+@router.get("/api/trade_logs")
+async def get_trade_logs():
+    """Returns the history of recent trade execution events."""
+    from web_ui.state import TRADE_LOG_HISTORY
+    return {"logs": TRADE_LOG_HISTORY[-50:]} # Return last 50 events
