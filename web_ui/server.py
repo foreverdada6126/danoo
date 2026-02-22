@@ -349,6 +349,7 @@ async def close_trade(order_id: str):
             amount=0.001, # Should be the actual amount from DB, but using 0.001 for now
             price=0 
         )
+        await bridge.close()
 
         if result["success"]:
             # 3. Update Database
@@ -403,6 +404,10 @@ async def approve_trade(signal_id: int):
                 amount=0.001, 
                 price=SYSTEM_STATE.get("price", 50000) 
             )
+            
+            # Immediately close the HTTP session when finished
+            # Wait, no, we need to balance fetch! Wait, we used it at line 435!
+            pass
 
             if result["success"]:
                 order = result["order"]
@@ -442,11 +447,13 @@ async def approve_trade(signal_id: int):
                 
                 # Immediately sync balance after execution for fast UI feedback
                 current_balance = await bridge.fetch_balance()
+                await bridge.close()
                 if current_balance is not None:
                     SYSTEM_STATE["equity"] = current_balance
                 LOG_HISTORY.append({"time": time.time(), "msg": f"EXCHANGE: Order {order['id']} placed successfully."})
                 return {"status": "success", "message": f"Trade {order['id']} executed."}
             else:
+                await bridge.close()
                 # Put it back if it failed
                 APPROVAL_QUEUE.insert(signal_id, approved)
                 return {"status": "error", "message": f"Exchange Rejected: {result.get('error')}"}

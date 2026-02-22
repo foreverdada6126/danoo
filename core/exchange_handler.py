@@ -157,3 +157,8 @@ class ExchangeHandler:
             elif "Account has insufficient balance" in error_msg: error_msg = "Futures Wallet Empty"
             
             return {"success": False, "error": error_msg}
+
+    async def close(self):
+        """Properly close the CCXT async session."""
+        if hasattr(self, 'client') and self.client:
+            await self.client.close()
