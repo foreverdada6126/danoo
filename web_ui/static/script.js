@@ -349,6 +349,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Bind Globals
     window.toggleOverlay = toggleOverlay;
     window.toggleReconGroup = toggleReconGroup;
+    window.toggleFabChat = () => {
+        const box = get('master-command-box');
+        if (box) box.classList.toggle('hidden');
+    };
+
     get('send-btn').onclick = sendCommand;
     get('chat-input').onkeypress = (e) => { if (e.key === 'Enter') sendCommand(); };
 
@@ -387,4 +392,49 @@ document.addEventListener('DOMContentLoaded', () => {
             up.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
         }
     }, 1000);
+
+    // Draggable FAB Logic
+    const fabContainer = get('fab-container');
+    const dragHandle = get('fab-drag-handle');
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+
+    // Default position is handled via absolute bottom/right styling 
+    if (dragHandle && fabContainer) {
+        dragHandle.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            dragStartX = e.clientX - fabContainer.getBoundingClientRect().left;
+            dragStartY = e.clientY - fabContainer.getBoundingClientRect().top;
+            fabContainer.style.cursor = 'grabbing';
+            dragHandle.style.cursor = 'grabbing';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+
+            // Calculate new position relative to the viewport
+            let newX = e.clientX - dragStartX;
+            let newY = e.clientY - dragStartY;
+
+            // Boundary checks
+            const rect = fabContainer.getBoundingClientRect();
+            if (newX < 0) newX = 0;
+            if (newY < 0) newY = 0;
+            if (newX + rect.width > window.innerWidth) newX = window.innerWidth - rect.width;
+            if (newY + rect.height > window.innerHeight) newY = window.innerHeight - rect.height;
+
+            // Reset Right/Bottom positioning to use Top/Left strictly during dragging
+            fabContainer.style.right = 'auto';
+            fabContainer.style.bottom = 'auto';
+            fabContainer.style.left = `${newX}px`;
+            fabContainer.style.top = `${newY}px`;
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            if (dragHandle) dragHandle.style.cursor = 'grab';
+        });
+    }
 });
