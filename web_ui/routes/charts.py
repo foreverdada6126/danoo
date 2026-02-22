@@ -99,3 +99,21 @@ async def get_ohlcv_data(symbol: str = "BTCUSDT", timeframe: str = "15m"):
         })
     
     return {"candles": candles, "trades": trades}
+
+@router.get("/api/market/prices")
+async def get_all_prices():
+    """Returns live prices for all supported assets."""
+    from core.exchange_handler import ExchangeHandler
+    symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "HBARUSDT", "DOGEUSDT", "XLMUSDT", "XDCUSDT"]
+    prices = {}
+    try:
+        bridge = ExchangeHandler()
+        client = await bridge._get_client()
+        tickers = await client.fetch_tickers(symbols)
+        for s in symbols:
+            if s in tickers:
+                prices[s] = tickers[s].get("last", 0.0)
+        await bridge.close()
+    except Exception as e:
+        logger.error(f"Multi-price fetch error: {e}")
+    return {"prices": prices}
