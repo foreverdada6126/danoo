@@ -3,54 +3,59 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from loguru import logger
 
 import time
+import pandas as pd
 from core.scalper_engine import ScalperEngine
+from core.strategy_library import StrategyLibrary
+from config.settings import SETTINGS
 
 # Initialize Scalper
 SCALPER = ScalperEngine()
 
 async def cycle_15m():
-    """Update data, indicators, and signals using real exchange data."""
-    from web_ui.server import SYSTEM_STATE, LOG_HISTORY
+    """Background Intelligence Scan for all assets in the Watchlist."""
+    from web_ui.server import SYSTEM_STATE, LOG_HISTORY, RECON_HISTORY
     from core.exchange_handler import ExchangeHandler
     
-    SYSTEM_STATE["heartbeat"] = "SCANNING"
-    logger.info("[Cycle 15m] Fetching real-time market data...")
+    SYSTEM_STATE["heartbeat"] = "SCANNING_ALL"
+    logger.info(f"[Cycle 15m] Comprehensive Watchlist Scan: {len(SETTINGS.WATCHLIST)} assets")
     
-    try:
-        bridge = ExchangeHandler()
-        # Set a 15-second timeout for the entire sequence to prevent hanging the scheduler
-        data = await asyncio.wait_for(bridge.fetch_market_data(), timeout=15)
-        balance = await asyncio.wait_for(bridge.fetch_balance(), timeout=15)
-        await bridge.close()
-        
-        if balance is not None:
-            SYSTEM_STATE["equity"] = balance
-            SYSTEM_STATE["exchange_connected"] = True
-            logger.info(f"Exchange Sync: Success. Balance discovered: ${balance}")
-        else:
-            SYSTEM_STATE["exchange_connected"] = False
-            logger.warning("Exchange Sync: Balance returned None (Check API Keys).")
-
-        if data:
-            SYSTEM_STATE["rsi"] = data["rsi"]
-            SYSTEM_STATE["price"] = data["price"]
-            SYSTEM_STATE["funding_rate"] = data["funding_rate"]
-            log_msg = f"Market Sync: BTC @ ${data['price']} | RSI: {data['rsi']} | Funding: {data['funding_rate']}%"
-            log_entry = {"time": time.time(), "msg": log_msg}
-        else:
-            log_entry = {"time": time.time(), "msg": "Market Sync Error: Exchange data incomplete."}
+    bridge = ExchangeHandler()
+    
+    for symbol in SETTINGS.WATCHLIST:
+        try:
+            client = await bridge._get_client()
+            ohlcv = await client.fetch_ohlcv(symbol, "15m", limit=30)
+            df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
             
-    except asyncio.TimeoutError:
-        SYSTEM_STATE["exchange_connected"] = False
-        logger.error("Exchange Sync Error: Timeout reaching Bybit API.")
-        log_entry = {"time": time.time(), "msg": "System Alert: Bybit API timeout. Connectivity compromised."}
-    except Exception as e:
-        SYSTEM_STATE["exchange_connected"] = False
-        logger.error(f"Exchange Sync Error: {e}")
-        log_entry = {"time": time.time(), "msg": f"System Alert: Exchange Bridge failure: {str(e)[:100]}"}
+            rsi_vals = StrategyLibrary.calculate_rsi(df['close'].values, 14)
+            rsi = rsi_vals[-1]
+            price = df['close'].iloc[-1]
+            
+            if symbol == SETTINGS.DEFAULT_SYMBOL:
+                SYSTEM_STATE["rsi"] = rsi
+                SYSTEM_STATE["price"] = price
+                SYSTEM_STATE["exchange_connected"] = True
+            
+            # Mission Intelligence Log (Recon)
+            report_time = time.time()
+            RECON_HISTORY.append({
+                "time": report_time,
+                "title": f"AUTO-SCAN: {symbol}",
+                "content": f"Automated background research complete for {symbol}. \nPrice: ${price:.4f} \nRSI: {rsi:.2f} \nTrend: { 'BULLISH' if rsi > 50 else 'BEARISH' }",
+                "score": round((rsi - 50) / 50, 2)
+            })
+            if len(RECON_HISTORY) > 50: RECON_HISTORY.pop(0)
+            
+        except Exception as e:
+            logger.error(f"Intelligence Scan Failed for {symbol}: {e}")
+
+    # General Balance Update
+    try:
+        balance = await bridge.fetch_balance()
+        if balance: SYSTEM_STATE["equity"] = balance
+    except: pass
     
-    LOG_HISTORY.append(log_entry)
-    if len(LOG_HISTORY) > 50: LOG_HISTORY.pop(0)
+    await bridge.close()
     SYSTEM_STATE["heartbeat"] = "IDLE"
 
 async def cycle_1h():
@@ -64,10 +69,6 @@ async def cycle_1h():
     executor = ExecutionEngine()
     decision = executor.check_trade_readiness(SYSTEM_STATE)
     
-    # In 'paper' mode, we might auto-execute locally, but here we just log it
-    # approved signals will usually go to APPROVAL_QUEUE via the Scientist reports
-    # but the executor can also block/READY based on technicals
-    
     log_msg = f"Execution Decision: {decision['decision']} - {decision['reason']}"
     log_entry = {"time": time.time(), "msg": log_msg}
     LOG_HISTORY.append(log_entry)
@@ -80,7 +81,6 @@ async def cycle_4h():
     from web_ui.server import SYSTEM_STATE, LOG_HISTORY
     SYSTEM_STATE["heartbeat"] = "REGIME_SCAN"
     logger.info("[Cycle 4h] Updating market regime classification...")
-    # Real logic: If RSI > 70 and Sentiment > 0.5 -> BULL_TREND
     if SYSTEM_STATE.get("rsi", 50) > 60:
         SYSTEM_STATE["regime"] = "BULL_TREND"
     elif SYSTEM_STATE.get("rsi", 50) < 40:
@@ -102,7 +102,6 @@ async def cycle_daily():
 
 async def start_scheduler_async():
     scheduler = AsyncIOScheduler()
-    
     from datetime import datetime
     
     # 15m Cycle (Run immediately)
@@ -121,8 +120,7 @@ async def start_scheduler_async():
     scheduler.add_job(cycle_daily, 'cron', hour=0, minute=0)
     
     scheduler.start()
-    logger.info("Async Scheduler started for all cycles (15m, 1h, 4h, daily).")
+    logger.info("Async Scheduler started for institutional watchlist cycles.")
     
-    # Keep it running if needed locally, but usually managed by app.py
     while True:
         await asyncio.sleep(1000)

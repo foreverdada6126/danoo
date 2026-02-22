@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     EXCHANGE_ID: str = os.getenv("EXCHANGE_ID", "bybit")
     DEFAULT_SYMBOL: str = "BTCUSDT"
     DEFAULT_TIMEFRAME: str = "15m"
+    WATCHLIST: list = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "HBARUSDT", "DOGEUSDT", "XLMUSDT", "XDCUSDT"]
     
     # Path Config
     DATA_PATH: str = "data"
