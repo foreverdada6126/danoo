@@ -46,7 +46,7 @@ class PredictionEngine:
         df['stoch_k'] = 100 * (df['close'] - low_min) / (high_max - low_min)
         df['stoch_d'] = df['stoch_k'].rolling(window=3).mean()
         
-        return df.fillna(method='bfill')
+        return df.ffill().bfill()
 
     async def train_and_predict(self, symbol, ohlcv_data, horizon=4):
         """
