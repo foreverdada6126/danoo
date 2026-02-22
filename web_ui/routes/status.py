@@ -51,10 +51,10 @@ async def get_status():
             # Fetch current price
             try:
                 bridge = ExchangeHandler()
-                client = await bridge._get_client()
+                # Use Force Public for Mainnet Prices
+                client = await bridge._get_client(force_public=True)
                 ticker = await client.fetch_ticker(current_symbol)
                 current_price = ticker.get("last", 0.0)
-                await bridge.close()
             except:
                 current_price = SYSTEM_STATE.get("price", 0.0)
             
@@ -87,12 +87,6 @@ async def get_status():
         logger.error(f"Status Calculation Error: {e}")
     
     return SYSTEM_STATE
-
-@router.get("/api/trade_logs")
-async def get_trade_logs():
-    """Returns specialized logs for chart trade actions."""
-    from web_ui.state import TRADE_LOG_HISTORY
-    return {"logs": TRADE_LOG_HISTORY}
 
 @router.get("/api/intelligence/flow")
 async def get_intel_flow():

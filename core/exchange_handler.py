@@ -20,7 +20,7 @@ async def get_exchange_client(force_public=False):
             # Public mainnet client for real data display
             _PUBLIC_CLIENT = exchange_class({
                 'enableRateLimit': True,
-                'options': {'defaultType': 'swap' if exchange_id == "bybit" else 'future'}
+                'options': {'defaultType': 'linear' if exchange_id == "bybit" else 'future'}
             })
             logger.info(f"Exchange Bridge: Public Mainnet Client created for {exchange_id.upper()}.")
         return _PUBLIC_CLIENT
