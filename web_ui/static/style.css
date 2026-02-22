@@ -15,6 +15,7 @@
     box-sizing: border-box;
     font-family: 'Outfit', sans-serif;
     font-size: 0.85rem;
+    user-select: text;
 }
 
 body {
