@@ -594,18 +594,18 @@ async def chat_with_openclaw(msg: ChatMessage):
 
         # Trigger Approval Queue for High Conviction Signals (> 0.7 or < -0.7)
         if abs(score) >= 0.7:
-                signal_type = "LONG" if score > 0 else "SHORT"
-                APPROVAL_QUEUE.append({
-                    "time": time.time(),
-                    "signal": f"AI-{signal_type} ({regime_raw})",
-                    "sentiment": score,
-                    "status": "AWAITING APPROVAL",
-                    "reason": justification
-                })
-                LOG_HISTORY.append({"time": report_time, "msg": f"STRATEGIC ALERT: High Conviction {signal_type} signal detected. Check Approval Queue."})
+            signal_type = "LONG" if score > 0 else "SHORT"
+            APPROVAL_QUEUE.append({
+                "time": time.time(),
+                "signal": f"AI-{signal_type} ({regime_raw})",
+                "sentiment": score,
+                "status": "AWAITING APPROVAL",
+                "reason": justification
+            })
+            LOG_HISTORY.append({"time": report_time, "msg": f"STRATEGIC ALERT: High Conviction {signal_type} signal detected. Check Approval Queue."})
 
-            logger.info(f"Recon Card Created: {regime_raw} | {score}")
-            return {"status": "success", "message": "Intelligence Dossier Updated."}
+        logger.info(f"Recon Card Created: {regime_raw} | {score}")
+        return {"status": "success", "message": "Intelligence Dossier Updated."}
 
     # Standard user chat logic
     response = f"OpenClaw: I received your instruction: '{msg.message}'. Analyzing market impact..."
