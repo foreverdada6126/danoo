@@ -3,6 +3,7 @@ const get = (id) => document.getElementById(id);
 let expandedGroups = new Set();
 let activeLogTab = "ALL";
 let isDraggingFab = false;
+let activeTradeTab = "ALL";
 
 function toggleReconGroup(dateId) {
     console.log("Toggling Group:", dateId);
@@ -226,28 +227,57 @@ window.triggerManualRecon = async () => {
     }, 2000);
 };
 
+function setTradeTab(cat) {
+    activeTradeTab = cat;
+    document.querySelectorAll('.trade-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-category') === cat);
+    });
+    updateTrades();
+}
+
 async function updateTrades() {
     try {
-        const res = await fetch('/api/system/trades');
+        const endpoint = (activeTradeTab === 'OPENED') ? '/api/system/trades' : '/api/system/trades/all';
+        const res = await fetch(endpoint);
         const data = await res.json();
         const container = get('trade-list');
-        if (!data.trades || data.trades.length === 0) {
-            container.innerHTML = '<div class="card-item"><div class="card-body" style="color: var(--text-dim); text-align: center;">No exposure found.</div></div>';
+
+        let trades = data.trades || [];
+
+        // Filter if needed for 'CLOSED' on 'all' endpoint
+        if (activeTradeTab === 'CLOSED') {
+            trades = trades.filter(t => t.status === 'CLOSED');
+        } else if (activeTradeTab === 'OPENED') {
+            trades = trades.filter(t => t.status === 'OPEN');
+        }
+
+        if (trades.length === 0) {
+            container.innerHTML = '<div class="card-item"><div class="card-body" style="color: var(--text-dim); text-align: center; font-size: 10px;">No trades found in this category.</div></div>';
             return;
         }
 
-        container.innerHTML = data.trades.map(t => `
-            <div class="card-item">
-                <div class="card-meta"><span>${t.type}</span><span>${formatTime(t.time)}</span></div>
-                <div class="card-header">${t.symbol} <span class="${t.pnl.includes('+') ? 'up' : 'down'}">${t.pnl}</span></div>
-                <div class="card-body">
-                    Status: <span class="neutral">${t.status}</span>
-                    <div style="font-size: 0.6rem; color: var(--text-dim); margin-top: 4px; font-style: italic;">Reason: ${t.reason || 'Not specified'}</div>
-                    <button onclick="closeTrade('${t.order_id}')" class="btn btn-approve" style="margin-top: 10px; width: 100%; font-size: 0.6rem; background: rgba(255, 100, 100, 0.1); border-color: #ff6464; color: #ff6464;">CLOSE POSITION</button>
+        container.innerHTML = trades.map(t => {
+            const isClosed = t.status === 'CLOSED';
+            return `
+                <div class="card-item ${isClosed ? 'opacity-60' : ''}">
+                    <div class="card-meta">
+                        <span class="${isClosed ? 'text-brand-dim' : 'text-brand-cyan'}">${t.type}</span>
+                        <span>${formatTime(t.time)}</span>
+                    </div>
+                    <div class="card-header">${t.symbol} <span class="${t.pnl && t.pnl.includes('+') ? 'up' : 'down'}">${t.pnl}</span></div>
+                    <div class="card-body">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[9px] uppercase tracking-wider ${isClosed ? 'text-brand-red' : 'text-brand-green'}">${t.status}</span>
+                        </div>
+                        <div style="font-size: 0.6rem; color: var(--text-dim); font-style: italic;">Reason: ${t.reason || 'Auto'}</div>
+                        ${!isClosed ? `<button onclick="closeTrade('${t.order_id}')" class="btn btn-approve mt-2 w-full text-[9px] bg-brand-red/10 border-brand-red/20 text-brand-red">CLOSE POSITION</button>` : ''}
+                    </div>
                 </div>
-            </div>
-        `).join('');
-    } catch (e) { }
+            `;
+        }).join('');
+    } catch (e) {
+        console.warn("Trade Feed Offline");
+    }
 }
 
 async function updateApprovals() {

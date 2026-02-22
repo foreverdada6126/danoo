@@ -257,12 +257,10 @@ async def get_active_trades():
     current_price = SYSTEM_STATE.get("price", 0.0)
     
     for t in ACTIVE_TRADES:
-        # Calculate PnL if we have the entry price from DB
         try:
             session = DB_SESSION()
             db_t = session.query(Trade).filter(Trade.id == t["id"]).first()
             if db_t and db_t.entry_price and current_price > 0:
-                # Basic PnL: (Current - Entry) * Amount * side_multiplier
                 side_mult = 1 if db_t.side == "LONG" else -1
                 raw_pnl = (current_price - db_t.entry_price) * db_t.amount * side_mult
                 t["pnl"] = f"{'+' if raw_pnl >= 0 else ''}${raw_pnl:.2f}"
@@ -271,6 +269,30 @@ async def get_active_trades():
             pass
             
     return {"trades": ACTIVE_TRADES}
+
+@app.get("/api/system/trades/all")
+async def get_all_trades():
+    """Returns all trades (opened and closed) from the database."""
+    try:
+        session = DB_SESSION()
+        db_trades = session.query(Trade).order_by(Trade.entry_time.desc()).limit(50).all()
+        result = []
+        for t in db_trades:
+            result.append({
+                "id": t.id,
+                "time": t.entry_time.timestamp(),
+                "symbol": t.symbol,
+                "type": f"{t.side.upper()}",
+                "status": t.status,
+                "pnl": f"${(t.pnl or 0.0):.2f}",
+                "order_id": t.order_id,
+                "reason": t.strategy or "Auto Trade"
+            })
+        session.close()
+        return {"trades": result}
+    except Exception as e:
+        logger.error(f"Error fetching trade history: {e}")
+        return {"trades": []}
 
 @app.get("/api/system/approvals")
 async def get_approval_queue():

@@ -104,11 +104,32 @@
         </header>
 
         <main
-            class="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-px bg-brand-border h-[calc(100vh-56px-32px)] overflow-hidden">
+            class="flex-1 grid grid-cols-1 lg:grid-cols-[340px_1fr_340px] gap-px bg-brand-border h-[calc(100vh-56px-32px)] overflow-hidden">
+
+            <!-- Left: Trade Desk -->
+            <section class="bg-brand-bg flex flex-col h-full overflow-hidden border-r border-brand-border">
+                <div
+                    class="flex items-center justify-between px-5 py-3.5 bg-brand-card/20 backdrop-blur-md border-b border-brand-border">
+                    <h2 class="text-[10px] font-bold tracking-[0.25em] text-brand-dim uppercase">Trade Desk</h2>
+                    <div id="trade-tabs-nav" class="flex gap-1 p-0.5 bg-black/40 rounded border border-white/5">
+                        <button onclick="setTradeTab('ALL')" data-category="ALL"
+                            class="trade-tab active">Trades</button>
+                        <button onclick="setTradeTab('OPENED')" data-category="OPENED" class="trade-tab">Opened</button>
+                        <button onclick="setTradeTab('CLOSED')" data-category="CLOSED" class="trade-tab">Closed</button>
+                    </div>
+                </div>
+                <div id="trade-list" class="flex-1 overflow-y-auto p-5 custom-scrollbar space-y-3">
+                    <div
+                        class="flex flex-col items-center justify-center py-10 opacity-30 select-none pointer-events-none">
+                        <p class="text-[10px] uppercase tracking-[0.3em] font-bold text-brand-dim text-center">Syncing
+                            Trades...</p>
+                    </div>
+                </div>
+            </section>
 
             <!-- Center: Market Terminal (Now expanded) -->
             <section class="bg-brand-bg flex flex-col h-full overflow-hidden border-r border-brand-border">
-                <div class="grid grid-rows-[1.4fr_200px_1fr] h-full gap-px bg-brand-border">
+                <div class="grid grid-rows-[1.4fr_1fr] h-full gap-px bg-brand-border">
                     <!-- Chart -->
                     <div class="bg-brand-bg flex flex-col overflow-hidden relative">
                         <div class="absolute top-4 left-4 z-10 pointer-events-none">
@@ -155,33 +176,6 @@
                         <div class="flex-1 p-6">
                             <div class="h-full w-full relative">
                                 <canvas id="pnlChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Active Trades -->
-                    <div class="bg-brand-bg flex flex-col overflow-hidden">
-                        <div
-                            class="flex items-center justify-between px-5 py-3 bg-brand-card/10 border-b border-brand-border">
-                            <div class="flex items-center gap-3">
-                                <h2 class="text-[10px] font-bold tracking-[0.25em] text-brand-dim uppercase">Open
-                                    Positions</h2>
-                                <span id="orders-count"
-                                    class="px-1.5 py-0.5 rounded bg-brand-cyan/10 text-brand-cyan text-[10px] font-bold font-mono">0</span>
-                            </div>
-                        </div>
-                        <div id="trade-list" class="flex-1 overflow-y-auto p-5 custom-scrollbar space-y-3">
-                            <div
-                                class="flex flex-col items-center justify-center py-10 opacity-30 select-none pointer-events-none">
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
-                                    class="mb-4 stroke-brand-dim">
-                                    <path
-                                        d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
-                                        stroke-width="1.5" />
-                                    <path d="M12 8V12L14 14" stroke-width="1.5" stroke-linecap="round" />
-                                </svg>
-                                <p class="text-[10px] uppercase tracking-[0.3em] font-bold text-brand-dim text-center">
-                                    Zero Market Exposure</p>
                             </div>
                         </div>
                     </div>

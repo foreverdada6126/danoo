@@ -318,8 +318,9 @@ body {
     transform: translateX(0) scale(1);
 }
 
-/* Log Tabs */
-.log-tab {
+/* Log/Trade Tabs */
+.log-tab,
+.trade-tab {
     padding: 6px 14px;
     border-radius: 6px;
     font-size: 10px;
@@ -332,12 +333,20 @@ body {
     cursor: pointer;
 }
 
-.log-tab:hover {
+.trade-tab {
+    padding: 4px 8px;
+    font-size: 8px;
+    letter-spacing: 0.5px;
+}
+
+.log-tab:hover,
+.trade-tab:hover {
     color: #fff;
     background: rgba(255, 255, 255, 0.05);
 }
 
-.log-tab.active {
+.log-tab.active,
+.trade-tab.active {
     background: var(--cyan-brand);
     color: #000;
 }
