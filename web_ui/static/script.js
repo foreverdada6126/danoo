@@ -116,6 +116,27 @@ async function syncDashboard() {
         get('meta-symbol').textContent = data.symbol;
         get('orders-count').textContent = data.active_orders;
 
+        const exchangeStatusEl = get('exchange-status');
+        const exchangeDotEl = get('exchange-dot');
+        const exchangeNameEl = get('exchange-name');
+
+        if (exchangeStatusEl) {
+            exchangeNameEl.textContent = data.exchange_id || "EXCHANGE";
+            if (data.exchange_connected) {
+                exchangeStatusEl.style.background = "rgba(0, 255, 100, 0.1)";
+                exchangeStatusEl.style.color = "#00ff64";
+                exchangeStatusEl.style.borderColor = "#00ff6422";
+                exchangeDotEl.style.background = "#00ff64";
+                exchangeDotEl.style.boxShadow = "0 0 5px #00ff64";
+            } else {
+                exchangeStatusEl.style.background = "rgba(255, 100, 100, 0.1)";
+                exchangeStatusEl.style.color = "#ff6464";
+                exchangeStatusEl.style.borderColor = "#ff646422";
+                exchangeDotEl.style.background = "#ff6464";
+                exchangeDotEl.style.boxShadow = "0 0 5px #ff6464";
+            }
+        }
+
         const aiBtn = get('ai-toggle-btn');
         if (aiBtn) {
             if (data.ai_active) {

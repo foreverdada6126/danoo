@@ -37,6 +37,13 @@
                 </div>
             </div>
             <div class="nav-actions">
+                <div id="exchange-status" class="btn-sm"
+                    style="display: flex; align-items: center; gap: 6px; background: rgba(255, 100, 100, 0.1); color: #ff6464; border: 1px solid #ff646422;">
+                    <div id="exchange-dot"
+                        style="width: 8px; height: 8px; border-radius: 50%; background: #ff6464; box-shadow: 0 0 5px #ff6464;">
+                    </div>
+                    <span id="exchange-name">NO EXCHAGE</span>
+                </div>
                 <button class="btn-sm" onclick="toggleOverlay('vps-overlay')">HEALTH</button>
                 <button class="btn-sm" onclick="toggleOverlay('logs-overlay')">LOGS</button>
                 <button class="btn-sm" onclick="toggleOverlay('files-overlay')">FILES</button>

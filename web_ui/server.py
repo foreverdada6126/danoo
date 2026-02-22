@@ -162,6 +162,8 @@ from config.settings import SETTINGS
 SYSTEM_STATE = {
     "status": "OPERATIONAL",
     "mode": SETTINGS.MODE.upper(),
+    "exchange_id": SETTINGS.EXCHANGE_ID.upper(),
+    "exchange_connected": False,
     "regime": "RANGING",
     "equity": 0.0,
     "pnl_24h": 0.0,
@@ -232,6 +234,13 @@ async def get_status():
     """Returns the core system state (equity, regime, insights)."""
     # Dynamic sync of order count for the UI counter
     SYSTEM_STATE["active_orders"] = len(ACTIVE_TRADES)
+    
+    # Simple check if exchange is connected based on if we have recorded a non-zero equity or price
+    if SYSTEM_STATE["equity"] > 0 or SYSTEM_STATE["price"] > 0:
+        SYSTEM_STATE["exchange_connected"] = True
+    else:
+        SYSTEM_STATE["exchange_connected"] = False
+        
     return SYSTEM_STATE
 
 @app.get("/api/system/health")
