@@ -656,13 +656,7 @@ function appendMsg(text, side) {
 // 5. BOOTSTRAP
 document.addEventListener('DOMContentLoaded', () => {
     initChart();
-    setTimeout(() => {
-        if (window.initTradingView) {
-            window.initTradingView('BTCUSDT', '15m');
-        }
-    }, 500);
 
-    // Bind Globals
     // Bind Globals
     window.toggleOverlay = toggleOverlay;
     window.toggleReconGroup = toggleReconGroup;
@@ -762,9 +756,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateTrades, 3000);
     setInterval(updateApprovals, 3000);
     setInterval(updateFiles, 10000);
-    setInterval(() => {
-        if (window.refreshChartData) window.refreshChartData();
-    }, 10000);
     setInterval(() => {
         const up = get('uptime');
         if (up) {
