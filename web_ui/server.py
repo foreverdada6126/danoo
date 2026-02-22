@@ -224,6 +224,15 @@ async def update_config(data: Dict[str, str]):
                 logger.error(f"Failed to propagate mode change: {e}")
             LOG_HISTORY.append({"time": time.time(), "msg": f"SYSTEM: Execution mode switched to {new_mode}."})
             return {"status": "success", "mode": new_mode}
+            
+    if "strat_toggle" in data:
+        strat = data["strat_toggle"]
+        if strat in ["strat_strict", "strat_loose", "strat_recon"]:
+            SYSTEM_STATE[strat] = not SYSTEM_STATE.get(strat, False)
+            status_str = "ENABLED" if SYSTEM_STATE[strat] else "DISABLED"
+            logger.info(f"UI Toggle: Strategy {strat} {status_str}")
+            LOG_HISTORY.append({"time": time.time(), "msg": f"SYSTEM: Strategy {strat.replace('strat_','').upper()} is now {status_str}."})
+            return {"status": "success", strat: SYSTEM_STATE[strat]}
     
     return {"status": "error", "message": "Invalid config keys"}
 
@@ -262,7 +271,10 @@ SYSTEM_STATE = {
     "price": 0.0,
     "funding_rate": 0.0,
     "heartbeat": "IDLE",
-    "ai_active": True
+    "ai_active": True,
+    "strat_strict": True,
+    "strat_loose": False,
+    "strat_recon": False
 }
 
 # Signal holders

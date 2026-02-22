@@ -134,6 +134,32 @@
 
             <!-- Left: Trade Desk -->
             <section class="bg-brand-bg flex flex-col h-full overflow-hidden border-r border-brand-border">
+
+                <div class="px-5 py-2.5 border-b border-brand-border bg-brand-bg/80 flex flex-col gap-2">
+                    <span class="text-[9px] font-bold tracking-[0.2em] text-brand-dim uppercase">Active
+                        Strategies</span>
+                    <div class="flex gap-4">
+                        <label
+                            class="flex items-center gap-1.5 cursor-pointer text-[10px] text-brand-dim uppercase font-bold hover:text-white transition-colors">
+                            <input type="checkbox" id="toggle-strat-strict" onchange="toggleStrat('strat_strict')"
+                                class="accent-brand-cyan cursor-pointer" checked>
+                            Strict
+                        </label>
+                        <label
+                            class="flex items-center gap-1.5 cursor-pointer text-[10px] text-brand-dim uppercase font-bold hover:text-white transition-colors">
+                            <input type="checkbox" id="toggle-strat-loose" onchange="toggleStrat('strat_loose')"
+                                class="accent-brand-cyan cursor-pointer">
+                            Loose
+                        </label>
+                        <label
+                            class="flex items-center gap-1.5 cursor-pointer text-[10px] text-brand-dim uppercase font-bold hover:text-white transition-colors">
+                            <input type="checkbox" id="toggle-strat-recon" onchange="toggleStrat('strat_recon')"
+                                class="accent-brand-cyan cursor-pointer">
+                            Intel Sync
+                        </label>
+                    </div>
+                </div>
+
                 <div
                     class="flex items-center justify-between px-5 py-3.5 bg-brand-card/20 backdrop-blur-md border-b border-brand-border">
                     <h2 class="text-[10px] font-bold tracking-[0.25em] text-brand-dim uppercase">Trade Desk</h2>

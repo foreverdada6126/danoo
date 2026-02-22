@@ -129,6 +129,11 @@ async function syncDashboard() {
                 ms.classList.add('text-brand-dim');
             }
         }
+
+        if (get('toggle-strat-strict')) get('toggle-strat-strict').checked = data.strat_strict;
+        if (get('toggle-strat-loose')) get('toggle-strat-loose').checked = data.strat_loose;
+        if (get('toggle-strat-recon')) get('toggle-strat-recon').checked = data.strat_recon;
+
         if (get('meta-symbol')) get('meta-symbol').textContent = data.symbol;
         if (get('orders-count')) get('orders-count').textContent = data.active_orders;
 
@@ -298,6 +303,22 @@ async function changeGlobalConfig(type, value) {
         }
     } catch (e) {
         console.error("Config Sync Failed", e);
+    }
+}
+
+async function toggleStrat(stratName) {
+    try {
+        const res = await fetch('/api/system/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ strat_toggle: stratName })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            syncDashboard();
+        }
+    } catch (e) {
+        console.error("Strategy Toggle Failed", e);
     }
 }
 

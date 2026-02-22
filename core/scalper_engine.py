@@ -61,19 +61,46 @@ class ScalperEngine:
                 trend_up = ema9[-1] > ema21[-1]
                 trend_down = ema9[-1] < ema21[-1]
 
+                strat_strict = SYSTEM_STATE.get("strat_strict", True)
+                strat_loose = SYSTEM_STATE.get("strat_loose", False)
+                strat_recon = SYSTEM_STATE.get("strat_recon", False)
+
                 # 4. Entry Logic
                 signal = None
-                if trend_up and prev_k < prev_d and curr_k > curr_d and curr_k < 30:
-                    signal = "BUY"
-                if trend_down and prev_k > prev_d and curr_k < curr_d and curr_k > 70:
-                    signal = "SELL"
+                strategy_matched = "UNKNOWN"
+                
+                if strat_strict and signal is None:
+                    if trend_up and prev_k < prev_d and curr_k > curr_d and curr_k < 30:
+                        signal = "BUY"
+                        strategy_matched = "STRICT_SCALP"
+                    elif trend_down and prev_k > prev_d and curr_k < curr_d and curr_k > 70:
+                        signal = "SELL"
+                        strategy_matched = "STRICT_SCALP"
+                        
+                if strat_loose and signal is None:
+                    if trend_up and prev_k < prev_d and curr_k > curr_d and curr_k < 50:
+                        signal = "BUY"
+                        strategy_matched = "LOOSE_SCALP"
+                    elif trend_down and prev_k > prev_d and curr_k < curr_d and curr_k > 50:
+                        signal = "SELL"
+                        strategy_matched = "LOOSE_SCALP"
+                        
+                if strat_recon and signal is None:
+                    # Fast momentum proxy via 1m RSI to sync with Intel direction
+                    rsi1m = StrategyLibrary.calculate_rsi(close, 14)[-1]
+                    if rsi1m > 65 and trend_up:
+                        signal = "BUY"
+                        strategy_matched = "RECON_SYNC"
+                    elif rsi1m < 35 and trend_down:
+                        signal = "SELL"
+                        strategy_matched = "RECON_SYNC"
 
                 if signal:
-                    # One active scalp per symbol
-                    existing = any(t for t in ACTIVE_TRADES if t["symbol"] == symbol and "SCALP" in t["reason"])
+                    # One active sub-trade per symbol to prevent double-entry
+                    existing = any(t for t in ACTIVE_TRADES if t["symbol"] == symbol and ("SCALP" in t["reason"] or "RECON" in t["reason"]))
                     if not existing:
-                        logger.warning(f"[Scalper] SIGNAL: {signal} detected for {symbol} at ${curr_price}")
-                        await self.execute_scalp(symbol, signal, curr_price)
+                        logger.warning(f"[Scalper] SIGNAL: {signal} detected for {symbol} at ${curr_price} via {strategy_matched}")
+                        await self.execute_scalp(symbol, signal, curr_price, reason=strategy_matched)
                 
                 await asyncio.sleep(0.5)
 
@@ -131,7 +158,7 @@ class ScalperEngine:
         for t in to_close:
             if t in ACTIVE_TRADES: ACTIVE_TRADES.remove(t)
 
-    async def execute_scalp(self, symbol: str, side: str, price: float):
+    async def execute_scalp(self, symbol: str, side: str, price: float, reason: str = "STRICT_SCALP"):
         """Execute and Persist Scalp Trade."""
         from web_ui.server import ACTIVE_TRADES, LOG_HISTORY
         
@@ -143,16 +170,16 @@ class ScalperEngine:
             new_trade = Trade(
                 symbol=symbol, side=side, amount=amount, entry_price=price,
                 entry_time=datetime.utcnow(), status="OPEN", order_id=result["order_id"],
-                strategy="SCALP-EMA-STOCH"
+                strategy=reason
             )
             session.add(new_trade)
             session.commit()
             
             ACTIVE_TRADES.append({
                 "id": new_trade.id, "time": new_trade.entry_time.timestamp(),
-                "symbol": symbol, "type": f"{side} (SCALP)", "status": "OPEN",
-                "pnl": "$0.00", "order_id": new_trade.order_id, "reason": "SCALP-EMA-STOCH"
+                "symbol": symbol, "type": f"{side} ({reason.split('_')[0]})", "status": "OPEN",
+                "pnl": "$0.00", "order_id": new_trade.order_id, "reason": reason
             })
-            LOG_HISTORY.append({"time": time.time(), "msg": f"SCALPER: Entering {side} scalp for {symbol} at ${price}"})
+            LOG_HISTORY.append({"time": time.time(), "msg": f"SCALPER: Entering {side} for {symbol} at ${price} via {reason}"})
             session.close()
-            logger.success(f"[Scalper] Position Live: {symbol} {side} ${price}")
+            logger.success(f"[Scalper] Position Live: {symbol} {side} ${price} [{reason}]")
