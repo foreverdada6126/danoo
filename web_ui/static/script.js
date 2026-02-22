@@ -450,6 +450,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // Click outside to close overlays
+    document.querySelectorAll('.overlay').forEach(overlay => {
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) overlay.classList.add('hidden');
+        });
+    });
+
     const sendBtn = get('send-btn');
     if (sendBtn) sendBtn.onclick = sendCommand;
 
