@@ -311,14 +311,21 @@ async function updateLogs() {
             return;
         }
 
-        const isScrolledToBottom = container.scrollHeight - container.clientHeight <= container.scrollTop + 60;
+        const isScrolledToBottom = container.scrollHeight - container.clientHeight <= container.scrollTop + 100;
 
-        container.innerHTML = logs.map(l => `
-            <div style="margin-bottom: 8px; font-size: 11px; line-height: 1.4; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 4px;">
-                <span style="color: var(--cyan-brand); font-weight: bold; margin-right: 8px;">[${formatTime(l.time, true)}]</span>
-                <span style="color: #fff; opacity: 0.9;">${l.msg}</span>
-            </div>
-        `).join('');
+        container.innerHTML = logs.map(l => {
+            const levelMatch = l.msg.match(/^\[(INFO|ERROR|DEBUG|SUCCESS|WARNING)\]/);
+            const level = levelMatch ? levelMatch[1] : 'INFO';
+            const cleanMsg = l.msg.replace(/^\[.*?\]/, '').trim();
+            const color = level === 'ERROR' ? '#ff4444' : (level === 'SUCCESS' ? '#00ff64' : (level === 'WARNING' ? '#ffbb00' : '#fff'));
+
+            return `
+                <div style="margin-bottom: 8px; font-size: 11px; line-height: 1.4; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 4px; display: flex; gap: 8px;">
+                    <span style="color: var(--cyan-brand); font-weight: bold; min-width: 60px;">${formatTime(l.time, true)}</span>
+                    <span style="color: ${color}; opacity: 0.9;">${cleanMsg}</span>
+                </div>
+            `;
+        }).join('');
 
         if (isScrolledToBottom) {
             container.scrollTop = container.scrollHeight;
@@ -432,11 +439,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // Stop drag if clicking buttons inside the box (except the handle itself)
         if (e.target.tagName && e.target.tagName.toLowerCase() === 'button' && e.currentTarget.id !== 'fab-button') return;
 
+        console.log("Drag Started from:", e.currentTarget.id);
         isDraggingFab = false;
 
         const rect = fabWidget.getBoundingClientRect();
 
-        // Reset positioning to handle dragging correctly
+        // Reset positioning to handle dragging correctly (remove bottom/right)
         fabWidget.style.right = 'auto';
         fabWidget.style.bottom = 'auto';
         fabWidget.style.left = `${rect.left}px`;
@@ -447,6 +455,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.addEventListener('mousemove', onDragMove);
         document.addEventListener('mouseup', onDragEnd);
+
+        // Visual feedback for drag state
+        document.body.style.cursor = 'grabbing';
     }
 
     function onDragMove(e) {
@@ -456,12 +467,12 @@ document.addEventListener('DOMContentLoaded', () => {
         let newX = e.clientX - dragStartX;
         let newY = e.clientY - dragStartY;
 
-        // Constraint check
-        const pad = 10;
+        // Constraint check - keep it well within view
+        const pad = 5;
         if (newX < pad) newX = pad;
         if (newY < pad) newY = pad;
-        if (newX > window.innerWidth - 60) newX = window.innerWidth - 60;
-        if (newY > window.innerHeight - 60) newY = window.innerHeight - 60;
+        if (newX > window.innerWidth - 70) newX = window.innerWidth - 70;
+        if (newY > window.innerHeight - 70) newY = window.innerHeight - 70;
 
         fabWidget.style.left = `${newX}px`;
         fabWidget.style.top = `${newY}px`;
@@ -470,9 +481,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function onDragEnd(e) {
         document.removeEventListener('mousemove', onDragMove);
         document.removeEventListener('mouseup', onDragEnd);
+        document.body.style.cursor = 'default';
 
+        console.log("Drag Ended. Was dragging:", isDraggingFab);
         // Block click if it was a drag
-        setTimeout(() => { isDraggingFab = false; }, 200);
+        setTimeout(() => { isDraggingFab = false; }, 250);
     }
 
     if (dragHandle) dragHandle.addEventListener('mousedown', initDrag);

@@ -1,5 +1,5 @@
 """
-Adaptive Strategy Intelligence Engine v5.2 - Main Orchestrator
+Adaptive Strategy Intelligence Engine v5.4 - Main Orchestrator
 """
 import asyncio
 import sys
@@ -18,9 +18,6 @@ async def run_market_intelligence(bot):
     """Periodically call intel-service for AI-driven sentiment analysis."""
     while True:
         try:
-            from web_ui.server import SYSTEM_STATE, LOG_HISTORY
-            from datetime import datetime
-            
             # 0. Check Power Toggle
             if not SYSTEM_STATE.get("ai_active", True):
                 logger.info("Intelligence Loop: AI Communication is disabled. Scanning bypassed.")
@@ -56,13 +53,7 @@ async def run_market_intelligence(bot):
                         except: pass
                     
                     SYSTEM_STATE["sentiment_score"] = sentiment
-                    
-                    # 3. Log it
-                    log_entry = {"time": time.time(), "msg": f"AI Insight: Sentiment calibrated at {sentiment}."}
-                    LOG_HISTORY.append(log_entry)
-                    if len(LOG_HISTORY) > 50: LOG_HISTORY.pop(0)
-                    
-                    logger.info("Intelligence Review Completed.")
+                    logger.success("Intelligence Review Completed and Synced to Core.")
                     
         except Exception as e:
             logger.error(f"Intelligence Task Error: {e}")
@@ -72,25 +63,31 @@ async def run_market_intelligence(bot):
 async def main():
     logger.add("logs/engine.log", rotation="10 MB", level="INFO")
     logger.info(f"Initializing {SETTINGS.PROJECT_NAME} v{SETTINGS.VERSION}...")
-    logger.success("--- SYSTEM PATCH v5.2.5 ACTIVE (TESTNET-MODERN MODE) ---")
+    logger.success("--- SYSTEM PATCH v5.4.1 ACTIVE (PERFORMANCE MODE) ---")
+    
     try:
         # 1. Initialize Telegram Bot (Core UI)
+        logger.info("Pillar 1/5: Initializing Telegram Interface...")
         bot = TelegramBot()
         await bot.start_bot()
-        await bot.send_alert(f"🚀 DaNoo v5.2 Engine Online.")
+        await bot.send_alert(f"🚀 DaNoo v5.4 Engine Online. Version 5.4.1 Patched.")
         
         # 2. Start Web UI Server (Background Task)
+        logger.info("Pillar 2/5: Initializing Command Hub Server...")
         ui_server = start_ui_server()
         asyncio.create_task(ui_server.serve())
-        logger.info("Web UI Server started on http://0.0.0.0:8000")
+        logger.info("Web UI Server status: LIVE on http://0.0.0.0:8000")
         
         # 3. Start Intelligence Task
+        logger.info("Pillar 3/5: Spawning Intelligence Watchdog...")
         asyncio.create_task(run_market_intelligence(bot))
         
         # 4. Initialize Internal Engines
+        logger.info("Pillar 4/5: Calibration of Regime & Execution Engines...")
         regime_engine = RegimeEngine()
         
         # 5. Start Routine Orchestration (Scheduler)
+        logger.info("Pillar 5/5: Starting Scheduler Orchestrator...")
         asyncio.create_task(start_scheduler_async())
         
         # 6. Immediate Sync for UI
@@ -98,9 +95,8 @@ async def main():
         asyncio.create_task(cycle_15m())
         
         # 7. Initial System Log
-        LOG_HISTORY.append({"time": time.time(), "msg": "SYSTEM: DaNoo Command Hub is now LIVE. Monitoring all vectors."})
+        logger.info("INITIALIZATION COMPLETE. System is now fully autonomous.")
         
-        logger.info("Main loop active. System operational.")
         # Keep the main process alive
         while True:
             await asyncio.sleep(60)
@@ -108,7 +104,10 @@ async def main():
     except (KeyboardInterrupt, SystemExit):
         logger.info("Shutdown signal received.")
     except Exception as e:
-        logger.error(f"Critical System Error: {e}")
+        logger.error(f"CRITICAL SYSTEM ERROR during boot: {e}")
+        # Send alert if possible
+        try: await bot.send_alert(f"⚠️ CRITICAL: DaNoo Engine crashed during boot: {e}")
+        except: pass
     finally:
         logger.info("Clean shutdown complete.")
 

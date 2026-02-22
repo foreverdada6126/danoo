@@ -23,6 +23,24 @@ ACTIVE_TRADES = []
 APPROVAL_QUEUE = []
 EQUITY_HISTORY = []
 
+def load_log_file():
+    """Initializes LOG_HISTORY with the last entries from the physics log file."""
+    log_file = "logs/engine.log"
+    if os.path.exists(log_file):
+        try:
+            with open(log_file, "r") as f:
+                lines = f.readlines()[-200:] # Load last 200 lines
+                for line in lines:
+                    # Very basic parsing of loguru lines: 2026-02-22 ... | INFO | msg
+                    if " | " in line:
+                        parts = line.split(" | ", 2)
+                        msg = parts[-1].strip()
+                        LOG_HISTORY.append({"time": time.time(), "msg": msg})
+        except Exception as e:
+            logger.error(f"Failed to load historical logs: {e}")
+
+load_log_file()
+
 # Persistent Loader
 def load_persistence():
     """Loads previous session state from SQLite."""
@@ -54,15 +72,21 @@ def ui_log_sink(message):
         record = message.record
         log_entry = {
             "time": time.time(), # Use Unix time for browser localization
-            "msg": record["message"]
+            "msg": f"[{record['level'].name}] {record['message']}"
         }
         LOG_HISTORY.append(log_entry)
-        if len(LOG_HISTORY) > 50: LOG_HISTORY.pop(0)
+        if len(LOG_HISTORY) > 1000: LOG_HISTORY.pop(0)
     except:
         pass
 
-# Add the sink (but not if already added)
-logger.add(ui_log_sink, format="{message}", level="INFO")
+# Add the sink only once
+if not any("ui_log_sink" in str(getattr(s, "action", "")) for s in logger._core.handlers.values() if hasattr(s, "action")):
+    pass # Loguru doesn't easily expose this, using a simpler flag
+
+_UI_SINK_ADDED = False
+if not globals().get("_UI_SINK_ADDED", False):
+    logger.add(ui_log_sink, format="{message}", level="DEBUG")
+    globals()["_UI_SINK_ADDED"] = True
 
 # To see host metrics from inside a container with /host/proc mounted
 os.environ["PROCFS_PATH"] = "/host/proc"
