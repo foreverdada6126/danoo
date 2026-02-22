@@ -545,44 +545,55 @@ async def chat_with_openclaw(msg: ChatMessage):
         payload = msg.message.split("SCIENTIST_REPORT:")[1].strip()
         logger.info(f"Scientist Report Detected. Payload: {payload[:100]}...")
         
-        # Super-resilient parsing: find the LAST two pipes to extract Score and Regime
-        # Format: [Long Justification] | [Score] | [Regime]
+        # Super-resilient parsing: find pipes OR extract via keywords
         parts = [p.strip() for p in payload.split("|")]
         
+        regime_raw = "INFO"
+        score = 0.0
+        justification = payload # Default if parsing fails
+        
         if len(parts) >= 3:
-            # The last part is Regime, second to last is Score. Everything else is Justification.
+            # Format A: Justification | Score | Regime
             regime_raw = parts[-1].replace("Regime:", "").strip()
             score_raw = parts[-2].replace("Score:", "").strip()
-            # Join everything before the score as the justification
             justification = "|".join(parts[:-2]).replace("Justification:", "").strip()
-            
             try:
-                # Clean up score (removes letters/labels)
                 import re
                 score_clean = re.findall(r"[-+]?\d*\.\d+|\d+", score_raw)[0]
                 score = float(score_clean)
-            except:
-                score = 0.0
-                
-            # Update State
-            SYSTEM_STATE["ai_insight"] = justification
-            SYSTEM_STATE["sentiment_score"] = score
-            SYSTEM_STATE["regime"] = regime_raw
+            except: score = 0.0
+        else:
+            # Format B: Markdown/Free-text (Manual Scans)
+            # Try to snatch score if AI included one like "Sentiment Score: 0.5"
+            import re
+            score_match = re.search(r"(?:Score|Sentiment|Conviction):\s*([-+]?\d*\.?\d+)", payload, re.I)
+            if score_match: score = float(score_match.group(1))
             
-            report_time = time.time()
-            LOG_HISTORY.append({"time": report_time, "msg": f"AI Intelligence: {justification[:50]}..."})
+            regime_match = re.search(r"(?:Regime|Condition):\s*(\w+)", payload, re.I)
+            if regime_match: regime_raw = regime_match.group(1).upper()
             
-            # Update Recon History
-            RECON_HISTORY.append({
-                "time": report_time,
-                "title": f"SCAN REPORT - BTC/{regime_raw}",
-                "content": justification,
-                "score": score
-            })
-            if len(RECON_HISTORY) > 20: RECON_HISTORY.pop(0)
+            # Clean up the justification by removing the header if it exists
+            justification = payload.replace("**High-Level Summary:**", "").strip()
 
-            # 4. Trigger Approval Queue for High Conviction Signals (> 0.7 or < -0.7)
-            if abs(score) >= 0.7:
+        # Update State
+        SYSTEM_STATE["ai_insight"] = justification[:200] + "..."
+        SYSTEM_STATE["sentiment_score"] = score
+        if regime_raw != "INFO": SYSTEM_STATE["regime"] = regime_raw
+        
+        report_time = time.time()
+        LOG_HISTORY.append({"time": report_time, "msg": f"AI Intelligence: {justification[:50]}...", "cat": "CORE"})
+        
+        # Update Recon History (Always append, even if raw)
+        RECON_HISTORY.append({
+            "time": report_time,
+            "title": f"INTEL REPORT - {regime_raw}",
+            "content": justification,
+            "score": score
+        })
+        if len(RECON_HISTORY) > 20: RECON_HISTORY.pop(0)
+
+        # Trigger Approval Queue for High Conviction Signals (> 0.7 or < -0.7)
+        if abs(score) >= 0.7:
                 signal_type = "LONG" if score > 0 else "SHORT"
                 APPROVAL_QUEUE.append({
                     "time": time.time(),

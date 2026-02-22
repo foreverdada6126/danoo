@@ -149,6 +149,11 @@ async def analyze_market(req: ResearchRequest):
         Query: {query}
         
         Return a high-level summary and sentiment estimate.
+        
+        FORMAT YOUR RESPONSE WITH THESE HEADERS AT THE END:
+        Justification: [Quick Summary]
+        Sentiment Score: [Value -1.0 to 1.0]
+        Current Regime: [BULL_TREND/BEAR_TREND/RANGING]
         """)
         
         chain = prompt | llm
