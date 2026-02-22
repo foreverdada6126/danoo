@@ -349,9 +349,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // Bind Globals
     window.toggleOverlay = toggleOverlay;
     window.toggleReconGroup = toggleReconGroup;
-    window.toggleFabChat = () => {
+    window.toggleFabChat = (e) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
         const box = get('master-command-box');
         if (box) box.classList.toggle('hidden');
+    };
+
+    let isDraggingFab = false;
+    window.toggleFabIfClicked = () => {
+        if (!isDraggingFab) {
+            window.toggleFabChat();
+        }
     };
 
     get('send-btn').onclick = sendCommand;
@@ -394,49 +405,57 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 1000);
 
     // Draggable FAB Logic
-    const fabBox = get('master-command-box');
+    const fabWidget = get('fab-widget');
     const dragHandle = get('fab-drag-handle');
-    let isDragging = false;
+    const fabButton = get('fab-button');
     let dragStartX = 0;
     let dragStartY = 0;
 
-    if (dragHandle && fabBox) {
-        dragHandle.addEventListener('mousedown', (e) => {
-            isDragging = true;
-            const rect = fabBox.getBoundingClientRect();
-            dragStartX = e.clientX - rect.left;
-            dragStartY = e.clientY - rect.top;
-            dragHandle.style.cursor = 'grabbing';
-            // Disable transition during drag for smoothness
-            fabBox.style.transition = 'none';
-        });
+    function initDrag(e) {
+        if (e.target.tagName && e.target.tagName.toLowerCase() === 'button') return;
+        isDraggingFab = false;
 
-        document.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            e.preventDefault();
+        const rect = fabWidget.getBoundingClientRect();
+        if (fabWidget.style.bottom !== 'auto' || fabWidget.style.right !== 'auto') {
+            fabWidget.style.left = `${rect.left}px`;
+            fabWidget.style.top = `${rect.top}px`;
+            fabWidget.style.bottom = 'auto';
+            fabWidget.style.right = 'auto';
+        }
 
-            let newX = e.clientX - dragStartX;
-            let newY = e.clientY - dragStartY;
+        dragStartX = e.clientX - rect.left;
+        dragStartY = e.clientY - rect.top;
 
-            const rect = fabBox.getBoundingClientRect();
-            if (newX < 0) newX = 0;
-            if (newY < 0) newY = 0;
-            if (newX + rect.width > window.innerWidth) newX = window.innerWidth - rect.width;
-            if (newY + rect.height > window.innerHeight) newY = window.innerHeight - rect.height;
+        if (dragHandle) dragHandle.style.cursor = 'grabbing';
 
-            // Break out of the static bottom/right layout
-            fabBox.style.position = 'fixed';
-            fabBox.style.bottom = 'auto';
-            fabBox.style.right = 'auto';
-            fabBox.style.left = `${newX}px`;
-            fabBox.style.top = `${newY}px`;
-        });
-
-        document.addEventListener('mouseup', () => {
-            if (isDragging) {
-                isDragging = false;
-                dragHandle.style.cursor = 'grab';
-            }
-        });
+        document.addEventListener('mousemove', onDragMove);
+        document.addEventListener('mouseup', onDragEnd);
     }
+
+    function onDragMove(e) {
+        isDraggingFab = true;
+        e.preventDefault();
+
+        let newX = e.clientX - dragStartX;
+        let newY = e.clientY - dragStartY;
+
+        if (newX < 320) newX = 320;
+        if (newY < 465) newY = 465;
+        if (newX > window.innerWidth - 50) newX = window.innerWidth - 50;
+        if (newY > window.innerHeight - 50) newY = window.innerHeight - 50;
+
+        fabWidget.style.left = `${newX}px`;
+        fabWidget.style.top = `${newY}px`;
+    }
+
+    function onDragEnd(e) {
+        document.removeEventListener('mousemove', onDragMove);
+        document.removeEventListener('mouseup', onDragEnd);
+        if (dragHandle) dragHandle.style.cursor = 'grab';
+
+        setTimeout(() => { isDraggingFab = false; }, 10);
+    }
+
+    if (dragHandle) dragHandle.addEventListener('mousedown', initDrag);
+    if (fabButton) fabButton.addEventListener('mousedown', initDrag);
 });
