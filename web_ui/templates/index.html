@@ -133,9 +133,9 @@
             class="flex-1 grid grid-cols-1 lg:grid-cols-[340px_1fr_340px] gap-px bg-brand-border h-[calc(100vh-56px-32px)] overflow-hidden">
 
             <!-- Left: Trade Desk -->
-            <section class="bg-brand-bg flex flex-col h-full overflow-hidden border-r border-brand-border">
+            <section class="bg-brand-bg flex flex-col h-full min-h-0 overflow-hidden border-r border-brand-border">
 
-                <div class="px-5 py-2.5 border-b border-brand-border bg-brand-bg/80 flex flex-col gap-2">
+                <div class="px-5 py-2.5 border-b border-brand-border bg-brand-bg/80 flex flex-col gap-2 shrink-0">
                     <span class="text-[9px] font-bold tracking-[0.2em] text-brand-dim uppercase">Strategy Filter</span>
                     <div id="strat-filter-nav" class="flex gap-1 p-0.5 bg-black/40 rounded border border-white/5">
                         <button onclick="setStratFilter('ALL')" data-strat="ALL" class="trade-tab active">All</button>
@@ -147,7 +147,7 @@
                 </div>
 
                 <div
-                    class="flex items-center justify-between px-5 py-3.5 bg-brand-card/20 backdrop-blur-md border-b border-brand-border">
+                    class="flex items-center justify-between px-5 py-3.5 bg-brand-card/20 backdrop-blur-md border-b border-brand-border shrink-0">
                     <h2 class="text-[10px] font-bold tracking-[0.25em] text-brand-dim uppercase">Trade Desk</h2>
                     <div id="trade-tabs-nav" class="flex gap-1 p-0.5 bg-black/40 rounded border border-white/5">
                         <button onclick="setTradeTab('ALL')" data-category="ALL"
