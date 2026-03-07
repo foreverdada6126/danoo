@@ -126,6 +126,8 @@ async def run_liquidity_engine():
                 scan = await LIQUIDITY_SCANNER.scan_symbol(symbol)
                 if scan:
                     LIQUIDITY_STATE[symbol] = scan
+                    if symbol == current_fav:
+                        logger.info(f"[Liquidity] {symbol} Walls found: Bids={scan['bid_walls']}, Asks={scan['ask_walls']} | Imbalance: {scan['imbalance']}")
                 await asyncio.sleep(1) # Fast depth rotation
                 
         except Exception as e:
@@ -134,6 +136,7 @@ async def run_liquidity_engine():
 
 async def main():
     logger.add("logs/engine.log", rotation="10 MB", level="INFO")
+    SYSTEM_STATE["version"] = SETTINGS.VERSION # Force sync
     logger.info(f"Initializing {SETTINGS.PROJECT_NAME} v{SETTINGS.VERSION}...")
     logger.success("--- SYSTEM PATCH v5.5.0 ACTIVE (EXPERT MODE) ---")
     

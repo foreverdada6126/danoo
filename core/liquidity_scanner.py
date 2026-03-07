@@ -18,29 +18,34 @@ class LiquidityScanner:
         """
         try:
             client = await self.bridge._get_client(force_public=True)
-            # Fetch L2 Order Book (Depth)
-            orderbook = await client.fetch_order_book(symbol, limit=100)
+            # Fetch deeper L2 Order Book (Depth)
+            orderbook = await client.fetch_order_book(symbol, limit=250)
             
             bids = np.array(orderbook['bids']) # [price, amount]
             asks = np.array(orderbook['asks'])
             
-            if len(bids) == 0 or len(asks) == 0:
+            if len(bids) < 5 or len(asks) < 5:
+                logger.warning(f"Thin Order Book [{symbol}]: Bids={len(bids)}, Asks={len(asks)}")
                 return None
 
             current_price = bids[0][0]
             
             # 1. Identify "Whale Walls" (Price levels with HUGE volume)
-            avg_bid_size = np.mean(bids[:, 1])
-            avg_ask_size = np.mean(asks[:, 1])
+            # Filter extremely small dust to get a cleaner average
+            clean_bids = bids[bids[:, 1] > np.percentile(bids[:, 1], 20)]
+            clean_asks = asks[asks[:, 1] > np.percentile(asks[:, 1], 20)]
             
-            # Find bins where size > 3x average (The Walls)
-            bid_walls = bids[bids[:, 1] > (avg_bid_size * 3)]
-            ask_walls = asks[asks[:, 1] > (avg_ask_size * 3)]
+            avg_bid_size = np.mean(clean_bids[:, 1])
+            avg_ask_size = np.mean(clean_asks[:, 1])
             
-            # 2. Institutional Imbalance (Is there more buying or selling weight in the top 100 orders?)
+            # Find bins where size > 2.0x average (The Walls) - Lowered from 3.0x
+            bid_walls = bids[bids[:, 1] > (avg_bid_size * 2.0)]
+            ask_walls = asks[asks[:, 1] > (avg_ask_size * 2.0)]
+            
+            # 2. Institutional Imbalance
             total_bid_liq = np.sum(bids[:, 1] * bids[:, 0])
             total_ask_liq = np.sum(asks[:, 1] * asks[:, 0])
-            imbalance = (total_bid_liq - total_ask_liq) / (total_bid_liq + total_ask_liq)
+            imbalance = (total_bid_liq - total_ask_liq) / (total_bid_liq + total_ask_liq + 1e-10)
             
             # 3. Find "Golden Liquidity" (The single strongest support/resistance)
             support = bid_walls[np.argmax(bid_walls[:, 1])][0] if len(bid_walls) > 0 else bids[-1][0]
