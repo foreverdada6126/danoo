@@ -497,7 +497,9 @@ body {
 /* Price Ticker Animation */
 .animate-ticker {
     display: inline-flex;
-    animation: ticker 45s linear infinite;
+    animation: ticker 35s linear infinite;
+    will-change: transform;
+    backface-visibility: hidden;
 }
 
 @keyframes ticker {

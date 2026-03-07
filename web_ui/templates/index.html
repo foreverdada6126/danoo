@@ -212,7 +212,14 @@
                             class="flex items-center justify-between px-5 py-3 bg-brand-card/10 border-b border-brand-border shrink-0">
                             <h2 class="text-[10px] font-bold tracking-[0.25em] text-brand-dim uppercase italic">Live
                                 Performance</h2>
-                            <span class="text-[10px] text-brand-cyan/60 font-mono tracking-widest">LIVE DATA FEED</span>
+                            <div class="flex items-center gap-2">
+                                <button id="perf-toggle-btn" onclick="togglePerformanceMode()"
+                                    class="text-[8px] font-bold text-brand-cyan border border-brand-cyan/30 px-2 py-0.5 rounded hover:bg-brand-cyan/10 transition-all uppercase tracking-widest">
+                                    Total Portfolio
+                                </button>
+                                <span class="text-[10px] text-brand-cyan/60 font-mono tracking-widest">LIVE DATA
+                                    FEED</span>
+                            </div>
                         </div>
                         <div class="px-5 py-3 flex justify-between shrink-0 border-b border-brand-border bg-black/40">
                             <div class="flex flex-col">

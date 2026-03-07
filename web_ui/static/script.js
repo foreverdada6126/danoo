@@ -247,44 +247,77 @@ async function updateTicker() {
         if (!container || !data.prices) return;
 
         const symbols = Object.keys(data.prices);
-        // Duplicate for seamless loop if needed, for now just list them
-        const items = symbols.map(s => {
-            const price = data.prices[s];
-            const last = lastPrices[s] || price;
-            const diff = price - last;
-            lastPrices[s] = price;
 
-            const colorClass = diff > 0 ? 'up' : (diff < 0 ? 'down' : '');
-            const icon = diff > 0 ? '↗' : (diff < 0 ? '↘' : '→');
-
-            return `
-                <div class="ticker-item">
+        // If empty or first run, build it
+        if (container.children.length === 0 || container.innerText.includes('Initializing')) {
+            const itemsMarkup = symbols.map(s => `
+                <div class="ticker-item" data-symbol="${s}">
                     <span class="ticker-symbol">${s.replace('USDT', '')}</span>
-                    <span class="ticker-price">$${price.toLocaleString()}</span>
-                    <span class="ticker-change ${colorClass}">${icon}</span>
+                    <span class="ticker-price">$0.00</span>
+                    <span class="ticker-change">→</span>
                 </div>
-            `;
-        }).join('');
+            `).join('');
+            // Double the items for seamless loop
+            container.innerHTML = itemsMarkup + itemsMarkup;
+        }
 
-        // Provide enough items to fill the width for animation
-        container.innerHTML = items + items + items;
+        // Update existing items without resetting animation
+        const items = container.querySelectorAll('.ticker-item');
+        items.forEach(item => {
+            const sym = item.getAttribute('data-symbol');
+            const price = data.prices[sym];
+            if (price === undefined) return;
+
+            const priceEl = item.querySelector('.ticker-price');
+            const changeEl = item.querySelector('.ticker-change');
+
+            if (priceEl && priceEl.textContent !== `$${price.toLocaleString()}`) {
+                const last = lastPrices[sym] || price;
+                const diff = price - last;
+                lastPrices[sym] = price;
+
+                priceEl.textContent = `$${price.toLocaleString()}`;
+                if (diff !== 0) {
+                    changeEl.textContent = diff > 0 ? '↗' : '↘';
+                    changeEl.className = `ticker-change ${diff > 0 ? 'up' : 'down'}`;
+                }
+            }
+        });
     } catch (e) { }
 }
+
+let perfMode = 'TOTAL'; // 'TOTAL' or 'ASSET'
+window.togglePerformanceMode = () => {
+    perfMode = (perfMode === 'TOTAL') ? 'ASSET' : 'TOTAL';
+    const btn = get('perf-toggle-btn');
+    if (btn) {
+        btn.textContent = perfMode === 'TOTAL' ? 'Total Portfolio' : 'Asset Focus';
+        btn.classList.toggle('border-brand-cyan', perfMode === 'TOTAL');
+        btn.classList.toggle('border-brand-green', perfMode === 'ASSET');
+        btn.style.color = perfMode === 'TOTAL' ? 'var(--cyan-brand)' : 'var(--green-brand)';
+    }
+    syncDashboard();
+};
 
 async function syncDashboard() {
     try {
         const res = await fetch('/api/status');
         const data = await res.json();
 
-        if (get('equity-value')) get('equity-value').textContent = `$${data.equity.toLocaleString()}`;
-        if (get('perf-capital')) get('perf-capital').textContent = `$${data.equity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        // Use appropriate keys based on toggle
+        const displayEquity = perfMode === 'TOTAL' ? data.total_equity : data.asset_equity;
+        const displayPnl = perfMode === 'TOTAL' ? data.total_pnl_24h : data.asset_pnl_24h;
+
+        if (get('equity-value')) get('equity-value').textContent = `$${data.total_equity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; // Main header always shows Total?
+
+        if (get('perf-capital')) {
+            get('perf-capital').textContent = `$${displayEquity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            get('perf-capital').className = `text-lg font-bold font-mono tracking-wider ${perfMode === 'ASSET' ? 'text-brand-green' : 'text-white'}`;
+        }
+
         if (get('perf-pnl')) {
-            const pnl = data.pnl_24h || 0;
-            const sign = pnl > 0 ? '+' : '';
-            const val = Math.abs(pnl).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            const pnlEl = get('perf-pnl');
-            pnlEl.textContent = `${sign}$${val}`;
-            pnlEl.className = `text-lg font-bold font-mono tracking-wider ${pnl > 0 ? 'text-brand-green' : (pnl < 0 ? 'text-brand-red' : 'text-white')}`;
+            get('perf-pnl').textContent = `${displayPnl >= 0 ? '+' : ''}$${displayPnl.toFixed(2)}`;
+            get('perf-pnl').className = `text-lg font-bold font-mono tracking-wider ${displayPnl >= 0 ? 'text-brand-green' : 'text-brand-red'}`;
         }
         if (get('regime-value')) {
             const regimeEl = get('regime-value');
@@ -620,11 +653,14 @@ async function updateTrades() {
                                 <div class="card-header">
                                     <div class="flex flex-col">
                                         <span class="tracking-tight">${t.symbol}</span>
-                                        <span class="text-[9px] font-mono text-brand-dim opacity-70">${t.trade_code || 'ID-PENDING'}</span>
+                                        <span class="text-[9px] font-mono text-brand-cyan/80 font-bold">${t.trade_code || 'ID-PENDING'}</span>
                                     </div>
                                     <span class="font-mono ${isProfit ? 'up' : 'down'} text-[13px]">${t.pnl || '$0.00'}</span>
                                 </div>
                                 <div class="card-body">
+                                    <div style="font-family: 'Space Mono', monospace; font-size: 10px; color: #fff; margin-bottom: 10px; padding: 6px; background: rgba(0,242,255,0.03); border-radius: 4px; border: 1px solid rgba(0,242,255,0.05); text-align: center;">
+                                        ${parseFloat(t.amount).toLocaleString()} ${t.symbol.replace('USDT', '')} <span style="color: var(--text-dim); font-size: 8px;">@</span> $${parseFloat(t.entry_price).toLocaleString()}
+                                    </div>
                                     <div class="flex items-center justify-between mb-2 text-[10px]">
                                         <div class="flex flex-col">
                                             <span class="text-brand-dim text-[8px] uppercase font-bold tracking-tighter">Conviction</span>

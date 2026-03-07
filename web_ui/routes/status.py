@@ -24,69 +24,88 @@ async def get_status():
     
     try:
         session = DB_SESSION()
+        from config.settings import SETTINGS
+        watchlist = SETTINGS.WATCHLIST
         
-        # Asset-specific Trade counts
-        SYSTEM_STATE["trades_total"] = session.query(Trade).filter(Trade.symbol == current_symbol).count()
-        SYSTEM_STATE["trades_open"] = session.query(Trade).filter(Trade.status == 'OPEN', Trade.symbol == current_symbol).count()
-        SYSTEM_STATE["trades_closed"] = session.query(Trade).filter(Trade.status == 'CLOSED', Trade.symbol == current_symbol).count()
+        total_equity = 0.0
+        total_pnl_24h = 0.0
         
-        # --- Per-Asset Calculation ---
-        # 1. Realized PnL (Last 24h for current asset)
+        asset_equity = 0.0
+        asset_pnl_24h = 0.0
+        
         cutoff = datetime.utcnow() - timedelta(hours=24)
-        recent_closed = session.query(Trade).filter(
-            Trade.symbol == current_symbol,
-            Trade.status == 'CLOSED',
-            Trade.exit_time >= cutoff
-        ).all()
-        realized_pnl = sum((t.pnl or 0.0) for t in recent_closed)
         
-        # 2. Unrealized PnL (Current open trades for asset)
-        unrealized_pnl = 0.0
-        open_trades = session.query(Trade).filter(
-            Trade.symbol == current_symbol,
-            Trade.status == 'OPEN'
-        ).all()
-        
-        if open_trades:
-            # Fetch current price
-            try:
-                bridge = ExchangeHandler()
-                # Use Force Public for Mainnet Prices
-                client = await bridge._get_client(force_public=True)
-                ticker = await client.fetch_ticker(current_symbol)
-                current_price = ticker.get("last", 0.0)
-            except:
-                current_price = SYSTEM_STATE.get("price", 0.0)
+        # Calculate per asset
+        for symbol in watchlist:
+            # 1. Realized 24h PnL
+            recent_closed = session.query(Trade).filter(
+                Trade.symbol == symbol,
+                Trade.status == 'CLOSED',
+                Trade.exit_time >= cutoff
+            ).all()
+            realized_24h = sum((t.pnl or 0.0) for t in recent_closed)
             
-                if current_price is not None and current_price > 0:
+            # 2. Cumulative Realized PnL (all time)
+            all_closed = session.query(Trade).filter(
+                Trade.symbol == symbol,
+                Trade.status == 'CLOSED'
+            ).all()
+            total_realized = sum((t.pnl or 0.0) for t in all_closed)
+            
+            # 3. Unrealized PnL
+            unrealized_pnl = 0.0
+            open_trades = session.query(Trade).filter(
+                Trade.symbol == symbol,
+                Trade.status == 'OPEN'
+            ).all()
+            
+            if open_trades:
+                try:
+                    bridge = ExchangeHandler()
+                    client = await bridge._get_client(force_public=True)
+                    ticker = await client.fetch_ticker(symbol)
+                    p = ticker.get("last", 0.0)
+                except:
+                    p = SYSTEM_STATE.get("price", 0.0) if symbol == current_symbol else 0.0
+                
+                if p > 0:
                     for t in open_trades:
-                        if t.entry_price is not None and t.amount is not None:
+                        if t.entry_price and t.amount:
                             side_mult = 1 if t.side.upper() in ["BUY", "LONG"] else -1
-                            unrealized_pnl += (current_price - t.entry_price) * t.amount * side_mult
+                            unrealized_pnl += (p - t.entry_price) * t.amount * side_mult
+            
+            # 4. State Calculation
+            initial_equity = 1000.0 if SYSTEM_STATE.get("mode") == "PAPER" else 0.0
+            current_asset_equity = initial_equity + total_realized + unrealized_pnl
+            current_asset_pnl_24h = realized_24h + unrealized_pnl
+            
+            total_equity += current_asset_equity
+            total_pnl_24h += current_asset_pnl_24h
+            
+            if symbol == current_symbol:
+                asset_equity = current_asset_equity
+                asset_pnl_24h = current_asset_pnl_24h
+                SYSTEM_STATE["trades_total"] = session.query(Trade).filter(Trade.symbol == current_symbol).count()
+                SYSTEM_STATE["trades_open"] = session.query(Trade).filter(Trade.status == 'OPEN', Trade.symbol == current_symbol).count()
+                SYSTEM_STATE["trades_closed"] = session.query(Trade).filter(Trade.status == 'CLOSED', Trade.symbol == current_symbol).count()
+                
+            # Internal state tracking
+            if symbol not in ASSET_STATE:
+                ASSET_STATE[symbol] = {"initial_equity": initial_equity, "cumulative_pnl": 0.0}
         
-        # 3. Update ASSET_STATE
-        if current_symbol not in ASSET_STATE:
-            ASSET_STATE[current_symbol] = {
-                "initial_equity": 1000.0 if SYSTEM_STATE.get("mode") == "PAPER" else 0.0,
-                "cumulative_pnl": 0.0
-            }
+        SYSTEM_STATE["total_equity"] = total_equity
+        SYSTEM_STATE["total_pnl_24h"] = total_pnl_24h
+        SYSTEM_STATE["asset_equity"] = asset_equity
+        SYSTEM_STATE["asset_pnl_24h"] = asset_pnl_24h
         
-        # Get total realized PnL for this asset (all time) to calculate total equity
-        all_closed = session.query(Trade).filter(
-            Trade.symbol == current_symbol,
-            Trade.status == 'CLOSED'
-        ).all()
-        total_realized = sum((t.pnl or 0.0) for t in all_closed)
-        
-        current_equity = ASSET_STATE[current_symbol]["initial_equity"] + total_realized + unrealized_pnl
-        SYSTEM_STATE["equity"] = current_equity
-        SYSTEM_STATE["pnl_24h"] = realized_pnl + unrealized_pnl
+        # Legacy support
+        SYSTEM_STATE["equity"] = total_equity
+        SYSTEM_STATE["pnl_24h"] = total_pnl_24h
         
         session.close()
     except Exception as e:
         import traceback
-        error_details = traceback.format_exc()
-        logger.error(f"Status Calculation Error: {e}\n{error_details}")
+        logger.error(f"Status Calculation Error: {e}\n{traceback.format_exc()}")
     
     return SYSTEM_STATE
 

@@ -104,6 +104,8 @@ async def get_all_trades():
                 "status": t.status,
                 "pnl": pnl_str,
                 "cost": f"${cost_val:.2f}",
+                "amount": t.amount or 0.0,
+                "entry_price": t.entry_price or 0.0,
                 "order_id": t.order_id,
                 "reason": strat_name,
                 "conviction": conviction,
