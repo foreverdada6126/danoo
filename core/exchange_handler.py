@@ -74,7 +74,8 @@ class ExchangeHandler:
 
     async def fetch_balance(self):
         if not self.api_key:
-            return 5000.0 if self.use_sandbox else 0.0
+            # Dynamic Paper Balance: $1000 per coin in watchlist
+            return float(len(SETTINGS.WATCHLIST) * 1000.0) if self.use_sandbox else 0.0
         try:
             client = await self._get_client()
             await client.load_markets()
