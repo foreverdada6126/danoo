@@ -1,23 +1,48 @@
-# DaNoo v5.2 - Intelligence & Development Rules
+# DaNoo v5.2 - Autonomous Trading Intelligence Rules
 
-## Core Directive
-Maintain the integrity of the "Risk-First" Institutional Meta Allocation Engine. Every change must prioritize capital preservation, operational stability, and execution security.
+## 🗺️ Project Structure Map
+Understand the modular architecture before modifying:
+- `core/`: Trading logic (`regime_engine.py`, `execution_engine.py`, `prediction_engine.py`).
+- `ai_research/`: Intel/Reasoning server (`intel_server.py`).
+- `web_ui/`: FastAPI web server (`server.py`) and Web artifacts.
+- `telegram_bot/`: Bot interface (`bot.py`).
+- `config/`: System and risk configuration (`risk_config.py`).
+- `database/`: Persistence models (`models.py`).
+- `security/`: Safety and validation (`execution_validator.py`).
+- `.skills/`: Tactical data discovery and research scripts.
 
-## Architecture Guidelines
-- **Math Parity**: All technical indicators must match the deterministic math established in the `reference_files` and `core/strategy_library.py`. Do NOT use standard libraries (like TA-Lib) unless specifically asked; maintain custom parity for backtest consistency.
-- **Async Efficiency**: Use `asyncio` for the main loop, Web UI (FastAPI), and Telegram polling. Avoid blocking calls.
-- **Unified State**: Maintain a shared state between the `RegimeEngine`, `ExecutionEngine`, and the two UIs (Web and Telegram).
+## 🧭 Core Directive
+Maintain the integrity of the "Risk-First" Institutional Meta Allocation Engine. Every change must prioritize:
+1. **Capital Preservation**: Never bypass risk limits in `config/risk_config.py`.
+2. **Operational Stability**: Use `asyncio` for non-blocking execution throughout.
+3. **Execution Security**: All trades MUST pass `ExecutionValidator` in `security/`.
 
-## UI/UX Standards
-- **Futuristic Aesthetic**: Web UI updates must follow the "Institutional Cyberpunk" theme (Glassmorphism, neon accents, Outfit/Space Mono fonts).
-- **Instructional Flow**: The Chat/Intel Interface is the primary way to interact with the OpenClaw agent. Ensure responses are professional and data-driven.
+## 🏗️ Architecture & Math
+- **Math Parity**: All indicators must match `reference_files/` and `core/strategy_library.py`. Do NOT use TA-Lib unless explicitly requested.
+- **Unified State**: Shared state must be maintained across `RegimeEngine`, `ExecutionEngine`, Web UI, and Telegram.
+- **Async First**: Use `asyncio` for main loops, Web server (FastAPI), and Telegram polling.
 
-## Security & Governance
-- **Zero Secrets**: NEVER hardcode API keys or Telegram tokens. Refer only to `SETTINGS` or `secrets.env`.
-- **Git Hygiene**: Respect the `.gitignore`. Data pull CSVs and logs should stay local or in the File Vault, not in the repo.
-- **OpenClaw Governance**: Follow the skill audit policy: line-by-line review, pinned versions, and "discovery only" usage.
+## 🎨 UI/UX Standards
+- **Institutional Cyberpunk**: Web UI updates must use Glassmorphism, neon accents (e.g., `#00FF41`), and `Outfit`/`Space Mono` fonts.
+- **Intel Interface**: Professional, data-driven analysis in the Chat/Intel interface.
 
-## Development Workflow
-1. **Analyze Regime**: Before suggesting trade logic changes, consider the 5 market regimes: BULL_TREND, BEAR_TREND, RANGING, COMPRESSED, HIGH_VOLATILITY.
-2. **Verify Execution**: All trade execution logic must pass through the `ExecutionValidator` check.
-3. **Log Visibility**: Significant engine changes must be reflected in the Web UI System Logs.
+## 🔒 Security & Policy
+- **Tactical Script Policy**: Any new script in `.skills/` requires line-by-line review, pinned versions, and "discovery only" usage.
+- **Zero Secrets**: Reference `SETTINGS` or `secrets.env` for all API keys and tokens.
+- **Git Hygiene**: Ignore data pulls (.csv) and logs. Keep them local or in the File Vault.
+
+## 🛠️ Development & Deployment Workflow
+1. **Regime Check**: Consider the 5 regimes (BULL_TREND, BEAR_TREND, RANGING, COMPRESSED, HIGH_VOLATILITY) before logic changes.
+2. **Execution Check**: Verify all trade logic against the `ExecutionValidator`.
+3. **Log Check**: Reflect major engine changes in the Web UI System Logs for operator visibility.
+4. **Docker Lifecycle**: 
+   - After logic changes, use `./manage.sh restart` to apply updates locally. 
+   - Pushing to `main` triggers `autoupdate.sh` on the VPS. 
+   - Monitor `danoo-core` outcomes via `docker logs danoo-core -f`.
+
+## 🚢 Docker & Orchestration (`danoo-fleet`)
+The engine runs as a multi-container fleet on the VPS:
+- **`danoo-core`**: Trading engine, regime logic, and Dashboard (Port 8000).
+- **`intel-service`**: AI research server (Port 5000).
+- **Network**: All services communicate via `danoo-net`. Ensure new services are added to `docker-compose.yml` and explicitly "wired" in `manage.sh` if external.
+- **Persistence**: Databases (`database/`) and logs (`logs/`) are volume-mapped to the host.

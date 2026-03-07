@@ -251,7 +251,7 @@ class ScalperEngine:
             # Actually, Bybit HBARUSDT usually allows 1-2 decimals, but let's stick to int if 0 was used before
             amount = round(amount, 1) if "HBAR" in symbol else round(amount, 0)
             
-        result = self.executor.execute_order(symbol, side.lower(), amount=amount, price=price)
+        result = await self.executor.execute_order(symbol, side.lower(), amount=amount, price=price)
         
         if result["status"] == "FILLED":
             session = DB_SESSION()

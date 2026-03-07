@@ -1,9 +1,11 @@
-import ccxt
+import asyncio
 import time
+import os
 from typing import Dict, Any, Optional
 from loguru import logger
 from config.settings import SETTINGS
 from config.risk_config import RISK_CONFIG
+from core.exchange_handler import ExchangeHandler
 
 class ExecutionEngine:
     """
@@ -12,56 +14,41 @@ class ExecutionEngine:
     """
     
     def __init__(self, mode: str = "paper"):
-        self.mode = mode
-        self.exchange = None
-        self.setup_exchange()
+        self.mode = mode.lower()
+        self.bridge = ExchangeHandler()
+        logger.info(f"Execution Engine: Initialized in {self.mode.upper()} mode.")
         
-    def setup_exchange(self):
-        if self.mode == "paper":
-            logger.info("Execution Engine: Running in PAPER mode.")
-            return
-
-        # Real/Testnet setup
-        self.exchange = ccxt.binance({
-            'apiKey': '', # To be loaded from secrets
-            'secret': '',
-            'enableRateLimit': True,
-            'options': {'defaultType': 'future'}
-        })
-        
-        # Testnet check
-        if os.getenv("USE_TESTNET") == "true":
-            self.exchange.set_sandbox_mode(True)
-            logger.info("Execution Engine: Running in TESTNET mode.")
-        else:
-            logger.warning("Execution Engine: Running in LIVE REAL MONEY mode.")
-
-    def execute_order(self, symbol: str, side: str, amount: float, price: Optional[float] = None) -> Dict[str, Any]:
+    async def execute_order(self, symbol: str, side: str, amount: float, price: Optional[float] = None) -> Dict[str, Any]:
         """
         Executes an order based on current mode and risk constraints.
         """
         # 1. Risk Pre-check
         if not self.validate_risk(symbol, amount):
+            logger.warning(f"Execution Rejected: Risk validation failed for {symbol}")
             return {"status": "REJECTED", "reason": "Risk limit exceeded"}
 
         # 2. Execution logic
         if self.mode == "real":
-            return self._handle_real_execution(symbol, side, amount, price)
+            return await self._handle_real_execution(symbol, side, amount, price)
         else:
-            return self._handle_paper_execution(symbol, side, amount, price)
+            return await self._handle_paper_execution(symbol, side, amount, price)
 
     def validate_risk(self, symbol: str, amount: float) -> bool:
         """
         Enforces RISK_CONFIG before any execution.
         """
-        # Placeholder for complex risk validation (max exposure, margin check)
+        # Basic validation against config
+        if amount <= 0:
+            return False
+            
         if RISK_CONFIG.position_size_validation_before_execution:
-            # Check leverage and size limits
+            # Add more complex logic if needed (e.g., wallet exposure checks)
             pass
         return True
 
-    def _handle_paper_execution(self, symbol: str, side: str, amount: float, price: Optional[float]) -> Dict[str, Any]:
-        logger.info(f"[PAPER] Order Executed: {side} {amount} {symbol}")
+    async def _handle_paper_execution(self, symbol: str, side: str, amount: float, price: Optional[float]) -> Dict[str, Any]:
+        """Simulates a filled order for paper trading."""
+        logger.info(f"[PAPER] Order Executed: {side.upper()} {amount} {symbol}")
         return {
             "status": "FILLED",
             "order_id": f"paper_{int(time.time())}",
@@ -72,14 +59,33 @@ class ExecutionEngine:
             "mode": "paper"
         }
 
-    def _handle_real_execution(self, symbol: str, side: str, amount: float, price: Optional[float]) -> Dict[str, Any]:
+    async def _handle_real_execution(self, symbol: str, side: str, amount: float, price: Optional[float]) -> Dict[str, Any]:
         """
-        Real money requires Manual Confirmation via Telegram as per mission.
+        Executes real trades via the Exchange Bridge.
         """
+        # Optional: Manual Confirmation logic can be toggled in RISK_CONFIG
         if RISK_CONFIG.double_check_real_money_orders:
-            logger.info(f"[REAL] Awaiting Manual Approval for: {side} {amount} {symbol}")
-            # This would trigger a Telegram Alert and wait for /approve
+            logger.info(f"[REAL] Manual Approval Required for: {side.upper()} {amount} {symbol}")
+            # In a fully autonomous bot, we might want to bypass this or integrate with a signal
             return {"status": "PENDING_APPROVAL", "symbol": symbol, "side": side}
         
-        # Actual CCXT call would go here
-        return {"status": "SUBMITTED"}
+        logger.info(f"[REAL] Executing {side.upper()} {amount} {symbol} on Exchange...")
+        
+        # Call the exchange handler (Assuming market orders for now as per current bridge)
+        result = await self.bridge.place_limit_order(symbol, side, amount, price or 0.0)
+        
+        if result.get("success"):
+            order_data = result.get("order", {})
+            logger.success(f"[REAL] Order FILLED: {symbol} ID: {order_data.get('id')}")
+            return {
+                "status": "FILLED",
+                "order_id": order_data.get("id"),
+                "symbol": symbol,
+                "side": side,
+                "amount": amount,
+                "price": order_data.get("price", price),
+                "mode": "real"
+            }
+        else:
+            logger.error(f"[REAL] Execution Failed: {result.get('error')}")
+            return {"status": "FAILED", "reason": result.get("error")}

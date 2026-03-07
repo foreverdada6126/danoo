@@ -74,17 +74,22 @@ async def cycle_15m():
 async def cycle_1h():
     """Recalculate scores and check trade changes."""
     from web_ui.state import SYSTEM_STATE, LOG_HISTORY
-    from core.executor import ExecutionEngine
+    from core.executor import StrategicBridge
     
     SYSTEM_STATE["heartbeat"] = "CHECKING_TRADE"
-    logger.info("[Cycle 1h] Running Execution Bridge analysis...")
+    logger.info("[Cycle 1h] Running Strategic Bridge analysis...")
     
-    executor = ExecutionEngine()
-    decision = executor.check_trade_readiness(SYSTEM_STATE)
+    bridge = StrategicBridge()
+    decision = bridge.check_trade_readiness(SYSTEM_STATE)
     
-    log_msg = f"Execution Decision: {decision['decision']} - {decision['reason']}"
-    log_entry = {"time": time.time(), "msg": log_msg}
-    LOG_HISTORY.append(log_entry)
+    log_msg = f"Strategic Decision: {decision['decision']} - {decision['reason']}"
+    LOG_HISTORY.append({"time": time.time(), "msg": log_msg})
+    
+    if decision["decision"] == "READY":
+        # Actively execute a strategic trade
+        success = await bridge.execute_strategic_trade(SYSTEM_STATE, decision)
+        if success:
+            logger.success(f"[Cycle 1h] Strategic Trade Executed: {decision['reason']}")
     
     if len(LOG_HISTORY) > 50: LOG_HISTORY.pop(0)
     SYSTEM_STATE["heartbeat"] = "IDLE"
