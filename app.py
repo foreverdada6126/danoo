@@ -93,11 +93,15 @@ async def run_prediction_engine():
                     
                     if len(ohlcv) < 50: continue
                         
-                    forecast = await predictor.train_and_predict(symbol, ohlcv)
+                    from web_ui.state import LIQUIDITY_STATE
+                    liq_data = LIQUIDITY_STATE.get(symbol)
+                    forecast = await predictor.train_and_predict(symbol, ohlcv, liquidity_data=liq_data)
+                    
                     if forecast:
                         PREDICTION_STATE[symbol] = forecast
                         if symbol == current_fav:
-                            logger.success(f"PROPRIETARY SYNC: {symbol} -> {forecast['direction']} ({forecast['change_pct']}%)")
+                            backing = "💎" if forecast.get('institutional_backed') else "📈"
+                            logger.success(f"EXPERT SYNC: {backing} {symbol} -> {forecast['direction']} ({forecast['change_pct']}%)")
                 except Exception as asset_err:
                     logger.error(f"Prediction Engine Error [{symbol}]: {asset_err}")
                 
@@ -108,34 +112,57 @@ async def run_prediction_engine():
             
         await asyncio.sleep(60) # Faster cycle check
 
+async def run_liquidity_engine():
+    """Institutional Order Book Depth Scan - Running in background."""
+    from core.liquidity_scanner import LIQUIDITY_SCANNER
+    from web_ui.state import LIQUIDITY_STATE
+    logger.info("Order Book Intelligence: Deep Depth Engine Started.")
+    while True:
+        try:
+            current_fav = SYSTEM_STATE.get("symbol", "BTCUSDT")
+            targets = [current_fav] + [s for s in SETTINGS.WATCHLIST if s != current_fav]
+            
+            for symbol in targets:
+                scan = await LIQUIDITY_SCANNER.scan_symbol(symbol)
+                if scan:
+                    LIQUIDITY_STATE[symbol] = scan
+                await asyncio.sleep(1) # Fast depth rotation
+                
+        except Exception as e:
+            logger.error(f"Liquidity Engine Error: {e}")
+        await asyncio.sleep(30) # High-frequency refresh (30s)
+
 async def main():
     logger.add("logs/engine.log", rotation="10 MB", level="INFO")
     logger.info(f"Initializing {SETTINGS.PROJECT_NAME} v{SETTINGS.VERSION}...")
-    logger.success("--- SYSTEM PATCH v5.4.1 ACTIVE (PERFORMANCE MODE) ---")
+    logger.success("--- SYSTEM PATCH v5.5.0 ACTIVE (EXPERT MODE) ---")
     
     try:
         # 1. Initialize Telegram Bot (Core UI)
-        logger.info("Pillar 1/5: Initializing Telegram Interface...")
+        logger.info("Pillar 1/6: Initializing Telegram Interface...")
         bot = TelegramBot()
         await bot.start_bot()
-        await bot.send_alert(f"🚀 DaNoo v{SETTINGS.VERSION} Engine Online.")
+        await bot.send_alert(f"🚀 DaNoo v{SETTINGS.VERSION} Expert Mode Online.")
         
         # 2. Start Web UI Server (Background Task)
-        logger.info("Pillar 2/5: Initializing Command Hub Server...")
+        logger.info("Pillar 2/6: Initializing Command Hub Server...")
         ui_server = start_ui_server()
         asyncio.create_task(ui_server.serve())
-        logger.info("Web UI Server status: LIVE on http://0.0.0.0:8000")
         
         # 3. Start Intelligence Task
-        logger.info("Pillar 3/5: Spawning Intelligence Watchdog...")
+        logger.info("Pillar 3/6: Spawning Intelligence Watchdog...")
         asyncio.create_task(run_market_intelligence(bot))
         
-        # 3.5 Start Prediction Task
-        logger.info("Pillar 3.1/5: Spawning Prediction Engine...")
+        # 4. Start ML Prediction Engine
+        logger.info("Pillar 4/6: Spawning Prediction Engine...")
         asyncio.create_task(run_prediction_engine())
         
-        # 4. Initialize Internal Engines
-        logger.info("Pillar 4/5: Calibration of Regime & Execution Engines...")
+        # 5. Start Institutional Liquidity Engine
+        logger.info("Pillar 5/6: Spawning Liquidity Sniper...")
+        asyncio.create_task(run_liquidity_engine())
+        
+        # 6. Initialize Execution & Scalper
+        logger.info("Pillar 6/6: Calibration of Execution Engines...")
         regime_engine = RegimeEngine()
         
         # 5. Start Routine Orchestration (Scheduler)

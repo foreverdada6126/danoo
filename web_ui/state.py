@@ -34,6 +34,7 @@ SYSTEM_STATE = {
 # Per-Asset State Tracking (Equity/PNL)
 ASSET_STATE = {}
 PREDICTION_STATE = {}
+LIQUIDITY_STATE = {} # Institutional Order Book Depth
 
 # ─── Data Containers ─────────────────────────────────────────────
 LOG_HISTORY = []

@@ -11,6 +11,12 @@ from web_ui.state import SYSTEM_STATE, LOG_HISTORY, ACTIVE_TRADES
 
 router = APIRouter()
 
+@router.get("/api/market/liquidity")
+async def get_liquidity(symbol: str = "BTCUSDT"):
+    """Returns the latest institutional order book analysis for a given symbol."""
+    from web_ui.state import LIQUIDITY_STATE
+    return LIQUIDITY_STATE.get(symbol, {"error": "No liquidity data available yet."})
+
 @router.get("/api/status")
 async def get_status():
     """Returns the core system state (equity, regime, insights)."""

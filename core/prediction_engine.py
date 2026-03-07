@@ -48,9 +48,9 @@ class PredictionEngine:
         
         return df.ffill().bfill()
 
-    async def train_and_predict(self, symbol, ohlcv_data, horizon=4):
+    async def train_and_predict(self, symbol, ohlcv_data, horizon=4, liquidity_data=None):
         """
-        Trains a model on the provided OHLCV data and predicts the next 'horizon' steps.
+        Trains a model and predicts next steps, now factoring in institutional liquidity walls.
         """
         try:
             df = pd.DataFrame(ohlcv_data, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
@@ -69,41 +69,64 @@ class PredictionEngine:
             X = train_df[features].values
             y = train_df['target'].values
             
-            # Incremental training (simply refit for now as RF is fast)
             self.model.fit(X, y)
             self.is_trained = True
             
-            # Multi-step prediction (recursive)
+            # Recursive Forecast
             predictions = []
             last_row = df.iloc[-1].copy()
-            
             current_close = last_row['close']
             
             for _ in range(horizon):
                 X_pred = last_row[features].values.reshape(1, -1)
                 next_price = self.model.predict(X_pred)[0]
                 predictions.append(float(next_price))
-                
-                # Update last_row for next recursive step (simplified)
                 last_row['close'] = next_price
-                # Note: Indicators aren't fully recalculated for speed, just close is bumped
-                # In a real system, we'd update all indicators, but this is a proxy for direction
+            
+            # ─── INSTITUTIONAL LIQUIDITY ADJUSTMENT ───
+            final_forecast = predictions[-1]
+            direction = "BULLISH" if final_forecast > current_close else "BEARISH"
+            change_pct = ((final_forecast - current_close) / current_close) * 100
+            confidence_mod = 0
+            
+            if liquidity_data:
+                res = liquidity_data.get("resistance", 999999)
+                sup = liquidity_data.get("support", 0)
+                imbalance = liquidity_data.get("imbalance", 0) # -1.0 to 1.0
+                
+                # 1. Price Capping (The "Expert" Guardrail)
+                if direction == "BULLISH" and final_forecast > res:
+                    # ML is bullish but there's a WHALE WALL in the way
+                    final_forecast = res * 0.9998 # Adjust to just below the wall
+                    direction = "BULL_REJECTED" # Flag the institutional barrier
+                    confidence_mod -= 20
+                    logger.warning(f"ML BULLISH but LIQUIDITY REJECTED for {symbol}. Capping at {res}")
+                
+                elif direction == "BEARISH" and final_forecast < sup:
+                    final_forecast = sup * 1.0002
+                    direction = "BEAR_SUPPORTED"
+                    confidence_mod -= 15
+                
+                # 2. Imbalance Influence
+                # If ML and Imbalance agree, boost confidence
+                if (direction == "BULLISH" and imbalance > 0.2) or (direction == "BEARISH" and imbalance < -0.2):
+                    confidence_mod += 15
             
             # Confidence based on volatility
             volatility = df['close'].pct_change().std()
-            confidence = max(0.6, 1.0 - (volatility * 10))
-            
-            direction = "BULLISH" if predictions[-1] > current_close else "BEARISH"
-            change_pct = ((predictions[-1] - current_close) / current_close) * 100
+            base_confidence = max(0.6, 1.0 - (volatility * 10))
+            final_confidence = min(99.0, max(40.0, (base_confidence * 100) + confidence_mod))
             
             return {
                 "symbol": symbol,
                 "current_price": float(current_close),
                 "forecast": predictions,
+                "adjusted_target": float(final_forecast),
                 "direction": direction,
-                "change_pct": round(change_pct, 2),
-                "confidence": round(confidence * 100, 1),
-                "timestamp": time.time()
+                "change_pct": round(((final_forecast - current_close) / current_close) * 100, 3),
+                "confidence": round(final_confidence, 1),
+                "timestamp": time.time(),
+                "institutional_backed": True if (liquidity_data and abs(confidence_mod) > 0) else False
             }
             
         except Exception as e:

@@ -550,6 +550,7 @@ async function changeGlobalConfig(type, value) {
             initPriceChart();
             syncDashboard();
             updatePrediction();
+            updateLiquidity();
         }
     } catch (e) {
         console.error("Config Sync Failed", e);
@@ -764,6 +765,34 @@ async function updatePrediction() {
         get('prediction-content').classList.add('pulse-discovery');
     } catch (e) {
         console.error("Prediction Update Failed", e);
+    }
+}
+async function updateLiquidity() {
+    try {
+        const symbol = get('asset-selector').value;
+        const res = await fetch(`/api/market/liquidity?symbol=${symbol}`);
+        const data = await res.json();
+
+        if (data.error) return;
+
+        if (get('liq-support-price')) get('liq-support-price').textContent = `$${parseFloat(data.support).toLocaleString()}`;
+        if (get('liq-res-price')) get('liq-res-price').textContent = `$${parseFloat(data.resistance).toLocaleString()}`;
+        if (get('liq-bid-walls')) get('liq-bid-walls').textContent = `${data.bid_walls} Walls`;
+        if (get('liq-ask-walls')) get('liq-ask-walls').textContent = `${data.ask_walls} Walls`;
+
+        const imbalance = parseFloat(data.imbalance) * 100;
+        if (get('liq-imbal-val')) {
+            get('liq-imbal-val').textContent = `${imbalance >= 0 ? '+' : ''}${imbalance.toFixed(2)}%`;
+            get('liq-imbal-val').className = `text-[8px] font-bold font-mono ${imbalance >= 0 ? 'text-brand-green' : 'text-brand-red'}`;
+        }
+        if (get('liq-imbal-bar')) {
+            const width = 50 + (imbalance / 2);
+            get('liq-imbal-bar').style.width = `${Math.max(5, Math.min(95, width))}%`;
+            get('liq-imbal-bar').className = `h-full transition-all ${imbalance >= 0 ? 'bg-brand-green' : 'bg-brand-red'}`;
+        }
+
+    } catch (e) {
+        console.warn("Liquidity Feed Offline");
     }
 }
 
@@ -1120,6 +1149,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateFiles, 10000);
     setInterval(updateTicker, 5000);
     setInterval(updatePrediction, 10000);
+    setInterval(updateLiquidity, 10000);
 
     // Initialize candlestick chart (has built-in retry for CDN + dimensions)
     initPriceChart();

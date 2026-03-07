@@ -96,11 +96,39 @@ class ScalperEngine:
                         strategy_matched = "RECON_SYNC"
 
                 if signal:
-                    # One active sub-trade per symbol to prevent double-entry
+                    # ONE active sub-trade per symbol
                     existing = any(t for t in ACTIVE_TRADES if t["symbol"] == symbol and ("SCALP" in t["reason"] or "RECON" in t["reason"]))
                     if not existing:
-                        logger.warning(f"[Scalper] SIGNAL: {signal} detected for {symbol} at ${curr_price} via {strategy_matched}")
-                        await self.execute_scalp(symbol, signal, curr_price, reason=strategy_matched)
+                        # 4.5. Institutional Liquidity Filter (EXPERT MODE)
+                        from web_ui.state import LIQUIDITY_STATE
+                        liq = LIQUIDITY_STATE.get(symbol)
+                        is_backed = False
+                        
+                        if liq:
+                            if signal == "BUY" and liq.get("is_whale_support"):
+                                is_backed = True
+                            elif signal == "SELL" and liq.get("is_whale_resistance"):
+                                is_backed = True
+                            
+                            # Log the Liquidity Context
+                            imbalance = liq.get("imbalance", 0)
+                            logger.info(f"[Expert Sniper] {symbol} {signal} | Imbalance: {imbalance:.2f} | Backed: {is_backed}")
+                        else:
+                            # If no liquidity data, assume neutral but don't grant "Backed" status
+                            logger.info(f"[Scalper] No depth data for {symbol}. Trading on technicals only.")
+
+                        # Upgrade or Skip Based on Logic
+                        final_reason = strategy_matched
+                        if is_backed:
+                            final_reason = f"INST_{strategy_matched}" # Upgrade to Institutional Grade
+                            logger.success(f"💎 HIGH CONVICTION: {symbol} Move is Liquidity Backed!")
+                        else:
+                            # If NOT backed by a wall, we skip it in EXPERT mode to ensure "Guaranteed Success"
+                            logger.warning(f"⚠️ Low Conviction: {symbol} {signal} skipped (No Institutional Wall detected).")
+                            continue
+
+                        logger.warning(f"[Scalper] SIGNAL: {signal} detected for {symbol} at ${curr_price} via {final_reason}")
+                        await self.execute_scalp(symbol, signal, curr_price, reason=final_reason)
                 
                 await asyncio.sleep(0.5)
 

@@ -349,6 +349,57 @@
                     </div>
                 </div>
 
+                <!-- Expert: Institutional Liquidity Depth -->
+                <div
+                    class="h-[180px] bg-brand-card/5 border border-brand-border rounded-lg flex flex-col overflow-hidden mb-5 shrink-0">
+                    <div
+                        class="flex items-center justify-between px-5 py-3 bg-brand-green/[0.07] border-b border-brand-green/10">
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-[9px] font-bold tracking-[0.3em] text-brand-green uppercase">Institutional
+                                Depth</h2>
+                            <div
+                                class="w-1.5 h-1.5 rounded-full bg-brand-green shadow-[0_0_12px_rgba(34,171,148,1)] animate-pulse">
+                            </div>
+                        </div>
+                        <span class="text-[7px] font-bold text-brand-green/60 uppercase tracking-widest font-mono">L2
+                            SCAN</span>
+                    </div>
+                    <div class="flex-1 p-4 grid grid-cols-2 gap-4">
+                        <div class="flex flex-col justify-center border-r border-brand-border/30 pr-4">
+                            <span class="text-[7px] text-brand-dim uppercase tracking-[0.2em] mb-2 text-center">Whale
+                                Support</span>
+                            <div id="liq-support-price"
+                                class="text-[14px] font-bold font-mono text-brand-green text-center tracking-tighter">$
+                                --.---</div>
+                            <div class="flex justify-center items-center gap-1 mt-1">
+                                <span id="liq-bid-walls" class="text-[8px] font-mono text-white/50">0 Walls</span>
+                            </div>
+                        </div>
+                        <div class="flex flex-col justify-center pl-2">
+                            <span class="text-[7px] text-brand-dim uppercase tracking-[0.2em] mb-2 text-center">Whale
+                                Resistance</span>
+                            <div id="liq-res-price"
+                                class="text-[14px] font-bold font-mono text-brand-red text-center tracking-tighter">$
+                                --.---</div>
+                            <div class="flex justify-center items-center gap-1 mt-1">
+                                <span id="liq-ask-walls" class="text-[8px] font-mono text-white/50">0 Walls</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        class="px-5 py-2.5 bg-black/30 border-t border-brand-border/30 flex items-center justify-between">
+                        <span class="text-[7px] text-brand-dim uppercase tracking-[0.2em]">Order Imbalance</span>
+                        <div class="flex items-center gap-2">
+                            <div class="w-20 h-1 bg-white/5 rounded-full overflow-hidden flex items-center">
+                                <div id="liq-imbal-bar" class="h-full bg-brand-green transition-all" style="width: 50%">
+                                </div>
+                            </div>
+                            <span id="liq-imbal-val"
+                                class="text-[8px] font-bold font-mono text-brand-green">0.00%</span>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Right Side Panels Wrapper -->
                 <div id="right-sidebar-content" class="flex flex-col flex-1 min-h-0">
                     <!-- Approval Queue (Default for REAL mode) -->
