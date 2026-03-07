@@ -24,6 +24,7 @@ class Trade(Base):
     entry_time = Column(DateTime, default=datetime.utcnow)
     exit_time = Column(DateTime)
     order_id = Column(String)
+    trade_code = Column(String)
 
 class CandleCache(Base):
     """Local cache for high-speed signal calculation."""

@@ -36,6 +36,14 @@ async def cycle_15m():
                 SYSTEM_STATE["price"] = price
                 SYSTEM_STATE["exchange_connected"] = True
             
+            # Per-asset global tracking
+            if "assets" not in SYSTEM_STATE: SYSTEM_STATE["assets"] = {}
+            SYSTEM_STATE["assets"][symbol] = {
+                "rsi": rsi,
+                "price": price,
+                "last_update": time.time()
+            }
+            
             # Mission Intelligence Log (Recon)
             report_time = time.time()
             RECON_HISTORY.append({
@@ -72,24 +80,32 @@ async def cycle_15m():
     SYSTEM_STATE["heartbeat"] = "IDLE"
 
 async def cycle_1h():
-    """Recalculate scores and check trade changes."""
+    """Recalculate scores and check trade changes for all watchlist assets."""
     from web_ui.state import SYSTEM_STATE, LOG_HISTORY
     from core.executor import StrategicBridge
     
     SYSTEM_STATE["heartbeat"] = "CHECKING_TRADE"
-    logger.info("[Cycle 1h] Running Strategic Bridge analysis...")
+    logger.info("[Cycle 1h] Running Strategic Bridge analysis for all assets...")
     
     bridge = StrategicBridge()
-    decision = bridge.check_trade_readiness(SYSTEM_STATE)
     
-    log_msg = f"Strategic Decision: {decision['decision']} - {decision['reason']}"
-    LOG_HISTORY.append({"time": time.time(), "msg": log_msg})
-    
-    if decision["decision"] == "READY":
-        # Actively execute a strategic trade
-        success = await bridge.execute_strategic_trade(SYSTEM_STATE, decision)
-        if success:
-            logger.success(f"[Cycle 1h] Strategic Trade Executed: {decision['reason']}")
+    for symbol in SETTINGS.WATCHLIST:
+        # Create a local state for this symbol
+        asset_data = SYSTEM_STATE.get("assets", {}).get(symbol, {})
+        local_state = SYSTEM_STATE.copy()
+        local_state.update({
+            "symbol": symbol,
+            "rsi": asset_data.get("rsi", 50),
+            "price": asset_data.get("price", 0.0)
+        })
+        
+        decision = bridge.check_trade_readiness(local_state)
+        
+        if decision["decision"] == "READY":
+            success = await bridge.execute_strategic_trade(local_state, decision)
+            if success:
+                logger.success(f"[Cycle 1h] Strategic Trade Executed: {symbol} - {decision['reason']}")
+                LOG_HISTORY.append({"time": time.time(), "msg": f"Strategic Logic: {symbol} Trade Executed via {decision['reason']}"})
     
     if len(LOG_HISTORY) > 50: LOG_HISTORY.pop(0)
     SYSTEM_STATE["heartbeat"] = "IDLE"

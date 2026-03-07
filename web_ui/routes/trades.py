@@ -46,6 +46,7 @@ async def get_active_trades():
                     t["cost"] = f"${(db_t.entry_price * db_t.amount):.2f}"
                     t["value"] = f"${(current_price * db_t.amount):.2f}"
                 t["leverage"] = db_t.leverage or 1
+                t["trade_code"] = db_t.trade_code
             session.close()
         except:
             pass
@@ -107,7 +108,8 @@ async def get_all_trades():
                 "reason": strat_name,
                 "conviction": conviction,
                 "risk": risk,
-                "leverage": t.leverage or 1
+                "leverage": t.leverage or 1,
+                "trade_code": t.trade_code
             })
         session.close()
         return {"trades": result}

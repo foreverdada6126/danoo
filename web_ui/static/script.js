@@ -617,7 +617,10 @@ async function updateTrades() {
                                     <span>${formatTime(t.time)}</span>
                                 </div>
                                 <div class="card-header">
-                                    <span class="tracking-tight">${t.symbol}</span>
+                                    <div class="flex flex-col">
+                                        <span class="tracking-tight">${t.symbol}</span>
+                                        <span class="text-[9px] font-mono text-brand-dim opacity-70">${t.trade_code || 'ID-PENDING'}</span>
+                                    </div>
                                     <span class="font-mono ${isProfit ? 'up' : 'down'} text-[13px]">${t.pnl || '$0.00'}</span>
                                 </div>
                                 <div class="card-body">

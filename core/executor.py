@@ -75,8 +75,11 @@ class StrategicBridge:
         price = state.get("price", 0.0)
         
         # Logic to calculate amount based on balance
-        equity = state.get("equity", 1000.0)
-        amount_usd = equity * 0.05 # Use 5% of equity for strategic trades
+        from config.settings import SETTINGS
+        total_equity = state.get("equity", 1000.0 * len(SETTINGS.WATCHLIST))
+        equity = total_equity / len(SETTINGS.WATCHLIST) if len(SETTINGS.WATCHLIST) > 0 else 1000.0
+        
+        amount_usd = equity * 0.10 # Use 10% of equity slice for strategic trades
         if price <= 0: return False
         
         amount = amount_usd / price
@@ -92,7 +95,44 @@ class StrategicBridge:
         result = await self.executor.execute_order(symbol, side, amount, price)
         
         if result["status"] == "FILLED":
+            from database.models import DB_SESSION, Trade
+            from datetime import datetime
+            from web_ui.state import ACTIVE_TRADES, LOG_HISTORY
+            
+            session = DB_SESSION()
+            # Generate Unique Trade Code
+            trade_count = session.query(Trade).filter(Trade.symbol == symbol).count()
+            side_code = "L" if side.upper() == "BUY" else "S"
+            trade_code = f"{symbol.split('USDT')[0]}-{side_code}-{trade_count+1:02d}"
+
+            new_trade = Trade(
+                symbol=symbol, side=side, amount=amount, entry_price=price,
+                entry_time=datetime.utcnow(), status="OPEN", order_id=result["order_id"],
+                strategy="STRATEGIC_BRIDGE", leverage=1, trade_code=trade_code
+            )
+            session.add(new_trade)
+            session.commit()
+
+            ACTIVE_TRADES.append({
+                "id": new_trade.id, 
+                "trade_code": trade_code,
+                "time": new_trade.entry_time.timestamp(),
+                "symbol": symbol, 
+                "type": f"{side.upper()} (STRATEGIC)", 
+                "status": "OPEN",
+                "pnl": "$0.00", 
+                "cost": f"${(amount * price):.2f}",
+                "entry_price": price,
+                "amount": amount,
+                "order_id": new_trade.order_id, 
+                "reason": "STRATEGIC_BRIDGE",
+                "conviction": "95%", 
+                "risk": "LOW", 
+                "leverage": 1
+            })
+
             logger.success(f"STRATEGIC SUCCESS: {symbol} pos opened via {decision_data['reason']}")
+            session.close()
             return True
         else:
             logger.error(f"STRATEGIC FAILURE: Execution rejected: {result.get('reason')}")

@@ -189,11 +189,11 @@ class ScalperEngine:
         from web_ui.state import ACTIVE_TRADES, LOG_HISTORY, SYSTEM_STATE, TRADE_LOG_HISTORY
         from config.risk_config import RISK_CONFIG
         
-        # 1. Base Portfolio Constraint
-        equity = SYSTEM_STATE.get("equity", 5000.0)
-        if equity <= 0: equity = 5000.0
+        # 1. Base Portfolio Constraint - Use per-asset slice
+        total_equity = SYSTEM_STATE.get("equity", 1000.0 * len(SETTINGS.WATCHLIST))
+        equity = total_equity / len(SETTINGS.WATCHLIST) if len(SETTINGS.WATCHLIST) > 0 else 1000.0
         
-        # 2. Base Risk Allocation (default: 1% of equity to risk losing)
+        # 2. Base Risk Allocation (default: 1% of equity slice to risk losing)
         base_risk_amount = equity * RISK_CONFIG.max_risk_per_trade
         
         # 3. Modify Risk by Strategy Conviction Factor
@@ -258,10 +258,15 @@ class ScalperEngine:
         
         if result["status"] == "FILLED":
             session = DB_SESSION()
+            # Generate Unique Trade Code
+            trade_count = session.query(Trade).filter(Trade.symbol == symbol).count()
+            side_code = "L" if side.upper() == "BUY" else "S"
+            trade_code = f"{symbol.split('USDT')[0]}-{side_code}-{trade_count+1:02d}"
+
             new_trade = Trade(
                 symbol=symbol, side=side, amount=amount, entry_price=price,
                 entry_time=datetime.utcnow(), status="OPEN", order_id=result["order_id"],
-                strategy=reason, leverage=leverage
+                strategy=reason, leverage=leverage, trade_code=trade_code
             )
             session.add(new_trade)
             session.commit()
@@ -271,6 +276,7 @@ class ScalperEngine:
             
             ACTIVE_TRADES.append({
                 "id": new_trade.id, 
+                "trade_code": trade_code,
                 "time": new_trade.entry_time.timestamp(),
                 "symbol": symbol, 
                 "type": f"{side} ({reason.split('_')[0]})", 
