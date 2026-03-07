@@ -12,7 +12,7 @@ SYSTEM_STATE = {
     "exchange_id": SETTINGS.EXCHANGE_ID.upper(),
     "exchange_connected": False,
     "regime": "RANGING",
-    "equity": 5000.0 if SETTINGS.MODE == "paper" else 0.0,
+    "equity": (len(SETTINGS.WATCHLIST) * 1000.0) if SETTINGS.MODE == "paper" else 0.0,
     "pnl_24h": 0.0,
     "active_orders": 0,
     "symbol": "BTCUSDT",

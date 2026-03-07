@@ -24,9 +24,18 @@ show_help() {
     echo "  wire      - Re-connect Hostinger apps to DaNoo network"
     echo "  restart   - Clean restart of all DaNoo services"
     echo "  status    - Show which containers are currently running"
+    echo "  purge     - Wipe all trades and logs and reset equity (CAUTION)"
 }
 
 case "$1" in
+    purge)
+        echo -e "${RED}⚠️  Wiping all trades and logs...${NC}"
+        # Run inside the core container since it has the DB and Log mounts
+        docker exec -it danoo-core python purge.py
+        # Restart after purge to reload clean state
+        docker compose restart danoo-core
+        echo -e "${GREEN}✅ System Fully Purged and Reset.${NC}"
+        ;;
     update)
         echo -e "${YELLOW}🚀 Pulling latest code and rebuilding...${NC}"
         git pull origin main
