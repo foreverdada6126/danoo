@@ -4,7 +4,7 @@ import os
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "DaNoo"
-    VERSION: str = "5.2.6"
+    VERSION: str = "5.4.3"
     
     # Operational Modes
     # 'paper' - auto execute, no confirmation
