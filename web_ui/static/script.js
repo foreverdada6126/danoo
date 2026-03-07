@@ -5,7 +5,7 @@ let activeLogTab = "ALL";
 let isDraggingFab = false;
 let activeTradeTab = "ALL";
 let activeStratFilter = "ALL";
-let activeAssetFilter = true;
+let activeAssetFilter = false;
 let isIntelCollapsed = true;
 let lastReadIntelTime = 0;
 
@@ -292,9 +292,20 @@ window.togglePerformanceMode = () => {
     const btn = get('perf-toggle-btn');
     if (btn) {
         btn.textContent = perfMode === 'TOTAL' ? 'Total Portfolio' : 'Asset Focus';
-        btn.classList.toggle('border-brand-cyan', perfMode === 'TOTAL');
-        btn.classList.toggle('border-brand-green', perfMode === 'ASSET');
-        btn.style.color = perfMode === 'TOTAL' ? 'var(--cyan-brand)' : 'var(--green-brand)';
+        if (perfMode === 'TOTAL') {
+            btn.style.color = "var(--cyan-brand)";
+            btn.style.borderColor = "rgba(0, 242, 255, 0.3)";
+        } else {
+            btn.style.color = "var(--green-brand)";
+            btn.style.borderColor = "rgba(34, 171, 148, 0.3)";
+        }
+    }
+    // Visual flash
+    const capitalEl = get('perf-capital');
+    if (capitalEl) {
+        capitalEl.style.transition = 'none';
+        capitalEl.style.opacity = '0.3';
+        setTimeout(() => capitalEl.style.opacity = '1', 50);
     }
     syncDashboard();
 };
@@ -307,8 +318,15 @@ async function syncDashboard() {
         // Use appropriate keys based on toggle
         const displayEquity = perfMode === 'TOTAL' ? data.total_equity : data.asset_equity;
         const displayPnl = perfMode === 'TOTAL' ? data.total_pnl_24h : data.asset_pnl_24h;
+        const displayTotal = perfMode === 'TOTAL' ? data.total_trades_count : data.asset_trades_count;
+        const displayOpen = perfMode === 'TOTAL' ? data.total_trades_open : data.asset_trades_open;
+        const displayClosed = perfMode === 'TOTAL' ? data.total_trades_closed : data.asset_trades_closed;
 
-        if (get('equity-value')) get('equity-value').textContent = `$${data.total_equity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; // Main header always shows Total?
+        const capLabel = get('perf-capital-label');
+        const currentSymShort = get('asset-selector').value.replace('USDT', '');
+        if (capLabel) capLabel.textContent = perfMode === 'TOTAL' ? 'Portfolio Capital' : `${currentSymShort} Performance`;
+
+        if (get('equity-value')) get('equity-value').textContent = `$${data.total_equity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
         if (get('perf-capital')) {
             get('perf-capital').textContent = `$${displayEquity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -319,6 +337,11 @@ async function syncDashboard() {
             get('perf-pnl').textContent = `${displayPnl >= 0 ? '+' : ''}$${displayPnl.toFixed(2)}`;
             get('perf-pnl').className = `text-lg font-bold font-mono tracking-wider ${displayPnl >= 0 ? 'text-brand-green' : 'text-brand-red'}`;
         }
+
+        if (get('perf-total')) get('perf-total').textContent = displayTotal || 0;
+        if (get('perf-open')) get('perf-open').textContent = displayOpen || 0;
+        if (get('perf-closed')) get('perf-closed').textContent = displayClosed || 0;
+
         if (get('regime-value')) {
             const regimeEl = get('regime-value');
             regimeEl.textContent = data.regime;
@@ -329,9 +352,6 @@ async function syncDashboard() {
         if (get('sentiment-value')) get('sentiment-value').textContent = data.sentiment_score.toFixed(2);
         if (get('price-value')) get('price-value').textContent = `$${data.price.toLocaleString()}`;
         if (get('funding-value')) get('funding-value').textContent = `${data.funding_rate}%`;
-        if (get('perf-total')) get('perf-total').textContent = data.trades_total || 0;
-        if (get('perf-open')) get('perf-open').textContent = data.trades_open || 0;
-        if (get('perf-closed')) get('perf-closed').textContent = data.trades_closed || 0;
 
         if (get('mode-selector') && data.mode) {
             const ms = get('mode-selector');

@@ -65,6 +65,9 @@ def load_persistence():
                 "type": f"{t.side.upper()} ({t.strategy.split('_')[0] if t.strategy else 'MANUAL'})",
                 "status": t.status,
                 "pnl": f"${t.pnl:.2f}" if t.pnl else "$0.00",
+                "entry_price": t.entry_price or 0.0,
+                "amount": t.amount or 0.0,
+                "trade_code": t.trade_code,
                 "order_id": t.order_id,
                 "reason": t.strategy or "Persistent Trade",
                 "leverage": t.leverage or 1

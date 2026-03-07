@@ -30,8 +30,15 @@ async def get_status():
         total_equity = 0.0
         total_pnl_24h = 0.0
         
+        total_trades_count = 0
+        total_trades_open = 0
+        total_trades_closed = 0
+        
         asset_equity = 0.0
         asset_pnl_24h = 0.0
+        asset_trades_count = 0
+        asset_trades_open = 0
+        asset_trades_closed = 0
         
         cutoff = datetime.utcnow() - timedelta(hours=24)
         
@@ -59,6 +66,11 @@ async def get_status():
                 Trade.status == 'OPEN'
             ).all()
             
+            # Accumulate Total Counts
+            total_trades_count += session.query(Trade).filter(Trade.symbol == symbol).count()
+            total_trades_open += len(open_trades)
+            total_trades_closed += len(all_closed)
+            
             if open_trades:
                 try:
                     bridge = ExchangeHandler()
@@ -85,9 +97,9 @@ async def get_status():
             if symbol == current_symbol:
                 asset_equity = current_asset_equity
                 asset_pnl_24h = current_asset_pnl_24h
-                SYSTEM_STATE["trades_total"] = session.query(Trade).filter(Trade.symbol == current_symbol).count()
-                SYSTEM_STATE["trades_open"] = session.query(Trade).filter(Trade.status == 'OPEN', Trade.symbol == current_symbol).count()
-                SYSTEM_STATE["trades_closed"] = session.query(Trade).filter(Trade.status == 'CLOSED', Trade.symbol == current_symbol).count()
+                asset_trades_count = session.query(Trade).filter(Trade.symbol == current_symbol).count()
+                asset_trades_open = len(open_trades)
+                asset_trades_closed = len(all_closed)
                 
             # Internal state tracking
             if symbol not in ASSET_STATE:
@@ -95,12 +107,22 @@ async def get_status():
         
         SYSTEM_STATE["total_equity"] = total_equity
         SYSTEM_STATE["total_pnl_24h"] = total_pnl_24h
+        SYSTEM_STATE["total_trades_count"] = total_trades_count
+        SYSTEM_STATE["total_trades_open"] = total_trades_open
+        SYSTEM_STATE["total_trades_closed"] = total_trades_closed
+        
         SYSTEM_STATE["asset_equity"] = asset_equity
         SYSTEM_STATE["asset_pnl_24h"] = asset_pnl_24h
+        SYSTEM_STATE["asset_trades_count"] = asset_trades_count
+        SYSTEM_STATE["asset_trades_open"] = asset_trades_open
+        SYSTEM_STATE["asset_trades_closed"] = asset_trades_closed
         
         # Legacy support
         SYSTEM_STATE["equity"] = total_equity
         SYSTEM_STATE["pnl_24h"] = total_pnl_24h
+        SYSTEM_STATE["trades_total"] = total_trades_count
+        SYSTEM_STATE["trades_open"] = total_trades_open
+        SYSTEM_STATE["trades_closed"] = total_trades_closed
         
         session.close()
     except Exception as e:

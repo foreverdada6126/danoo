@@ -155,8 +155,8 @@
                         <span class="text-[9px] font-bold tracking-[0.2em] text-brand-dim uppercase">Strategy
                             Filter</span>
                         <button id="asset-focus-toggle" onclick="toggleAssetFocus()"
-                            class="text-[8px] font-bold text-brand-cyan uppercase tracking-wider transition-all hover:opacity-100">Focus:
-                            ON</button>
+                            class="text-[8px] font-bold text-brand-cyan uppercase tracking-wider transition-all hover:opacity-100 opacity-40">Focus:
+                            OFF</button>
                     </div>
                     <div id="strat-filter-nav" class="flex gap-1 p-0.5 bg-black/40 rounded border border-white/5">
                         <button onclick="setStratFilter('ALL')" data-strat="ALL" class="trade-tab active">All</button>
@@ -223,8 +223,9 @@
                         </div>
                         <div class="px-5 py-3 flex justify-between shrink-0 border-b border-brand-border bg-black/40">
                             <div class="flex flex-col">
-                                <span class="text-[9px] text-brand-dim uppercase tracking-widest mb-1">Capital
-                                    (USDT)</span>
+                                <span id="perf-capital-label"
+                                    class="text-[9px] text-brand-dim uppercase tracking-widest mb-1">Portfolio
+                                    Capital</span>
                                 <span id="perf-capital"
                                     class="text-lg font-bold font-mono text-white tracking-wider">$--</span>
                             </div>
