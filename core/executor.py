@@ -75,7 +75,7 @@ class StrategicBridge:
         price = state.get("price", 0.0)
         
         # Logic to calculate amount based on balance
-        equity = state.get("equity", 5000.0)
+        equity = state.get("equity", 1000.0)
         amount_usd = equity * 0.05 # Use 5% of equity for strategic trades
         if price <= 0: return False
         

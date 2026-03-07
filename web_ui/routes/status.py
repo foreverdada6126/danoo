@@ -67,7 +67,7 @@ async def get_status():
         # 3. Update ASSET_STATE
         if current_symbol not in ASSET_STATE:
             ASSET_STATE[current_symbol] = {
-                "initial_equity": 5000.0 if SYSTEM_STATE["mode"] == "PAPER" else 0.0,
+                "initial_equity": 1000.0 if SYSTEM_STATE["mode"] == "PAPER" else 0.0,
                 "cumulative_pnl": 0.0
             }
         
