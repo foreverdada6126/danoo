@@ -705,6 +705,9 @@ async function updateTrades() {
 async function updatePrediction() {
     try {
         const symbol = get('asset-selector').value;
+        const titleEl = get('pred-hub-title');
+        if (titleEl) titleEl.textContent = `Prediction Hub: ${symbol.replace('USDT', '')}`;
+
         const res = await fetch(`/api/market/prediction?symbol=${symbol}`);
         const data = await res.json();
 
