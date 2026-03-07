@@ -67,30 +67,38 @@ async def run_market_intelligence(bot):
         await asyncio.sleep(3600) # Run every hour
 
 async def run_prediction_engine():
-    """Background task to update market forecasts every 5 minutes."""
+    """Background task to update market forecasts for all watchlist assets."""
     from core.exchange_handler import ExchangeHandler
-    logger.info("Prediction Engine: Background Loop Started.")
+    logger.info("Prediction Engine: Background Loop Started for all watchlist assets.")
     while True:
         try:
-            current_symbol = SYSTEM_STATE.get("symbol", "BTCUSDT")
             timeframe = SYSTEM_STATE.get("timeframe", "15m")
-            
-            logger.info(f"Prediction Engine: Updating Forecast for {current_symbol}...")
             bridge = ExchangeHandler()
             client = await bridge._get_client(force_public=True)
-            ohlcv = await client.fetch_ohlcv(current_symbol, timeframe, limit=300)
             
-            logger.info(f"Prediction Engine: Data Ingested ({len(ohlcv)} candles). Training...")
-            forecast = await predictor.train_and_predict(current_symbol, ohlcv)
-            if forecast:
-                # Update global prediction state
-                PREDICTION_STATE[current_symbol] = forecast
-                logger.success(f"Prediction Engine: Forecast Update for {current_symbol} -> {forecast['direction']} ({forecast['change_pct']}%). Confidence: {forecast['confidence']}%")
+            for symbol in SETTINGS.WATCHLIST:
+                try:
+                    logger.info(f"Prediction Engine: Updating Forecast for {symbol}...")
+                    ohlcv = await client.fetch_ohlcv(symbol, timeframe, limit=300)
+                    
+                    if len(ohlcv) < 50:
+                        logger.warning(f"Prediction Engine: Insufficient data for {symbol}")
+                        continue
+                        
+                    forecast = await predictor.train_and_predict(symbol, ohlcv)
+                    if forecast:
+                        PREDICTION_STATE[symbol] = forecast
+                        logger.success(f"Prediction Engine: Forecast Update for {symbol} -> {forecast['direction']} ({forecast['change_pct']}%). Confidence: {forecast['confidence']}%")
+                except Exception as asset_err:
+                    logger.error(f"Prediction Engine Error [{symbol}]: {asset_err}")
+                
+                # Small pause between assets to prevent rate limits
+                await asyncio.sleep(2)
             
         except Exception as e:
-            logger.error(f"Prediction Engine Error: {e}")
+            logger.error(f"Prediction Engine Main Loop Error: {e}")
             
-        await asyncio.sleep(300) # Every 5 minutes
+        await asyncio.sleep(300) # Full cycle every 5 minutes
 
 async def main():
     logger.add("logs/engine.log", rotation="10 MB", level="INFO")

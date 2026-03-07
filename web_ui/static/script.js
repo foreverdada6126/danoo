@@ -496,6 +496,7 @@ async function changeGlobalConfig(type, value) {
             // Reload chart with new symbol/timeframe
             initPriceChart();
             syncDashboard();
+            updatePrediction();
         }
     } catch (e) {
         console.error("Config Sync Failed", e);
