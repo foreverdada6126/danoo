@@ -58,16 +58,16 @@ async def get_status():
             except:
                 current_price = SYSTEM_STATE.get("price", 0.0)
             
-            if current_price > 0:
-                for t in open_trades:
-                    if t.entry_price and t.amount:
-                        side_mult = 1 if t.side.upper() in ["BUY", "LONG"] else -1
-                        unrealized_pnl += (current_price - t.entry_price) * t.amount * side_mult
+                if current_price is not None and current_price > 0:
+                    for t in open_trades:
+                        if t.entry_price is not None and t.amount is not None:
+                            side_mult = 1 if t.side.upper() in ["BUY", "LONG"] else -1
+                            unrealized_pnl += (current_price - t.entry_price) * t.amount * side_mult
         
         # 3. Update ASSET_STATE
         if current_symbol not in ASSET_STATE:
             ASSET_STATE[current_symbol] = {
-                "initial_equity": 1000.0 if SYSTEM_STATE["mode"] == "PAPER" else 0.0,
+                "initial_equity": 1000.0 if SYSTEM_STATE.get("mode") == "PAPER" else 0.0,
                 "cumulative_pnl": 0.0
             }
         
@@ -84,7 +84,9 @@ async def get_status():
         
         session.close()
     except Exception as e:
-        logger.error(f"Status Calculation Error: {e}")
+        import traceback
+        error_details = traceback.format_exc()
+        logger.error(f"Status Calculation Error: {e}\n{error_details}")
     
     return SYSTEM_STATE
 

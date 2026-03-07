@@ -89,7 +89,7 @@ class StrategyLibrary:
         high_max = pd.Series(high).rolling(window=k_period).max()
         
         # Raw %K
-        k_raw = 100 * (pd.Series(close) - low_min) / (high_max - low_min)
+        k_raw = 100 * (pd.Series(close) - low_min) / (high_max - low_min + 1e-10)
         
         # Smooth %K (Slowing)
         k_smoothed = k_raw.rolling(window=slow_period).mean()
