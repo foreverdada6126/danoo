@@ -147,8 +147,11 @@ class ScalperEngine:
                 if exit_triggered:
                     close_side = "sell" if side == "BUY" else "buy"
                     close_amount = db_t.amount
-                    result = await self.bridge.place_limit_order(trade["symbol"], close_side, close_amount, 0)
-                    if result["success"]:
+                    
+                    # ⚡ Use Execution Engine to respect PAPER/REAL mode
+                    result = await self.executor.execute_order(trade["symbol"], close_side, close_amount, price)
+                    
+                    if result["status"] == "FILLED":
                         db_t.status = "CLOSED"
                         db_t.exit_price = price
                         db_t.exit_time = datetime.utcnow()

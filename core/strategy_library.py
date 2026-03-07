@@ -71,7 +71,7 @@ class StrategyLibrary:
             avg_gain[i] = (avg_gain[i-1] * (period - 1) + gain[i-1]) / period
             avg_loss[i] = (avg_loss[i-1] * (period - 1) + loss[i-1]) / period
             
-        rs = np.where(avg_loss == 0, 100, avg_gain / avg_loss)
+        rs = np.where(avg_loss == 0, 100, avg_gain / (avg_loss + 1e-10))
         rsi = 100 - (100 / (1 + rs))
         return rsi
 

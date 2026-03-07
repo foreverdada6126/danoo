@@ -60,6 +60,9 @@ async def run_market_intelligence(bot):
                     
         except Exception as e:
             logger.error(f"Intelligence Task Error: {e}")
+            # If it's a connection error, retry much faster than 1 hour
+            await asyncio.sleep(30)
+            continue
         
         await asyncio.sleep(3600) # Run every hour
 
