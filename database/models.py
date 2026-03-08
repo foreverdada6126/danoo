@@ -25,6 +25,8 @@ class Trade(Base):
     exit_time = Column(DateTime)
     order_id = Column(String)
     trade_code = Column(String)
+    memo = Column(String) # AI-generated trade justification
+    market_context = Column(JSON) # Snapshot of L2 walls, RSI, Trend, etc.
 
 class CandleCache(Base):
     """Local cache for high-speed signal calculation."""

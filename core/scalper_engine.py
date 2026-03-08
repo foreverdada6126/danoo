@@ -134,18 +134,18 @@ class ScalperEngine:
                             # If no liquidity data, assume neutral but don't grant "Backed" status
                             logger.info(f"[Scalper] No depth data for {symbol}. Trading on technicals only.")
 
-                        # Upgrade or Skip Based on Logic
-                        final_reason = strategy_matched
-                        if is_backed:
-                            final_reason = f"INST_{strategy_matched}" # Upgrade to Institutional Grade
-                            logger.success(f"💎 EXPERT ENTRY: {symbol} Move is Liquidity Backed ({conviction})!")
-                        else:
-                            # If NOT backed, skip to ensure "Expert" quality
-                            # logger.warning(f"⚠️ Low Conviction: {symbol} {signal} skipped (No Institutional Backing).")
-                            continue
+                        # ─── Snapshot Context for AI Audit ───
+                        context = {
+                            "rsi": float(StrategyLibrary.calculate_rsi(close, 14)[-1]),
+                            "stoch_k": float(curr_k),
+                            "stoch_d": float(curr_d),
+                            "trend": "UP" if trend_up else "DOWN",
+                            "regime": SYSTEM_STATE.get("regime", "RANGING"),
+                            "liquidity": liq # This is the full scan result
+                        }
 
                         logger.warning(f"[Scalper] SIGNAL: {signal} detected for {symbol} at ${curr_price} via {final_reason}")
-                        await self.execute_scalp(symbol, signal, curr_price, reason=final_reason)
+                        await self.execute_scalp(symbol, signal, curr_price, reason=final_reason, context=context)
                 
                 await asyncio.sleep(0.5)
 
@@ -229,7 +229,7 @@ class ScalperEngine:
         for t in to_close:
             if t in ACTIVE_TRADES: ACTIVE_TRADES.remove(t)
 
-    async def execute_scalp(self, symbol: str, side: str, price: float, reason: str = "STRICT_SCALP"):
+    async def execute_scalp(self, symbol: str, side: str, price: float, reason: str = "STRICT_SCALP", context: dict = None):
         """Execute and Persist Scalp Trade using Dynamic Position Sizing."""
         from web_ui.state import ACTIVE_TRADES, LOG_HISTORY, SYSTEM_STATE, TRADE_LOG_HISTORY
         from config.risk_config import RISK_CONFIG
@@ -311,7 +311,8 @@ class ScalperEngine:
             new_trade = Trade(
                 symbol=symbol, side=side, amount=amount, entry_price=price,
                 entry_time=datetime.utcnow(), status="OPEN", order_id=result["order_id"],
-                strategy=reason, leverage=leverage, trade_code=trade_code
+                strategy=reason, leverage=leverage, trade_code=trade_code,
+                market_context=context
             )
             session.add(new_trade)
             session.commit()

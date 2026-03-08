@@ -1050,7 +1050,13 @@ function appendMsg(text, side) {
     const list = get('chat-messages');
     const div = document.createElement('div');
     div.className = `msg ${side}`;
-    div.textContent = text;
+
+    // Basic Markdown support for AI Audit reports
+    let formatted = text
+        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+        .replace(/\n/g, '<br>');
+
+    div.innerHTML = formatted;
     list.appendChild(div);
     list.scrollTop = list.scrollHeight;
 }

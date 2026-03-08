@@ -282,5 +282,16 @@ async def chat_with_openclaw(msg: ChatMessage):
         logger.info(f"Recon Card Created: {regime_raw} | {score}")
         return {"status": "success", "message": "Intelligence Dossier Updated."}
 
+    if "analyze" in msg.message.lower() or "analyse" in msg.message.lower():
+        from core.trade_analyzer import TRADING_AUDITOR
+        import re
+        
+        # Extract asset name (e.g. BTC, ETH, etc)
+        match = re.search(r"(?:analyse|analyze)\s+(\w+)", msg.message.lower())
+        if match:
+            asset = match.group(1).upper()
+            report = await TRADING_AUDITOR.analyze_asset(asset)
+            return {"reply": report}
+
     response = f"OpenClaw: I received your instruction: '{msg.message}'. Analyzing market impact..."
     return {"reply": response}
