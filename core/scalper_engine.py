@@ -107,10 +107,12 @@ class ScalperEngine:
                             
                             # ─── EXPERT DECISION MATRIX ───
                             # 1. Wall Support (Strongest)
-                            on_wall = (signal == "BUY" and liq.get("is_whale_support")) or (signal == "SELL" and liq.get("is_whale_resistance"))
+                            # RELAXED ZONE: 0.5% proximity to walls instead of 0.3%
+                            on_wall = (signal == "BUY" and abs(current_price - liq.get("support", 0))/current_price < 0.005) or \
+                                      (signal == "SELL" and abs(current_price - liq.get("resistance", 0))/current_price < 0.005)
                             
                             # 2. Imbalance Support (Momentum)
-                            strong_imbalance = (signal == "BUY" and imbalance > 0.15) or (signal == "SELL" and imbalance < -0.15)
+                            strong_imbalance = (signal == "BUY" and imbalance > 0.12) or (signal == "SELL" and imbalance < -0.12)
                             
                             # 3. Path of Least Resistance (No massive walls in front)
                             # (Simulated check: ensure we aren't buying into a resistance wall within 1%)
@@ -124,7 +126,10 @@ class ScalperEngine:
                                 conviction = "IMBALANCE_FLOW"
                             
                             # Log the Liquidity Context
-                            logger.info(f"[Expert Sniper] {symbol} {signal} Assessment | Imbalance: {imbalance:.2f} | On Wall: {on_wall} | Result: {'BACKED' if is_backed else 'SKIPPED'}")
+                            if not is_backed:
+                                logger.info(f"[Expert Sniper] {symbol} {signal} SKIPPED: Needs Wall Support or >0.12 Imbalance. Current Imbal: {imbalance:.2f}")
+                            else:
+                                logger.info(f"[Expert Sniper] {symbol} {signal} Assessment | Imbalance: {imbalance:.2f} | On Wall: {on_wall} | Result: BACKED")
                         else:
                             # If no liquidity data, assume neutral but don't grant "Backed" status
                             logger.info(f"[Scalper] No depth data for {symbol}. Trading on technicals only.")
@@ -136,7 +141,7 @@ class ScalperEngine:
                             logger.success(f"💎 EXPERT ENTRY: {symbol} Move is Liquidity Backed ({conviction})!")
                         else:
                             # If NOT backed, skip to ensure "Expert" quality
-                            logger.warning(f"⚠️ Low Conviction: {symbol} {signal} skipped (No Institutional Backing).")
+                            # logger.warning(f"⚠️ Low Conviction: {symbol} {signal} skipped (No Institutional Backing).")
                             continue
 
                         logger.warning(f"[Scalper] SIGNAL: {signal} detected for {symbol} at ${curr_price} via {final_reason}")

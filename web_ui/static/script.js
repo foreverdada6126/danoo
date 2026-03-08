@@ -780,10 +780,17 @@ async function updateLiquidity() {
             return;
         }
 
-        if (get('liq-support-price')) get('liq-support-price').textContent = `$${parseFloat(data.support).toLocaleString()}`;
-        if (get('liq-res-price')) get('liq-res-price').textContent = `$${parseFloat(data.resistance).toLocaleString()}`;
+        if (get('liq-support-price')) get('liq-support-price').textContent = `$${parseFloat(data.support).toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`;
+        if (get('liq-res-price')) get('liq-res-price').textContent = `$${parseFloat(data.resistance).toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`;
         if (get('liq-bid-walls')) get('liq-bid-walls').textContent = `${data.bid_walls} Walls`;
         if (get('liq-ask-walls')) get('liq-ask-walls').textContent = `${data.ask_walls} Walls`;
+
+        // Update Wall Activity Indicator
+        const lastUpdated = (Date.now() / 1000) - data.timestamp;
+        const scanIndicator = document.querySelector('.text-brand-green/60.uppercase');
+        if (scanIndicator) {
+            scanIndicator.textContent = lastUpdated < 15 ? "L2 SCAN [LIVE]" : `L2 SCAN [STALE ${Math.round(lastUpdated)}s]`;
+        }
 
         const imbalance = parseFloat(data.imbalance) * 100;
         if (get('liq-imbal-val')) {

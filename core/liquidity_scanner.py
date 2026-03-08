@@ -21,8 +21,8 @@ class LiquidityScanner:
             # Fetch deeper L2 Order Book (Depth)
             orderbook = await client.fetch_order_book(symbol, limit=250)
             
-            bids = np.array(orderbook['bids']) # [price, amount]
-            asks = np.array(orderbook['asks'])
+            bids = np.array(orderbook['bids']) if orderbook.get('bids') else np.array([])
+            asks = np.array(orderbook['asks']) if orderbook.get('asks') else np.array([])
             
             if len(bids) < 5 or len(asks) < 5:
                 logger.warning(f"Thin Order Book [{symbol}]: Bids={len(bids)}, Asks={len(asks)}")
@@ -31,16 +31,14 @@ class LiquidityScanner:
             current_price = bids[0][0]
             
             # 1. Identify "Whale Walls" (Price levels with HUGE volume)
-            # Filter extremely small dust to get a cleaner average
-            clean_bids = bids[bids[:, 1] > np.percentile(bids[:, 1], 20)]
-            clean_asks = asks[asks[:, 1] > np.percentile(asks[:, 1], 20)]
+            # Use Median as a more stable baseline for "Normal" order size
+            median_bid = np.median(bids[:, 1])
+            median_ask = np.median(asks[:, 1])
             
-            avg_bid_size = np.mean(clean_bids[:, 1])
-            avg_ask_size = np.mean(clean_asks[:, 1])
-            
-            # Find bins where size > 2.0x average (The Walls) - Lowered from 3.0x
-            bid_walls = bids[bids[:, 1] > (avg_bid_size * 2.0)]
-            ask_walls = asks[asks[:, 1] > (avg_ask_size * 2.0)]
+            # Walls are orders significant enough to stall or bounce price
+            # We look for orders > 1.8x the median (Lowered for higher sensitivity)
+            bid_walls = bids[bids[:, 1] > (median_bid * 1.8)]
+            ask_walls = asks[asks[:, 1] > (median_ask * 1.8)]
             
             # 2. Institutional Imbalance
             total_bid_liq = np.sum(bids[:, 1] * bids[:, 0])
@@ -51,25 +49,28 @@ class LiquidityScanner:
             support = bid_walls[np.argmax(bid_walls[:, 1])][0] if len(bid_walls) > 0 else bids[-1][0]
             resistance = ask_walls[np.argmax(ask_walls[:, 1])][0] if len(ask_walls) > 0 else asks[-1][0]
             
-            # Reliability Score: How close are we to a major wall?
-            # Higher score = Price is sitting on a wall = "Guaranteed" Bounce
+            # Proximity check
             dist_to_support = (current_price - support) / current_price
             dist_to_res = (resistance - current_price) / current_price
             
             return {
                 "symbol": symbol,
                 "price": current_price,
-                "support": support,
-                "resistance": resistance,
-                "bid_walls": len(bid_walls),
-                "ask_walls": len(ask_walls),
-                "imbalance": round(imbalance, 4),
-                "is_whale_support": dist_to_support < 0.002, # within 0.2% of a wall
-                "is_whale_resistance": dist_to_res < 0.002
+                "support": float(support),
+                "resistance": float(resistance),
+                "bid_walls": int(len(bid_walls)),
+                "ask_walls": int(len(ask_walls)),
+                "imbalance": round(float(imbalance), 4),
+                "is_whale_support": bool(dist_to_support < 0.003), # 0.3% zone
+                "is_whale_resistance": bool(dist_to_res < 0.003),
+                "timestamp": time.time()
             }
             
         except Exception as e:
-            logger.error(f"Liquidity Scan Error [{symbol}]: {e}")
+            if "rate limit" in str(e).lower():
+                logger.error(f"BYBIT RATE LIMIT HIT while scanning {symbol}. Throttling required.")
+            else:
+                logger.error(f"Liquidity Scan Error [{symbol}]: {e}")
             return None
 
 LIQUIDITY_SCANNER = LiquidityScanner()

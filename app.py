@@ -132,7 +132,7 @@ async def run_liquidity_engine():
                 
         except Exception as e:
             logger.error(f"Liquidity Engine Error: {e}")
-        await asyncio.sleep(30) # High-frequency refresh (30s)
+        await asyncio.sleep(1) # High-frequency refresh
 
 async def main():
     logger.add("logs/engine.log", rotation="10 MB", level="INFO")
