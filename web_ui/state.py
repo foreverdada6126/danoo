@@ -28,7 +28,7 @@ SYSTEM_STATE = {
     "strat_strict": True,
     "strat_loose": True,
     "strat_recon": True,
-    "version": SETTINGS.VERSION
+    "version": "5.5.0" # Institutional Expert
 }
 
 # Per-Asset State Tracking (Equity/PNL)

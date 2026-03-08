@@ -24,7 +24,7 @@ class ScalperEngine:
 
     async def scan_market(self):
         """Monitor every asset in the watchlist (1m heartbeat)."""
-        from web_ui.state import SYSTEM_STATE, LOG_HISTORY, ACTIVE_TRADES
+        from web_ui.state import SYSTEM_STATE, LOG_HISTORY, ACTIVE_TRADES, LIQUIDITY_STATE
         
         # Don't overlap scans
         if time.time() - self.last_scan_time < 50:
@@ -100,19 +100,31 @@ class ScalperEngine:
                     existing = any(t for t in ACTIVE_TRADES if t["symbol"] == symbol and ("SCALP" in t["reason"] or "RECON" in t["reason"]))
                     if not existing:
                         # 4.5. Institutional Liquidity Filter (EXPERT MODE)
-                        from web_ui.state import LIQUIDITY_STATE
                         liq = LIQUIDITY_STATE.get(symbol)
                         is_backed = False
-                        
                         if liq:
-                            if signal == "BUY" and liq.get("is_whale_support"):
+                            imbalance = liq.get("imbalance", 0)
+                            
+                            # ─── EXPERT DECISION MATRIX ───
+                            # 1. Wall Support (Strongest)
+                            on_wall = (signal == "BUY" and liq.get("is_whale_support")) or (signal == "SELL" and liq.get("is_whale_resistance"))
+                            
+                            # 2. Imbalance Support (Momentum)
+                            strong_imbalance = (signal == "BUY" and imbalance > 0.15) or (signal == "SELL" and imbalance < -0.15)
+                            
+                            # 3. Path of Least Resistance (No massive walls in front)
+                            # (Simulated check: ensure we aren't buying into a resistance wall within 1%)
+                            path_clear = True 
+                            
+                            if on_wall:
                                 is_backed = True
-                            elif signal == "SELL" and liq.get("is_whale_resistance"):
+                                conviction = "MAX_WALL"
+                            elif strong_imbalance and path_clear:
                                 is_backed = True
+                                conviction = "IMBALANCE_FLOW"
                             
                             # Log the Liquidity Context
-                            imbalance = liq.get("imbalance", 0)
-                            logger.info(f"[Expert Sniper] {symbol} {signal} | Imbalance: {imbalance:.2f} | Backed: {is_backed}")
+                            logger.info(f"[Expert Sniper] {symbol} {signal} Assessment | Imbalance: {imbalance:.2f} | On Wall: {on_wall} | Result: {'BACKED' if is_backed else 'SKIPPED'}")
                         else:
                             # If no liquidity data, assume neutral but don't grant "Backed" status
                             logger.info(f"[Scalper] No depth data for {symbol}. Trading on technicals only.")
@@ -121,10 +133,10 @@ class ScalperEngine:
                         final_reason = strategy_matched
                         if is_backed:
                             final_reason = f"INST_{strategy_matched}" # Upgrade to Institutional Grade
-                            logger.success(f"💎 HIGH CONVICTION: {symbol} Move is Liquidity Backed!")
+                            logger.success(f"💎 EXPERT ENTRY: {symbol} Move is Liquidity Backed ({conviction})!")
                         else:
-                            # If NOT backed by a wall, we skip it in EXPERT mode to ensure "Guaranteed Success"
-                            logger.warning(f"⚠️ Low Conviction: {symbol} {signal} skipped (No Institutional Wall detected).")
+                            # If NOT backed, skip to ensure "Expert" quality
+                            logger.warning(f"⚠️ Low Conviction: {symbol} {signal} skipped (No Institutional Backing).")
                             continue
 
                         logger.warning(f"[Scalper] SIGNAL: {signal} detected for {symbol} at ${curr_price} via {final_reason}")

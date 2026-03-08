@@ -773,7 +773,12 @@ async function updateLiquidity() {
         const res = await fetch(`/api/market/liquidity?symbol=${symbol}`);
         const data = await res.json();
 
-        if (data.error) return;
+        console.log(`[UI] Syncing Liquidity for ${symbol}:`, data);
+
+        if (data.error) {
+            console.warn("Liquidity Data unavailable:", data.error);
+            return;
+        }
 
         if (get('liq-support-price')) get('liq-support-price').textContent = `$${parseFloat(data.support).toLocaleString()}`;
         if (get('liq-res-price')) get('liq-res-price').textContent = `$${parseFloat(data.resistance).toLocaleString()}`;
@@ -1150,6 +1155,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateTicker, 5000);
     setInterval(updatePrediction, 10000);
     setInterval(updateLiquidity, 10000);
+    updateLiquidity(); // Initial call
 
     // Initialize candlestick chart (has built-in retry for CDN + dimensions)
     initPriceChart();
